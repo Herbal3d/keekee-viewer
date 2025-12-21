@@ -1,0 +1,131 @@
+﻿// Copyright 2025 Robert Adams
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Text;
+using log4net;
+using log4net.Config;
+
+[assembly: log4net.Config.XmlConfigurator(ConfigFileExtension = "log4net", Watch = true)]
+
+namespace KeeKee.Framework.Logging {
+
+    public sealed class Log4NetLogger : ILog {
+
+        private string moduleName = "";
+        public string ModuleName { set { moduleName = value; } get { return moduleName; } }
+
+        private log4net.ILog logger = null;
+        private static Object lockObject = new Object();
+
+        public Log4NetLogger() : this("") {
+        }
+
+        public Log4NetLogger(string modName) {
+            moduleName = modName;
+            // logger = log4net.LogManager.GetLogger(modName);
+            lock (lockObject) {
+                if (logger == null) {
+                    // logger = log4net.LogManager.GetLogger(KeeKeeBase.ApplicationName);
+                    logger = log4net.LogManager.GetLogger(moduleName);
+                    // logger = log4net.LogManager.GetLogger(Assembly.GetExecutingAssembly().FullName);
+                    // logger = log4net.LogManager.GetLogger(ModuleName);
+                    // If error level reporting isn't enabled we assume no logger is configured 
+                    // and initialize a default ConsoleAppender
+                    if (!logger.IsErrorEnabled) {
+                        log4net.Appender.ConsoleAppender appender = new log4net.Appender.ConsoleAppender();
+                        appender.Layout = new log4net.Layout.PatternLayout("%timestamp[%thread]: %message%newline");
+                        BasicConfigurator.Configure(appender);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// return true of a message would be logged with the specified loglevel
+        /// </summary>
+        /// <param name="logLevel">the loglevel to test if it's enabled now</param>
+        /// <returns></returns>
+        public bool WouldLog(LogLevel logLevel) {
+            return IfLog(logLevel);
+        }
+
+        /// <summary>
+        /// Internal routine that returns true if the passed logging flag it not filtered
+        /// (it will cause some output).
+        /// </summary>
+        /// <param name="logLevel"></param>
+        /// <returns></returns>
+        private bool IfLog(LogLevel logLevel) {
+            if (logLevel == LogLevel.DBADERROR) return true;
+            bool ret = false;
+            if ((logLevel & LogManager.CurrentLogLevel) == logLevel) {
+                if ((logLevel & LogLevel.DDETAIL) != 0) {
+                    // must also have log4net configed for "DEBUG" to get detailed output
+                    ret = logger.IsDebugEnabled;    // DETAIL is only output if in debug mode
+                }
+                else {
+                    ret = logger.IsInfoEnabled;     // if INFO, output it
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Log the passed message if the loglevel is not filtered out
+        /// </summary>
+        /// <param name="logLevel">log level of the message</param>
+        /// <param name="msg">the message to log</param>
+        public void Log(LogLevel logLevel, string msg) {
+            if (IfLog(logLevel)) LogIt(logLevel, msg);
+        }
+
+        public void Log(LogLevel logLevel, string msg, object p1) {
+            if (IfLog(logLevel)) LogIt(logLevel, String.Format(msg, p1));
+        }
+
+        public void Log(LogLevel logLevel, string msg, object p1, object p2) {
+            if (IfLog(logLevel)) LogIt(logLevel, String.Format(msg, p1, p2));
+        }
+
+        public void Log(LogLevel logLevel, string msg, object p1, object p2, object p3) {
+            if (IfLog(logLevel)) LogIt(logLevel, String.Format(msg, p1, p2, p3));
+        }
+
+        public void Log(LogLevel logLevel, string msg, object p1, object p2, object p3, object p4) {
+            if (IfLog(logLevel)) LogIt(logLevel, String.Format(msg, p1, p2, p3, p4));
+        }
+
+        private void LogIt(LogLevel logLevel, string msg) {
+            StringBuilder buf = new StringBuilder(256);
+            buf.Append(DateTime.Now.ToString("yyyyMMddHHmmss"));
+            // buf.Append(": ");
+            // buf.Append(KeeKeeBase.ApplicationName);
+            buf.Append(": ");
+            if (ModuleName.Length != 0) {
+                buf.Append(ModuleName);
+            }
+            buf.Append(": ");
+            buf.Append(msg);
+            // The end of line is added in the .log4net file so it's also on all
+            //    the log lines from other modules (libomv, ...)
+            // buf.Append("\r\n");
+            if ((logLevel & LogLevel.DDETAIL) != 0) {
+                logger.Debug(buf.ToString());
+            }
+            else {
+                logger.Info(buf.ToString());
+            }
+        }
+    }
+}
