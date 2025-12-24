@@ -12,9 +12,10 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+
 using KeeKee;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Parameters;
+
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
@@ -28,26 +29,26 @@ namespace KeeKee.Comm {
     /// classes between comm and KeeKee.World.
     /// for
     /// </summary>
-public class CommBase /*: ICommProvider*/ {
-    /*
-    string Name { get; }
-    
-    bool IsConnected { get; }
+    public class CommBase /*: ICommProvider*/ {
+        /*
+        string Name { get; }
 
-    bool IsLoggedIn { get; }
+        bool IsConnected { get; }
 
-    bool Connect(ParameterSet parms);
+        bool IsLoggedIn { get; }
 
-    bool Disconnect();
+        bool Connect(ParameterSet parms);
 
-    // initiate a connection
-    ParameterSet ConnectionParams { get; }
+        bool Disconnect();
 
-    // kludge to get underlying LL Comm (circular ref Comm.LLLP <=> World.LL)
-    OMV.GridClient GridClient { get; }
+        // initiate a connection
+        ParameterSet ConnectionParams { get; }
 
-    // each comm provider has a block of statistics
-    ParameterSet CommStatistics();
-     */
-}
+        // kludge to get underlying LL Comm (circular ref Comm.LLLP <=> World.LL)
+        OMV.GridClient GridClient { get; }
+
+        // each comm provider has a block of statistics
+        ParameterSet CommStatistics();
+         */
+    }
 }

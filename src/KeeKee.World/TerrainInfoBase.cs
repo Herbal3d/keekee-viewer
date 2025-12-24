@@ -14,49 +14,39 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace KeeKee.World {
-public class TerrainInfoBase : EntityBase, ITerrainInfo {
-    protected float[,] m_heightMap;
-    public float[,] HeightMap { get { return m_heightMap; } }
+    public class TerrainInfoBase : EntityBase, ITerrainInfo {
+        public float[,] HeightMap { get; protected set; } = new float[256, 256];
 
-    protected int m_heightMapWidth; // X dimension
-    public int HeightMapWidth { get { return m_heightMapWidth; } }
+        public int HeightMapWidth { get; protected set; } = 256;
 
-    protected int m_heightMapLength; // Y dimension
-    public int HeightMapLength { get { return m_heightMapLength; } }
+        public int HeightMapLength { get; protected set; } = 256;
 
-    protected float m_maximumHeight;
-    public float MaximumHeight { get { return m_maximumHeight; } }
+        public float MaximumHeight { get; protected set; } = 4096.0f;
+        public float MinimumHeight { get; protected set; } = -4096.0f;
 
-    protected float m_minimumHeight;
-    public float MinimumHeight { get { return m_minimumHeight; } }
+        public int TerrainPatchStride { get; protected set; } = 16;
 
-    protected int m_terrainPatchStride = 16;
-    public int TerrainPatchStride { get { return m_terrainPatchStride; } }
+        // X dimension (E/W)
+        public int TerrainPatchWidth { get; protected set; } = 256;
 
-    // X dimension (E/W)
-    protected int m_terrainPatchWidth = 256;
-    public int TerrainPatchWidth { get { return m_terrainPatchWidth; } }
+        // Y dimension (N/S)
+        public int TerrainPatchLength { get; protected set; } = 256;
 
-    // Y dimension (N/S)
-    protected int m_terrainPatchLength = 256;
-    public int TerrainPatchLength { get { return m_terrainPatchLength; } }
+        // height of the water
+        public const float NOWATER = -113537;   // here because it can't go in the interface (stupid C#)
+        public float WaterHeight { get; set; } = NOWATER;
 
-    // height of the water
-    public const float NOWATER = -113537;   // here because it can't go in the interface (stupid C#)
-    protected float m_waterHeight = NOWATER;
-    public float WaterHeight { get { return m_waterHeight; } set { m_waterHeight = value; } }
+        // the patch is presumed to be Stride width and length
+        public virtual void UpdatePatch(RegionContextBase reg, int x, int y, float[] data) {
+            return;
+        }
 
-    // the patch is presumed to be Stride width and length
-    public virtual void UpdatePatch(RegionContextBase reg, int x, int y, float[] data) {
-        return;
+        public TerrainInfoBase(RegionContextBase rcontext, AssetContextBase acontext)
+                        : base(rcontext, acontext) {
+        }
+
+        public override void Dispose() {
+            throw new NotImplementedException();
+        }
     }
-
-    public TerrainInfoBase (RegionContextBase rcontext, AssetContextBase acontext) 
-                    : base(rcontext, acontext) {
-    }
-
-    public override void Dispose() {
-        throw new NotImplementedException();
-    }
-}
 }

@@ -11,32 +11,37 @@
 
 using System;
 using System.Collections.Generic;
+
 using KeeKee;
-using KeeKee.Framework.Parameters;
+using KeeKee.Framework;
+
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.Comm {
 
-public delegate void ConnectionFailureCallback(ICommProvider source, string reason);
+    public delegate void ConnectionFailureCallback(ICommProvider source, string reason);
 
-public interface ICommProvider : IProvider {
-    string Name { get; }
-    
-    bool IsConnected { get; }
+    public interface ICommProvider : IProvider {
+        string Name { get; }
 
-    bool IsLoggedIn { get; }
+        bool IsConnected { get; }
 
-    bool Connect(ParameterSet parms);
+        bool IsLoggedIn { get; }
 
-    bool Disconnect();
+        bool Connect(IOptions<CommConfig> parms);
 
-    // initiate a connection
-    ParameterSet ConnectionParams { get; }
+        bool Disconnect();
 
-    // kludge to get underlying LL Comm (circular ref Comm.LLLP <=> World.LL)
-    OMV.GridClient GridClient { get; }
+        // initiate a connection
+        IOptions<CommConfig> ConnectionParams { get; }
 
-    // each comm provider has a block of statistics
-    ParameterSet CommStatistics();
-}
+        // kludge to get underlying LL Comm (circular ref Comm.LLLP <=> World.LL)
+        OMV.GridClient GridClient { get; }
+
+        // each comm provider has a block of statistics
+        IOptions<CommStats> CommStatistics();
+    }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Robert Adams
+// Copyright 2025 Robert Adams
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,21 +9,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace KeeKee.Framework.Config {
 
-namespace KeeKee.Framework.Parameters {
+    public class KeeKeeConfig {
 
-public interface IParameterPersist {
+        public const string subSectionName = "KeeKeeViewer";
 
-    /// <summary>
-    /// Read in the parameters from the persistant storage. It is expected
-    /// that parameters have been set that specify where the persistant storage
-    /// is.
-    /// </summary>
-    /// <throws>ParameterException if the storage cannot be read</throws>
-    void ReadParameterPersist();
-    void WriteParameterPersist();
+        public string AppTitle { get; set; } = "KeeKee Viewer";
+        public string AppName { get; set; } = "KeeKeeViewer";
+        public string AppVersion { get; set; } = "0.1.0";
+
+    }
 }
-}
+

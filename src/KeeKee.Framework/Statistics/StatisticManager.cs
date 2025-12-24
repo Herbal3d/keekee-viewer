@@ -9,9 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
+
 using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Framework.Statistics {
@@ -19,63 +18,58 @@ namespace KeeKee.Framework.Statistics {
     /// Manages a group of counters and presents one REST interface to read
     /// this group of counters.
     /// </summary>
-public class StatisticManager : IDisplayable {
+    public class StatisticManager(ILogger<StatisticManager> Log) : IDisplayable {
 
-    private List<ICounter> m_counters = new List<ICounter>();
+        private List<ICounter> m_counters = new List<ICounter>();
 
-    public StatisticManager(string statisticGroupName) {
-    }
-
-    // a simple counter
-    public ICounter GetCounter(string counterName) {
-        ICounter newCounter = new StatCounter(counterName);
-        m_counters.Add(newCounter);
-        return newCounter;
-    }
-
-    // a counter who's value is kept outside one of these counter classes
-    public ICounter GetCounterValue(string counterName, CounterValueCallback valueCall) {
-        ICounter newCounter = new StatCounterValue(counterName, valueCall);
-        m_counters.Add(newCounter);
-        return newCounter;
-    }
-
-    // an interval with a begin and end
-    public IIntervalCounter GetIntervalCounter(string counterName) {
-        IIntervalCounter newCounter = new IntervalCounter(counterName);
-        m_counters.Add(newCounter);
-        return newCounter;
-    }
-
-    /// <summary>
-    /// A statistics collection returns an OSD structure which is a map
-    /// of maps. The top level map are the individual counters and
-    /// their value is a map of the variables that make up the counter.
-    /// </summary>
-    /// <returns></returns>
-    public OMVSD.OSDMap GetDisplayable() {
-        OMVSD.OSDMap values = new OMVSD.OSDMap();
-        foreach (ICounter cntr in m_counters) {
-            try {
-                OMVSD.OSDMap ivals = new OMVSD.OSDMap();
-                ivals.Add("count", new OMVSD.OSDInteger((int)cntr.Count));
-                if (cntr is IIntervalCounter) {
-                    IIntervalCounter icntr = (IIntervalCounter)cntr;
-                    ivals.Add("average", new OMVSD.OSDInteger((int)icntr.Average));
-                    ivals.Add("low", new OMVSD.OSDInteger((int)icntr.Low));
-                    ivals.Add("high", new OMVSD.OSDInteger((int)icntr.High));
-                    ivals.Add("last", new OMVSD.OSDInteger((int)icntr.Last));
-                    ivals.Add("total", new OMVSD.OSDInteger((int)icntr.Total));
-                }
-                values.Add(cntr.Name, ivals);
-            }
-            catch (Exception e) {
-                Logging.LogManager.Log.Log(KeeKee.Framework.Logging.LogLevel.DBADERROR,
-                    "FAILURE getting Displayable value: n={0}, {1}", cntr.Name, e.ToString());
-            }
+        // a simple counter
+        public ICounter GetCounter(string counterName) {
+            ICounter newCounter = new StatCounter(counterName);
+            m_counters.Add(newCounter);
+            return newCounter;
         }
-        return values;
-    }
 
-}
+        // a counter who's value is kept outside one of these counter classes
+        public ICounter GetCounterValue(string counterName, CounterValueCallback valueCall) {
+            ICounter newCounter = new StatCounterValue(counterName, valueCall);
+            m_counters.Add(newCounter);
+            return newCounter;
+        }
+
+        // an interval with a begin and end
+        public IIntervalCounter GetIntervalCounter(string counterName) {
+            IIntervalCounter newCounter = new IntervalCounter(counterName);
+            m_counters.Add(newCounter);
+            return newCounter;
+        }
+
+        /// <summary>
+        /// A statistics collection returns an OSD structure which is a map
+        /// of maps. The top level map are the individual counters and
+        /// their value is a map of the variables that make up the counter.
+        /// </summary>
+        /// <returns></returns>
+        public OMVSD.OSDMap GetDisplayable() {
+            OMVSD.OSDMap values = new OMVSD.OSDMap();
+            foreach (ICounter cntr in m_counters) {
+                try {
+                    OMVSD.OSDMap ivals = new OMVSD.OSDMap();
+                    ivals.Add("count", new OMVSD.OSDInteger((int)cntr.Count));
+                    if (cntr is IIntervalCounter) {
+                        IIntervalCounter icntr = (IIntervalCounter)cntr;
+                        ivals.Add("average", new OMVSD.OSDInteger((int)icntr.Average));
+                        ivals.Add("low", new OMVSD.OSDInteger((int)icntr.Low));
+                        ivals.Add("high", new OMVSD.OSDInteger((int)icntr.High));
+                        ivals.Add("last", new OMVSD.OSDInteger((int)icntr.Last));
+                        ivals.Add("total", new OMVSD.OSDInteger((int)icntr.Total));
+                    }
+                    values.Add(cntr.Name, ivals);
+                } catch (Exception e) {
+                    Log.LogError("FAILURE getting Displayable value: n={0}, {1}", cntr.Name, e.ToString());
+                }
+            }
+            return values;
+        }
+
+    }
 }

@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
+    <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
     <ProjectReference Include="..\KeeKee.View\KeeKee.View.csproj" />
   </ItemGroup>
 

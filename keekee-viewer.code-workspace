@@ -4,5 +4,13 @@
 			"path": "."
 		}
     ],
-    "settings": {}
+    "settings": {
+        "files.associations": {
+            "appsettings.json": "jsonc",
+            "appsettings.Developement.json": "jsonc",
+            "appsettings.Production.json": "jsonc",
+            "Grids.json": "jsonc",
+            "KeeKee.json": "jsonc"
+        }
+    }
 }
