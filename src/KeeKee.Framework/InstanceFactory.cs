@@ -12,6 +12,11 @@
 using Microsoft.Extensions.DependencyInjection;
 
 namespace KeeKee.Framework {
+    /// <summary>
+    /// A class that creates and instance of a DI registered class.
+    /// To use, add InstanceFactory to the class creation invocation
+    /// and then do a "_factory.Create<TheClassYouWant>()".
+    /// </summary>
     public interface IInstanceFactory {
         T Create<T>() where T : class;
     }

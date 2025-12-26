@@ -81,17 +81,45 @@ namespace KeeKee {
                      // for more details on NLog configuration using appsettings.json.
                  })
                  .ConfigureServices((context, services) => {
-                     // Configuration binding
-                     RegisterConfigurationOptions(context, services);
-                     // Core Services
-                     RegisterServices(context, services);
-                     // Infrastructure Services
-                     //     e.g., database, messaging, etc.
-                     // Application Services
-                     //        e.g., jobrunners, etc.
-                     // Background Workers
-                     //    e.g., hosted services, etc.
-                     RegisterWorkers(context, services);
+                    services.Configure<KeeKeeConfig>(context.Configuration.GetSection(KeeKeeConfig.subSectionName));
+                    services.AddTransient<IInstanceFactory, InstanceFactory>();
+
+                    // Logger and KLogger wrapper for base logger
+                    services.Configure<KLoggerConfig>(context.Configuration.GetSection(KLoggerConfig.subSectionName));
+                    services.AddTransient(typeof(ILogger<>), typeof(KLogger<>));
+
+                    // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
+                    services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subsectionName));
+                    services.AddTransient<RestHandlerFactory, RestHandlerFactory>();
+                    services.AddHostedService<RestManager>();
+                    
+                    // Communication services
+
+            // KeeKee.Rest, IModule
+            // KeeKee.Comm, ICommProvider
+            // KeeKee.World, IWorld
+            // KeeKee.View, IViewProvider
+            // KeeKee.View, IUserInterfaceProvider
+            // KeeKee.Renderer.OGL, IRendererProvider
+            // KeeKee.Comm.LLLP, IRestUser
+            // KeeKee.View, IViewSplash
+            // KeeKee.View, IViewAvatar
+            // KeeKee.View, IViewChat
+            // KeeKee.View, KeeKee.Renderer.OGL.IViewOGL
+            // KeeKee.View, IRegionTrackerProvider
+            // KeeKee.World.Services, IAvatarTrackerService
+            // KeeKee.Comm.LLLP, Comm.IChatProvider
+
+            // Asset Server example choosing implementation based on config
+            // pServices.AddSingleton<IAssetServer>(sp => {
+            //     var provider = config.GetValue<string>("AssetServer:Provider") ?? "LLLP";
+            //     OR var provider = sp.GetRequiredService<IOptions<IAssetServerOptions>>().Value.Provider ?? "LLLP";
+            //     return provider.ToLowerInvariant() switch {
+            //         "lllp" => services.AddSingleton<IAssetServer, LllpAssetServer>(),
+            //         "rest" => services.AddSingleton<IAssetServer, RestAssetServer>(),
+            //         _ => throw new ApplicationException($"Unknown AssetServer provider '{provider}'.")
+            //     };
+            // });
 
 
                  })
@@ -116,69 +144,6 @@ namespace KeeKee {
         [LoggerMessage(0, LogLevel.Information, "KeeKee application shutting down.")]
         public static partial void LogShutdown(ILogger logger);
 
-
-        private static void RegisterConfigurationOptions(HostBuilderContext pContext, IServiceCollection pServices) {
-            var config = pContext.Configuration;
-            // pServices.AddOptions<MyOptions>().Bind(config.GetSection("MyOptions"));
-
-            // Add IOptions config for the individual config sections
-            // This will allow someone to inject IOptions<CodeConfig> to get the config params.
-            //     Using the IOptions interface allows the config to be changed at runtime
-            //     (see IOptionsSnapshot for more info).
-            pServices.Configure<KeeKeeConfig>(config.GetSection(KeeKeeConfig.subSectionName));
-            pServices.Configure<KLoggerConfig>(config.GetSection(KLoggerConfig.subSectionName));
-            pServices.Configure<RestManagerConfig>(config.GetSection(RestManagerConfig.subsectionName));
-
-        }
-
-        private static void RegisterServices(HostBuilderContext pContext, IServiceCollection pServices) {
-            // lots of _serviceCollection.AddSingleton<IInterface, InterfaceClass>();
-            // Register services here if needed
-
-            // pServices.AddSingleton<IMyService, MyService>();
-
-            // Asset Server example choosing implementation based on config
-            // pServices.AddSingleton<IAssetServer>(sp => {
-            //     var provider = config.GetValue<string>("AssetServer:Provider") ?? "LLLP";
-            //     OR var provider = sp.GetRequiredService<IOptions<IAssetServerOptions>>().Value.Provider ?? "LLLP";
-            //     return provider.ToLowerInvariant() switch {
-            //         "lllp" => services.AddSingleton<IAssetServer, LllpAssetServer>(),
-            //         "rest" => services.AddSingleton<IAssetServer, RestAssetServer>(),
-            //         _ => throw new ApplicationException($"Unknown AssetServer provider '{provider}'.")
-            //     };
-            // });
-
-            // The KLogger wrapper around ILogger
-            pServices.AddTransient(typeof(ILogger<>), typeof(KLogger<>));
-
-            pServices.AddTransient<IInstanceFactory, InstanceFactory>();
-            pServices.AddTransient<RestHandlerFactory, RestHandlerFactory>();
-
-
-            // KeeKee.Rest, IModule
-            // KeeKee.Comm, ICommProvider
-            // KeeKee.World, IWorld
-            // KeeKee.View, IViewProvider
-            // KeeKee.View, IUserInterfaceProvider
-            // KeeKee.Renderer.OGL, IRendererProvider
-            // KeeKee.Comm.LLLP, IRestUser
-            // KeeKee.View, IViewSplash
-            // KeeKee.View, IViewAvatar
-            // KeeKee.View, IViewChat
-            // KeeKee.View, KeeKee.Renderer.OGL.IViewOGL
-            // KeeKee.View, IRegionTrackerProvider
-            // KeeKee.World.Services, IAvatarTrackerService
-            // KeeKee.Comm.LLLP, Comm.IChatProvider
-
-
-        }
-
-        private static void RegisterWorkers(HostBuilderContext pContext, IServiceCollection pServices) {
-            // lots of _serviceCollection.AddHostedService<WorkerClass>();
-            // Register background workers here if needed
-            // pServices.AddHostedService<BackgroundWorker>();
-            pServices.AddHostedService<RestManager>();
-        }
     }
 
     /*

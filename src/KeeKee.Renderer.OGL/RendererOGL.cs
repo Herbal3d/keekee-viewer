@@ -12,13 +12,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Modules;
-using KeeKee.Framework.Parameters;
 using KeeKee.Renderer;
 using KeeKee.World;
 using KeeKee.World.LL;
+
 using OMV = OpenMetaverse;
 using OMVR = OpenMetaverse.Rendering;
 using OMVI = OpenMetaverse.Imaging;

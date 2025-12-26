@@ -6,4 +6,23 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
+    <PackageReference Include="LibreMetaverse" Version="2.5.6.83" />
+    <PackageReference Include="OpenTK" Version="4.9.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
+    <ProjectReference Include="..\KeeKee.Comm\KeeKee.Comm.csproj" />
+    <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
+    <ProjectReference Include="..\KeeKee.Renderer\KeeKee.Renderer.csproj" />
+    <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" />
+    <ProjectReference Include="..\KeeKee.World.LL\KeeKee.World.LL.csproj" />
+    <ProjectReference Include="..\KeeKee.World.OS\KeeKee.World.OS.csproj" />
+  </ItemGroup>
+
 </Project>
