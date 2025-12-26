@@ -12,42 +12,56 @@
 using System.Net;
 using System.Text;
 
-using KeeKee;
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-// called to process GET. The Uri is the full request uri and 'after' is everything after the 'api'
-public delegate OMVSD.OSD ProcessGetCallback(KeeKee.Rest.RestHandler handler, Uri uri, string after);
-public delegate OMVSD.OSD ProcessPostCallback(KeeKee.Rest.RestHandler handler, Uri uri, string after, OMVSD.OSD body);
-
 namespace KeeKee.Rest {
 
-    public class RestHandler : IDisposable {
+    public class RestHandlerFactory {
+        private readonly ServiceProvider m_serviceProvider;
 
-        public const string APINAME = "/api";
+        public RestHandlerFactory(ServiceProvider pServiceProvider) {
+            m_serviceProvider = pServiceProvider;
+        }
 
-        public const string RESTREQUESTERRORCODE = "RESTRequestError";
-        public const string RESTREQUESTERRORMSG = "RESTRequestMsg";
+        public IRestHandler Create(string urlBase, ProcessGetCallback pget, ProcessPostCallback ppost) {
+            return ActivatorUtilities.CreateInstance<IRestHandler>(m_serviceProvider, urlBase, pget, ppost);
+        }
+        public IRestHandler Create(string urlBase, IDisplayable pDisplayable) {
+            return ActivatorUtilities.CreateInstance<IRestHandler>(m_serviceProvider, urlBase, pDisplayable);
+        }
+        public IRestHandler Create(string urlBase, string pDirectory) {
+            return ActivatorUtilities.CreateInstance<IRestHandler>(m_serviceProvider, urlBase, pDirectory);
+        }
+    }
+
+    public class RestHandler : IRestHandler, IDisposable {
+
+        // public const string APINAME = "/api";
+
+        // public const string RESTREQUESTERRORCODE = "RESTRequestError";
+        // public const string RESTREQUESTERRORMSG = "RESTRequestMsg";
 
         public HttpListener? m_Handler;
-        public string? m_baseUrl;
-        public ProcessGetCallback? m_processGet;
-        public ProcessPostCallback? m_processPost;
-        public IDisplayable? m_displayable;
-        public string? m_dir;
-        public bool m_parameterSetWritable = false;
-        public string? m_prefix;
+        public string BaseUrl { get; private set; }
+        public ProcessGetCallback? ProcessGet { get; private set; }
+        public ProcessPostCallback? ProcessPost { get; private set; }
+        public IDisplayable Displayable { get; private set; } = null!;
+        public string Dir { get; private set; } = null!;
+        public bool ParameterSetWritable { get; private set; } = false;
+        public string Prefix { get; private set; } = null!;
 
-        public HttpListenerContext? m_context;
-        public HttpListenerRequest? m_request;
-        public HttpListenerResponse? m_response;
+        public HttpListenerContext? ListenerContext { get; private set; }
+        public HttpListenerRequest? ListenerRequest { get; private set; }
+        public HttpListenerResponse? ListenerResponse { get; private set; }
 
-        private IKLogger<RestHandler>? m_log;
+        private readonly ServiceProvider m_serviceProvider;
+        private readonly IKLogger<RestHandler> m_log;
 
         /// <summary>
         /// Setup a rest handler that calls back for gets and posts to the specified urlBase.
@@ -56,14 +70,18 @@ namespace KeeKee.Rest {
         /// <param name="urlBase">base of the url that's us</param>
         /// <param name="pget">called on GET operations</param>
         /// <param name="ppost">called on POST operations</param>
-        public RestHandler(string urlBase, ProcessGetCallback pget, ProcessPostCallback ppost) {
-            m_baseUrl = urlBase;
-            m_processGet = pget;
-            m_processPost = ppost;
-            m_prefix = APINAME + urlBase;
-            m_log = RestManager.Instance.ServiceProvider.GetService(typeof(IKLogger<RestHandler>)) as IKLogger<RestHandler>;
-            RestManager.Instance.RegisterListener(this);
-            m_log.Log(KLogLevel.RestDetail, "Register GET/POST handler for {0}", m_prefix);
+        public RestHandler(IKLogger<RestHandler> pLog, ServiceProvider pServiceProvider,
+                        string urlBase, ProcessGetCallback pget, ProcessPostCallback ppost) {
+            m_log = pLog;
+            m_serviceProvider = pServiceProvider;
+            BaseUrl = urlBase;
+            Prefix = APINAME + urlBase;
+
+            ProcessGet = pget;
+            ProcessPost = ppost;
+
+            m_serviceProvider.GetRequiredService<RestManager>().RegisterListener(this);
+            m_log.Log(KLogLevel.RestDetail, "Register GET/POST handler for {0}", Prefix);
         }
 
         /// <summary>
@@ -72,14 +90,17 @@ namespace KeeKee.Rest {
         /// <param name="urlBase">base of the url for this parameter set</param>
         /// <param name="parms">the parameter set to read and write</param>
         /// <param name="writable">if 'true', it allows POST operations to change the parameter set</param>
-        public RestHandler(string urlBase, IDisplayable displayable) {
-            m_baseUrl = urlBase;
+        public RestHandler(IKLogger<RestHandler> pLog, ServiceProvider pServiceProvider,
+                        string urlBase, IDisplayable displayable) {
+            m_log = pLog;
+            m_serviceProvider = pServiceProvider;
+            BaseUrl = urlBase;
             m_displayable = displayable;
-            m_processGet = ProcessGetParam;
             m_prefix = APINAME + urlBase;
-            m_log = RestManager.Instance.ServiceProvider.GetService(typeof(IKLogger<RestHandler>)) as IKLogger<RestHandler>;
-            RestManager.Instance.RegisterListener(this);
-            m_log?.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", m_prefix);
+
+            m_processGet = ProcessGetParam;
+            m_serviceProvider.GetRequiredService<RestManager>().RegisterListener(this);
+            m_log.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", m_prefix);
         }
 
         /// <summary>
@@ -87,13 +108,16 @@ namespace KeeKee.Rest {
         /// </summary>
         /// <param name="urlBase"></param>
         /// <param name="directory"></param>
-        public RestHandler(string urlBase, string directory) {
-            m_baseUrl = urlBase;
+        public RestHandler(IKLogger<RestHandler> pLog, ServiceProvider pServiceProvider,
+                        string urlBase, string directory) {
+            m_log = pLog;
+            m_serviceProvider = pServiceProvider;
+            BaseUrl = urlBase;
             m_dir = directory;
             m_prefix = urlBase;
-            m_log = RestManager.Instance.ServiceProvider.GetService(typeof(IKLogger<RestHandler>)) as IKLogger<RestHandler>;
-            RestManager.Instance.RegisterListener(this);
-            m_log?.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", m_prefix);
+
+            m_serviceProvider.GetRequiredService<RestManager>().RegisterListener(this);
+            m_log.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", m_prefix);
         }
 
         public void Dispose() {
@@ -111,7 +135,7 @@ namespace KeeKee.Rest {
                     // no processor but we have a dir. Return the file in that dir.
                     string filename = m_dir + "/" + afterString;
                     if (File.Exists(filename)) {
-                        // m_log?.Log(KLogLevel.RestDetail, "GET: file: {0}", afterString);
+                        // m_log.Log(KLogLevel.RestDetail, "GET: file: {0}", afterString);
                         string[] fileContents = File.ReadAllLines(filename);
                         string mimeType = RestManager.MIMEDEFAULT;
                         if (filename.EndsWith(".css")) mimeType = "text/css";
@@ -125,7 +149,7 @@ namespace KeeKee.Rest {
                             }
                         );
                     } else {
-                        m_log?.Log(KLogLevel.RestDetail, "GET: file does not exist: {0}", filename);
+                        m_log.Log(KLogLevel.RestDetail, "GET: file does not exist: {0}", filename);
                     }
                     return;
                 }
@@ -141,7 +165,7 @@ namespace KeeKee.Rest {
                         }
                     );
                 } catch (Exception e) {
-                    m_log?.Log(KLogLevel.Error, "Failed getHandler: u="
+                    m_log.Log(KLogLevel.Error, "Failed getHandler: u="
                             + (m_request?.Url?.ToString() ?? "UNKNOWN") + ":" + e.ToString());
                     RestManager.Instance.ConstructErrorResponse(m_response, HttpStatusCode.InternalServerError,
                         delegate (ref StringBuilder buff) {
@@ -157,7 +181,7 @@ namespace KeeKee.Rest {
                 return;
             }
             if (m_request?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log?.Log(KLogLevel.RestDetail, "POST: " + (m_request?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.RestDetail, "POST: " + (m_request?.Url?.ToString() ?? "UNKNOWN"));
                 string strBody = "";
                 using (StreamReader rdr = new StreamReader(m_request.InputStream)) {
                     strBody = rdr.ReadToEnd();
@@ -176,11 +200,11 @@ namespace KeeKee.Rest {
                             }
                         );
                     } else {
-                        m_log?.Log(KLogLevel.RestDetail, "Failure which creating POST response");
+                        m_log.Log(KLogLevel.RestDetail, "Failure which creating POST response");
                         throw new KeeKeeException("Failure processing POST");
                     }
                 } catch (Exception e) {
-                    m_log?.Log(KLogLevel.RestDetail, "Failed postHandler: u="
+                    m_log.Log(KLogLevel.RestDetail, "Failed postHandler: u="
                             + (m_request?.Url?.ToString() ?? "UNKNOWN") + ":" + e.ToString());
                     RestManager.Instance.ConstructErrorResponse(m_response, HttpStatusCode.InternalServerError,
                         delegate (ref StringBuilder buff) {
@@ -204,7 +228,7 @@ namespace KeeKee.Rest {
                 try {
                     retMap = (OMVSD.OSDMap)OMVSD.OSDParser.DeserializeJson(body);
                 } catch (Exception e) {
-                    m_log?.Log(KLogLevel.RestDetail, "Failed parsing of JSON body: " + e.ToString());
+                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of JSON body: " + e.ToString());
                 }
             } else {
                 try {
@@ -218,7 +242,7 @@ namespace KeeKee.Rest {
                         }
                     }
                 } catch (Exception e) {
-                    m_log?.Log(KLogLevel.RestDetail, "Failed parsing of query body: " + e.ToString());
+                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of query body: " + e.ToString());
                 }
             }
             return retMap;
@@ -246,7 +270,7 @@ namespace KeeKee.Rest {
                     ret = paramValues;
                 }
             } catch (Exception e) {
-                m_log?.Log(KLogLevel.RestDetail, "Failed fetching GetParam value: {0}", e);
+                m_log.Log(KLogLevel.RestDetail, "Failed fetching GetParam value: {0}", e);
             }
             return ret;
         }
@@ -263,7 +287,7 @@ namespace KeeKee.Rest {
                 }
                 ret = handler.m_parameterSet.GetDisplayable();
             } catch (Exception e) {
-                m_log?.Log(KLogLevel.RestDetail, "Failed setting param in POST: {0}", e);
+                m_log.Log(KLogLevel.RestDetail, "Failed setting param in POST: {0}", e);
             }
             return ret;
         }

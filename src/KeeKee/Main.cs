@@ -19,6 +19,7 @@ using KeeKee.Framework.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 using Microsoft.Extensions.Options;
+using KeeKee.Framework;
 
 namespace KeeKee {
 
@@ -149,6 +150,10 @@ namespace KeeKee {
 
             // The KLogger wrapper around ILogger
             pServices.AddTransient(typeof(ILogger<>), typeof(KLogger<>));
+
+            pServices.AddTransient<IInstanceFactory, InstanceFactory>();
+            pServices.AddTransient<RestHandlerFactory, RestHandlerFactory>();
+
 
             // KeeKee.Rest, IModule
             // KeeKee.Comm, ICommProvider

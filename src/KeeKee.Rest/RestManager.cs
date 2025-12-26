@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 
 using KeeKee.Framework.Config;
 using KeeKee.Framework.Logging;
+using KeeKee.Framework;
 
 namespace KeeKee.Rest {
 
@@ -68,7 +69,7 @@ namespace KeeKee.Rest {
         // return the full base URL with the port added
         public readonly string BaseURL;
 
-        public readonly IServiceProvider ServiceProvider;
+        private readonly IInstanceFactory m_instanceFactory;
 
         private static RestManager? m_instance;
         public static RestManager Instance {
@@ -83,12 +84,12 @@ namespace KeeKee.Rest {
         public RestManager(IKLogger<RestManager> pLog,
                         IOptions<RestManagerConfig> pConfig,
                         IOptions<KeeKeeConfig> pKeeKeeConfig,
-                        IServiceProvider pServiceProvider) {
+                        IInstanceFactory pInstanceFactory) {
             m_log = pLog;
             m_config = pConfig;
             m_instance = this;
             m_keeKeeConfig = pKeeKeeConfig;
-            ServiceProvider = pServiceProvider;
+            m_instanceFactory = pInstanceFactory;
 
             BaseURL = pConfig.Value.BaseURL + ":" + pConfig.Value.Port.ToString();
             Port = pConfig.Value.Port;
