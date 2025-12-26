@@ -42,6 +42,6 @@ namespace KeeKee.Comm {
         OMV.GridClient GridClient { get; }
 
         // each comm provider has a block of statistics
-        IOptions<CommStats> CommStatistics();
+        CommStats CommStatistics();
     }
 }

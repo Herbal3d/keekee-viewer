@@ -15,11 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KeeKee.Framework\KeeKee.Rest.csproj" />
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
-    <ProjectReference Include="..\KeeKee.Framework\KeeKee.World.csproj" />
-    <ProjectReference Include="..\KeeKee.Framework\KeeKee.World.LL.csproj" />
-    <ProjectReference Include="..\KeeKee.Framework\KeeKee.World.OS.csproj" />
+    <ProjectReference Include="..\KeeKee.Comm\KeeKee.Comm.csproj" />
+    <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
+    <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" />
+    <ProjectReference Include="..\KeeKee.World.LL\KeeKee.World.LL.csproj" />
+    <ProjectReference Include="..\KeeKee.World.OS\KeeKee.World.OS.csproj" />
   </ItemGroup>
 
 

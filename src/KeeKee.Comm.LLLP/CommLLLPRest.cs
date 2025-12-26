@@ -15,8 +15,6 @@ using System.Text;
 using KeeKee;
 using KeeKee.Comm;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Modules;
-using KeeKee.Framework.Parameters;
 using KeeKee.Rest;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
@@ -36,9 +34,8 @@ namespace KeeKee.Comm.LLLP {
     /// POST http://127.0.0.1:port/api/LLLP/connection/teleport : teleport the user
     ///    parameter is DESTINATION
     /// </summary>
-public class CommLLLPRest : ModuleBase, IRestUser {
-    private ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
-
+public class CommLLLPRest : {
+    private KLogger<CommLLLPRest> m_log;
     CommLLLP m_comm = null;
     string m_apiName;
     RestHandler m_paramGetHandler = null;
@@ -60,8 +57,8 @@ public class CommLLLPRest : ModuleBase, IRestUser {
             m_comm = (CommLLLP)ModuleManager.Instance.Module(commName);
         }
         catch (Exception e) {
-            m_log.Log(LogLevel.DBADERROR, "CommLLLPRest COULD NOT CONNECT TO COMM MODULE NAMED " + commName);
-            m_log.Log(LogLevel.DBADERROR, "CommLLLPRest error = " + e.ToString());
+            m_log.Log(kLogLevel.DBADERROR, "CommLLLPRest COULD NOT CONNECT TO COMM MODULE NAMED " + commName);
+            m_log.Log(kLogLevel.DBADERROR, "CommLLLPRest error = " + e.ToString());
         }
         try {
             m_apiName = ModuleParams.ParamString(ModuleName + ".APIName");
@@ -71,7 +68,7 @@ public class CommLLLPRest : ModuleBase, IRestUser {
             m_actionHandler = new RestHandler("/" + m_apiName + "/connect", null, ProcessPost);
         }
         catch (Exception e) {
-            m_log.Log(LogLevel.DBADERROR, "CommLLLPRest COULD NOT REGISTER REST OPERATION: " + e.ToString());
+            m_log.Log(kLogLevel.DBADERROR, "CommLLLPRest COULD NOT REGISTER REST OPERATION: " + e.ToString());
         }
     }
 
@@ -79,10 +76,10 @@ public class CommLLLPRest : ModuleBase, IRestUser {
     public OMVSD.OSD ProcessGet(Uri uri, string after) {
         OMVSD.OSDMap ret = new OMVSD.OSDMap();
         if (m_comm == null) {
-            m_log.Log(LogLevel.DBADERROR, "GET WITHOUT COMM CONNECTION!! URL=" + uri.ToString());
+            m_log.Log(kLogLevel.DBADERROR, "GET WITHOUT COMM CONNECTION!! URL=" + uri.ToString());
             return new OMVSD.OSD();
         }
-        m_log.Log(LogLevel.DCOMMDETAIL, "Parameter request: {0}", uri.ToString());
+        m_log.Log(kLogLevel.DCOMMDETAIL, "Parameter request: {0}", uri.ToString());
         string[] segments = after.Split('/');
         // the after should be "/NAME/param" where "NAME" is my apiname. If 'param' is there return one
         if (segments.Length > 2) {
@@ -108,10 +105,10 @@ public class CommLLLPRest : ModuleBase, IRestUser {
     public OMVSD.OSD ProcessPost(RestHandler handler, Uri uri, string after, OMVSD.OSD body) {
         OMVSD.OSDMap ret = new OMVSD.OSDMap();
         if (m_comm == null) {
-            m_log.Log(LogLevel.DBADERROR, "POST WITHOUT COMM CONNECTION!! URL=" + uri.ToString());
+            m_log.Log(kLogLevel.DBADERROR, "POST WITHOUT COMM CONNECTION!! URL=" + uri.ToString());
             return new OMVSD.OSD();
         }
-        m_log.Log(LogLevel.DCOMMDETAIL, "Post action: {0}", uri.ToString());
+        m_log.Log(kLogLevel.DCOMMDETAIL, "Post action: {0}", uri.ToString());
         switch (after) {
             case "/login":
                 ret = PostActionLogin(body);
@@ -126,7 +123,7 @@ public class CommLLLPRest : ModuleBase, IRestUser {
                 ret = PostActionExit(body);
                 break;
             default:
-                m_log.Log(LogLevel.DBADERROR, "UNKNOWN ACTION: " + uri.ToString());
+                m_log.Log(kLogLevel.DBADERROR, "UNKNOWN ACTION: " + uri.ToString());
                 ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
                 ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Unknown action"));
                 break;
@@ -146,7 +143,7 @@ public class CommLLLPRest : ModuleBase, IRestUser {
             loginParams.Add(CommLLLP.FIELDSIM, paramMap["LOGINSIM"].AsString());
         }
         catch {
-            m_log.Log(LogLevel.DBADERROR, "MISFORMED POST REQUEST: ");
+            m_log.Log(kLogLevel.DBADERROR, "MISFORMED POST REQUEST: ");
             ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
             ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Misformed POST request"));
             return ret;
@@ -154,14 +151,14 @@ public class CommLLLPRest : ModuleBase, IRestUser {
 
         try {
             if (!m_comm.Connect(loginParams)) {
-                m_log.Log(LogLevel.DBADERROR, "CONNECT FAILED");
+                m_log.Log(kLogLevel.DBADERROR, "CONNECT FAILED");
                 ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
                 ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Could not log in"));
                 return ret;
             }
         }
         catch (Exception e) {
-            m_log.Log(LogLevel.DBADERROR, "CONNECT EXCEPTION: " + e.ToString());
+            m_log.Log(kLogLevel.DBADERROR, "CONNECT EXCEPTION: " + e.ToString());
             ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
             ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Connection threw exception: " + e.ToString()));
             return ret;
@@ -176,11 +173,11 @@ public class CommLLLPRest : ModuleBase, IRestUser {
         try {
             OMVSD.OSDMap paramMap = (OMVSD.OSDMap)body;
             string dest = paramMap["DESTINATION"].AsString();
-            m_log.Log(LogLevel.DCOMMDETAIL, "Request to teleport to {0}", dest);
+            m_log.Log(kLogLevel.DCOMMDETAIL, "Request to teleport to {0}", dest);
             m_comm.DoTeleport(dest);
         }
         catch (Exception e) {
-            m_log.Log(LogLevel.DBADERROR, "CONNECT EXCEPTION: " + e.ToString());
+            m_log.Log(kLogLevel.DBADERROR, "CONNECT EXCEPTION: " + e.ToString());
             ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
             ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Connection threw exception: " + e.ToString()));
             return ret;

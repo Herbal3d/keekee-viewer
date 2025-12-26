@@ -39,8 +39,7 @@ namespace KeeKee.Comm.LLLP {
         public string Name { get { return this.ModuleName; } }
 
         // ICommProvider.CommStatistics
-        protected IOptions<CommStats> m_commStatistics;
-        public IOptions<CommStats> CommStatistics() { return m_commStatistics; }
+        public CommStats CommStatistics { get;  private set; }
         protected RestHandler m_commStatsHandler;
         private int m_statNetDisconnected;
         private int m_statNetLoginProgress;
