@@ -42,12 +42,6 @@ namespace KeeKee.Rest {
     /// </summary>
     public class RestManager : BackgroundService {
 
-#pragma warning disable 414 // I know these are set and never referenced
-        private RestHandler? m_staticHandler;
-        private RestHandler? m_stdHandler;
-        private RestHandler? m_faviconHandler;
-#pragma warning restore 414
-
         private readonly IKLogger<RestManager> m_log;
         private readonly IOptions<RestManagerConfig> m_config;
         private readonly IOptions<KeeKeeConfig> m_keeKeeConfig;
@@ -59,37 +53,32 @@ namespace KeeKee.Rest {
         private Thread? m_listenerThread;
         List<RestHandler> m_handlers = new List<RestHandler>();
 
+        private readonly RestHandlerFactory m_RestHandlerFactory;
+
+#pragma warning disable 414 // I know these are set and never referenced
+        private IRestHandler? m_staticHandler;
+        private IRestHandler? m_stdHandler;
+        private IRestHandler? m_faviconHandler;
+#pragma warning restore 414
+
         // Some system wide rest handlers to make information available
-        private RestHandler? m_workQueueRestHandler;
-        private RestHandler? m_paramDefaultRestHandler;
-        private RestHandler? m_paramIniRestHandler;
-        private RestHandler? m_paramUserRestHandler;
-        private RestHandler? m_paramOverrideRestHandler;
+        private IRestHandler? m_workQueueRestHandler;
+        private IRestHandler? m_paramDefaultRestHandler;
+        private IRestHandler? m_paramIniRestHandler;
+        private IRestHandler? m_paramUserRestHandler;
+        private IRestHandler? m_paramOverrideRestHandler;
 
         // return the full base URL with the port added
         public readonly string BaseURL;
 
-        private readonly IInstanceFactory m_instanceFactory;
-
-        private static RestManager? m_instance;
-        public static RestManager Instance {
-            get {
-                if (m_instance == null) {
-                    throw new KeeKeeException("CALLING FOR RESTMANAGER INSTANCE BEFORE SET!!!");
-                }
-                return m_instance;
-            }
-        }
-
         public RestManager(IKLogger<RestManager> pLog,
                         IOptions<RestManagerConfig> pConfig,
                         IOptions<KeeKeeConfig> pKeeKeeConfig,
-                        IInstanceFactory pInstanceFactory) {
+                        RestHandlerFactory pRestHandlerFactory) {
             m_log = pLog;
             m_config = pConfig;
-            m_instance = this;
             m_keeKeeConfig = pKeeKeeConfig;
-            m_instanceFactory = pInstanceFactory;
+            m_RestHandlerFactory = pRestHandlerFactory;
 
             BaseURL = pConfig.Value.BaseURL + ":" + pConfig.Value.Port.ToString();
             Port = pConfig.Value.Port;
@@ -123,11 +112,11 @@ namespace KeeKee.Rest {
             string stdDir = baseUIDir + "std/";
 
             m_log.Log(KLogLevel.RestDetail, "Registering FileHandler {0} -> {1}", "/static/", staticDir);
-            m_staticHandler = new RestHandler("/static/", staticDir);
+            m_staticHandler = m_RestHandlerFactory.Create("/static/", staticDir);
 
             m_log.Log(KLogLevel.RestDetail, "Registering FileHandler {0} -> {1}", "/std/", stdDir);
-            m_stdHandler = new RestHandler("/std/", stdDir);
-            m_faviconHandler = new RestHandler("/favicon.ico", baseUIDir);
+            m_stdHandler = m_RestHandlerFactory.Create("/std/", stdDir);
+            m_faviconHandler = m_RestHandlerFactory.Create("/favicon.ico", baseUIDir);
 
             // some Framework structures that can be referenced
             // m_log.Log(KLogLevel.RestDetail, "Registering work queue stats at 'api/stats/workQueues'");
@@ -147,19 +136,19 @@ namespace KeeKee.Rest {
                 HttpListenerRequest request = context.Request;
                 HttpListenerResponse response = context.Response;
                 string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
-                RestManager.Instance.m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
+                m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
                 RestHandler? thisHandler = null;
-                foreach (RestHandler rh in RestManager.Instance.m_handlers) {
-                    if (absURL.StartsWith(rh.m_prefix.ToLower())) {
+                foreach (RestHandler rh in m_handlers) {
+                    if (absURL.StartsWith(rh.Prefix.ToLower())) {
                         thisHandler = rh;
                         break;
                     }
                 }
                 if (thisHandler != null) {
-                    string afterString = absURL.Substring(thisHandler.m_prefix.Length);
-                    thisHandler.m_context = context;
-                    thisHandler.m_request = request;
-                    thisHandler.m_response = response;
+                    string afterString = absURL.Substring(thisHandler.Prefix.Length);
+                    thisHandler.ListenerContext = context;
+                    thisHandler.ListenerRequest = request;
+                    thisHandler.ListenerResponse = response;
                     thisHandler.GetPostAsync(afterString);
                 } else {
                     m_log.Log(KLogLevel.RestDetail, "Request not processed because no matching handler");
@@ -172,7 +161,7 @@ namespace KeeKee.Rest {
         }
 
         public void RegisterListener(RestHandler handler) {
-            m_log.Log(KLogLevel.RestDetail, "Registering prefix {0}", handler.m_prefix);
+            m_log.Log(KLogLevel.RestDetail, "Registering prefix {0}", handler.Prefix);
             m_handlers.Add(handler);
         }
 

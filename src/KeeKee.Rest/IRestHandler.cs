@@ -12,13 +12,14 @@
 using System.Net;
 
 using KeeKee.Framework;
+using KeeKee.Rest;
 
 using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
     // called to process GET. The Uri is the full request uri and 'after' is everything after the 'api'
-    public delegate OMVSD.OSD ProcessGetCallback(KeeKee.Rest.RestHandler handler, Uri uri, string after);
-    public delegate OMVSD.OSD ProcessPostCallback(KeeKee.Rest.RestHandler handler, Uri uri, string after, OMVSD.OSD body);
+    public delegate OMVSD.OSD ProcessGetCallback(IRestHandler handler, Uri uri, string after);
+    public delegate OMVSD.OSD ProcessPostCallback(IRestHandler handler, Uri uri, string after, OMVSD.OSD body);
 
     public interface IRestHandler {
 
@@ -33,7 +34,7 @@ namespace KeeKee.Rest {
         const string RESTREQUESTERRORCODE = "RESTRequestError";
         const string RESTREQUESTERRORMSG = "RESTRequestMsg";
 
-        HttpListener? m_Handler { get; }
+        HttpListener Handler { get; }
         string BaseUrl { get; }
         ProcessGetCallback? ProcessGet { get; }
         ProcessPostCallback? ProcessPost { get; }
@@ -42,9 +43,9 @@ namespace KeeKee.Rest {
         bool ParameterSetWritable { get; }
         string Prefix { get; }
 
-        HttpListenerContext? ListenerContext { get; }
-        HttpListenerRequest? ListenerRequest { get; }
-        HttpListenerResponse? ListenerResponse { get; }
+        HttpListenerContext? ListenerContext { get; set; }
+        HttpListenerRequest? ListenerRequest { get; set; }
+        HttpListenerResponse? ListenerResponse { get; set; }
 
     }
 

@@ -16,6 +16,7 @@ using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
@@ -44,10 +45,10 @@ namespace KeeKee.Rest {
 
         // public const string APINAME = "/api";
 
-        // public const string RESTREQUESTERRORCODE = "RESTRequestError";
+        // public const string RESTREQUESTERRORCODE = "RESTequestError";
         // public const string RESTREQUESTERRORMSG = "RESTRequestMsg";
 
-        public HttpListener? m_Handler;
+        public HttpListener Handler { get; private set; } = null!;
         public string BaseUrl { get; private set; }
         public ProcessGetCallback? ProcessGet { get; private set; }
         public ProcessPostCallback? ProcessPost { get; private set; }
@@ -56,12 +57,13 @@ namespace KeeKee.Rest {
         public bool ParameterSetWritable { get; private set; } = false;
         public string Prefix { get; private set; } = null!;
 
-        public HttpListenerContext? ListenerContext { get; private set; }
-        public HttpListenerRequest? ListenerRequest { get; private set; }
-        public HttpListenerResponse? ListenerResponse { get; private set; }
+        public HttpListenerContext? ListenerContext { get; set; }
+        public HttpListenerRequest? ListenerRequest { get; set; }
+        public HttpListenerResponse? ListenerResponse { get; set; }
 
-        private readonly ServiceProvider m_serviceProvider;
+        private readonly RestManager m_restManager;
         private readonly IKLogger<RestHandler> m_log;
+        private readonly IOptions<RestManagerConfig> m_options;
 
         /// <summary>
         /// Setup a rest handler that calls back for gets and posts to the specified urlBase.
@@ -70,17 +72,20 @@ namespace KeeKee.Rest {
         /// <param name="urlBase">base of the url that's us</param>
         /// <param name="pget">called on GET operations</param>
         /// <param name="ppost">called on POST operations</param>
-        public RestHandler(IKLogger<RestHandler> pLog, ServiceProvider pServiceProvider,
+        public RestHandler(IKLogger<RestHandler> pLog,
+                        RestManager pRestManager,
+                        IOptions<RestManagerConfig> pOptions,
                         string urlBase, ProcessGetCallback pget, ProcessPostCallback ppost) {
             m_log = pLog;
-            m_serviceProvider = pServiceProvider;
+            m_restManager = pRestManager;
+            m_options = pOptions;
             BaseUrl = urlBase;
-            Prefix = APINAME + urlBase;
+            Prefix = IRestHandler.APINAME + urlBase;
 
             ProcessGet = pget;
             ProcessPost = ppost;
 
-            m_serviceProvider.GetRequiredService<RestManager>().RegisterListener(this);
+            m_restManager.RegisterListener(this);
             m_log.Log(KLogLevel.RestDetail, "Register GET/POST handler for {0}", Prefix);
         }
 
@@ -90,17 +95,20 @@ namespace KeeKee.Rest {
         /// <param name="urlBase">base of the url for this parameter set</param>
         /// <param name="parms">the parameter set to read and write</param>
         /// <param name="writable">if 'true', it allows POST operations to change the parameter set</param>
-        public RestHandler(IKLogger<RestHandler> pLog, ServiceProvider pServiceProvider,
+        public RestHandler(IKLogger<RestHandler> pLog,
+                        RestManager pRestManager,
+                        IOptions<RestManagerConfig> pOptions,
                         string urlBase, IDisplayable displayable) {
             m_log = pLog;
-            m_serviceProvider = pServiceProvider;
+            m_restManager = pRestManager;
+            m_options = pOptions;
             BaseUrl = urlBase;
-            m_displayable = displayable;
-            m_prefix = APINAME + urlBase;
+            Displayable = displayable;
+            Prefix = IRestHandler.APINAME + urlBase;
 
-            m_processGet = ProcessGetParam;
-            m_serviceProvider.GetRequiredService<RestManager>().RegisterListener(this);
-            m_log.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", m_prefix);
+            ProcessGet = ProcessGetParam;
+            m_restManager.RegisterListener(this);
+            m_log.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", Prefix);
         }
 
         /// <summary>
@@ -108,39 +116,42 @@ namespace KeeKee.Rest {
         /// </summary>
         /// <param name="urlBase"></param>
         /// <param name="directory"></param>
-        public RestHandler(IKLogger<RestHandler> pLog, ServiceProvider pServiceProvider,
+        public RestHandler(IKLogger<RestHandler> pLog,
+                        RestManager pRestManager,
+                        IOptions<RestManagerConfig> pOptions,
                         string urlBase, string directory) {
             m_log = pLog;
-            m_serviceProvider = pServiceProvider;
+            m_restManager = pRestManager;
+            m_options = pOptions;
             BaseUrl = urlBase;
-            m_dir = directory;
-            m_prefix = urlBase;
+            Dir = directory;
+            Prefix = urlBase;
 
-            m_serviceProvider.GetRequiredService<RestManager>().RegisterListener(this);
-            m_log.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", m_prefix);
+            m_restManager.RegisterListener(this);
+            m_log.Log(KLogLevel.RestDetail, "Register GET/POST displayable handler for {0}", Prefix);
         }
 
         public void Dispose() {
-            if (m_Handler != null) {
-                m_Handler.Stop();
-                m_Handler = null;
+            if (Handler != null) {
+                Handler.Stop();
+                Handler = null;
             }
         }
 
         public virtual void GetPostAsync(string afterString) {
-            Uri requestUrl = m_request != null && m_request.Url != null ? m_request.Url : new Uri("http://localhost/unknown");
+            Uri requestUrl = ListenerRequest?.Url ?? new Uri("http://localhost/unknown");
 
-            if (m_request?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                if (m_processGet == null && m_dir != null) {
+            if (ListenerRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
+                if (ProcessGet == null && Dir != null) {
                     // no processor but we have a dir. Return the file in that dir.
-                    string filename = m_dir + "/" + afterString;
+                    string filename = Dir + "/" + afterString;
                     if (File.Exists(filename)) {
                         // m_log.Log(KLogLevel.RestDetail, "GET: file: {0}", afterString);
                         string[] fileContents = File.ReadAllLines(filename);
                         string mimeType = RestManager.MIMEDEFAULT;
                         if (filename.EndsWith(".css")) mimeType = "text/css";
                         if (filename.EndsWith(".json")) mimeType = "text/json";
-                        RestManager.Instance.ConstructSimpleResponse(m_response, mimeType,
+                        m_restManager.ConstructSimpleResponse(ListenerResponse, mimeType,
                             delegate (ref StringBuilder buff) {
                                 foreach (string line in fileContents) {
                                     buff.Append(line);
@@ -154,23 +165,23 @@ namespace KeeKee.Rest {
                     return;
                 }
                 try {
-                    if (m_processGet == null) {
+                    if (ProcessGet == null) {
                         throw new KeeKeeException("HTTP GET with no processing routine");
                     }
-                    // m_log.Log(LogLevel.DRESTDETAIL, "GET: " + m_request.Url);
-                    OMVSD.OSD resp = m_processGet(this, requestUrl, afterString);
-                    RestManager.Instance.ConstructSimpleResponse(m_response, "text/json",
+                    // m_log.Log(LogLevel.DRESTDETAIL, "GET: " + ListenerRequest.Url);
+                    OMVSD.OSD resp = ProcessGet(this, requestUrl, afterString);
+                    m_restManager.ConstructSimpleResponse(ListenerResponse, "text/json",
                         delegate (ref StringBuilder buff) {
                             buff.Append(OMVSD.OSDParser.SerializeJsonString(resp));
                         }
                     );
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.Error, "Failed getHandler: u="
-                            + (m_request?.Url?.ToString() ?? "UNKNOWN") + ":" + e.ToString());
-                    RestManager.Instance.ConstructErrorResponse(m_response, HttpStatusCode.InternalServerError,
+                            + (ListenerRequest?.Url?.ToString() ?? "UNKNOWN") + ":" + e.ToString());
+                    m_restManager.ConstructErrorResponse(ListenerResponse, HttpStatusCode.InternalServerError,
                         delegate (ref StringBuilder buff) {
                             buff.Append("<div>");
-                            buff.Append("FAILED GETTING '" + (m_request?.Url?.ToString() ?? "UNKNOWN") + "'");
+                            buff.Append("FAILED GETTING '" + (ListenerRequest?.Url?.ToString() ?? "UNKNOWN") + "'");
                             buff.Append("</div>");
                             buff.Append("<div>");
                             buff.Append("ERROR = '" + e.ToString() + "'");
@@ -180,21 +191,21 @@ namespace KeeKee.Rest {
                 }
                 return;
             }
-            if (m_request?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "POST: " + (m_request?.Url?.ToString() ?? "UNKNOWN"));
+            if (ListenerRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
+                m_log.Log(KLogLevel.RestDetail, "POST: " + (ListenerRequest?.Url?.ToString() ?? "UNKNOWN"));
                 string strBody = "";
-                using (StreamReader rdr = new StreamReader(m_request.InputStream)) {
+                using (StreamReader rdr = new StreamReader(ListenerRequest.InputStream)) {
                     strBody = rdr.ReadToEnd();
                     // m_log.Log(LogLevel.DRESTDETAIL, "APIPostHandler: Body: '" + strBody + "'");
                 }
                 try {
-                    if (m_processPost == null) {
+                    if (ProcessPost == null) {
                         throw new KeeKeeException("HTTP POST with no processing routine");
                     }
                     OMVSD.OSD body = MapizeTheBody(strBody);
-                    OMVSD.OSD resp = m_processPost(this, requestUrl, afterString, body);
+                    OMVSD.OSD resp = ProcessPost(this, requestUrl, afterString, body);
                     if (resp != null) {
-                        RestManager.Instance.ConstructSimpleResponse(m_response, "text/json",
+                        m_restManager.ConstructSimpleResponse(ListenerResponse, "text/json",
                             delegate (ref StringBuilder buff) {
                                 buff.Append(OMVSD.OSDParser.SerializeJsonString(resp));
                             }
@@ -205,8 +216,8 @@ namespace KeeKee.Rest {
                     }
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.RestDetail, "Failed postHandler: u="
-                            + (m_request?.Url?.ToString() ?? "UNKNOWN") + ":" + e.ToString());
-                    RestManager.Instance.ConstructErrorResponse(m_response, HttpStatusCode.InternalServerError,
+                            + (ListenerRequest?.Url?.ToString() ?? "UNKNOWN") + ":" + e.ToString());
+                    m_restManager.ConstructErrorResponse(ListenerResponse, HttpStatusCode.InternalServerError,
                         delegate (ref StringBuilder buff) {
                             buff.Append("<div>");
                             buff.Append("FAILED GETTING '" + requestUrl.ToString() + "'");
@@ -248,13 +259,13 @@ namespace KeeKee.Rest {
             return retMap;
         }
 
-        public OMVSD.OSD ProcessGetParam(RestHandler handler, Uri uri, string afterString) {
+        public OMVSD.OSD ProcessGetParam(IRestHandler handler, Uri uri, string afterString) {
             OMVSD.OSD ret = new OMVSD.OSDMap();
             OMVSD.OSDMap paramValues;
-            // if (handler.m_displayable == null) {
+            // if (handler.Displayable == null) {
             //     paramValues = handler.m_parameterSet.GetDisplayable();
             // } else {
-            paramValues = handler.m_displayable?.GetDisplayable() ?? new OMVSD.OSDMap();
+            paramValues = handler.Displayable?.GetDisplayable() ?? new OMVSD.OSDMap();
             // }
             try {
                 if (afterString.Length > 0) {
@@ -275,9 +286,9 @@ namespace KeeKee.Rest {
             return ret;
         }
 
-        /*
-        public OMVSD.OSD ProcessPostParam(RestHandler handler, Uri uri, string afterString, OMVSD.OSD rawbody) {
+        public OMVSD.OSD ProcessPostParam(IRestHandler handler, Uri uri, string afterString, OMVSD.OSD rawbody) {
             OMVSD.OSD ret = new OMVSD.OSDMap();
+            /* Old code that could change parameters directly. Doesn't work with IOption
             try {
                 OMVSD.OSDMap body = (OMVSD.OSDMap)rawbody;
                 foreach (string akey in body.Keys) {
@@ -289,8 +300,8 @@ namespace KeeKee.Rest {
             } catch (Exception e) {
                 m_log.Log(KLogLevel.RestDetail, "Failed setting param in POST: {0}", e);
             }
+            */
             return ret;
         }
-        */
     }
 }
