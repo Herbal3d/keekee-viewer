@@ -87,6 +87,17 @@ namespace KeeKee.Framework.Logging {
                     break;
                 case KLogLevel.None:
                     // Do nothing
+                case KLogLevel.DBADERROR:
+                    _innerLogger.Log(LogLevel.Error, message, args);
+                    break;
+                    break;
+                case KLogLevel.DCOMM:
+                    if (_options.Value.DCOMM)
+                        _innerLogger.Log(LLForDetail, message, args);
+                    break;
+                case KLogLevel.DCOMMDETAIL:
+                    if (_options.Value.DCOMMDETAIL)
+                        _innerLogger.Log(LLForDetail, message, args);
                     break;
                 default:
                     // Unknown level, log as Information

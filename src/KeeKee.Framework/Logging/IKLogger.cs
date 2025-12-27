@@ -22,11 +22,15 @@ namespace KeeKee.Framework.Logging {
         Error,
         Critical,
         None,
+        DBADERROR,
         RestDetail,
         WorkQueueDetail,
         UIDetail,
         DINIT,
-        DINITDETAIL
+        DINITDETAIL,
+        DCOMM,
+        DCOMMDETAIL
+
     }
     public interface IKLogger<T> : ILogger<T> {
         // Log with our KLogLevel

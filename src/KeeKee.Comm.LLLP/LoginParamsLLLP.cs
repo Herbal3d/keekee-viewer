@@ -1,0 +1,24 @@
+// Copyright 2025 Robert Adams
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+namespace KeeKee.Comm.LLLP {
+    public class LoginParamsLLLP: ILoginParams {
+        public string? UserName { get; set; }
+        public string? Password { get; set; }
+        public string? AuthURL { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? StartLocation { get; set; } = "Last";
+        public string? HomeURL { get; set; }
+        public bool   RememberUserName { get; set; } = false;
+        public bool   RememberPassword { get; set; } = false;
+    }
+}

@@ -24,5 +24,7 @@ public class KLoggerConfig {
     // Detailed initialization logging
     public bool DINIT { get; set; } = false;
     public bool DINITDETAIL { get; set; } = false;
+    public bool DCOMM { get; set; } = false;
+    public bool DCOMMDETAIL { get; set; } = false;
 }
 

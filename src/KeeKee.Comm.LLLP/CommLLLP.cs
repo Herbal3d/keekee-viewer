@@ -20,6 +20,7 @@ using KeeKee;
 using KeeKee.Comm;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
+using KeeKee.Framework.Utilities;
 using KeeKee.Rest;
 using KeeKee.World;
 using KeeKee.World.LL;
@@ -38,8 +39,11 @@ namespace KeeKee.Comm.LLLP {
         // ICommProvider.Name
         public string Name { get { return this.ModuleName; } }
 
+        private IKLogger<CommLLLP> m_log;
+
         // ICommProvider.CommStatistics
         public CommStats CommStatistics { get;  private set; }
+
         protected RestHandler m_commStatsHandler;
         private int m_statNetDisconnected;
         private int m_statNetLoginProgress;
@@ -79,7 +83,6 @@ namespace KeeKee.Comm.LLLP {
         protected bool m_SwitchingSims;       // true when we're setting up the connection to a different sim
 
         public IOptions<CommConfig> ConnectionParams { get; set; }
-        }
 
         // The whole module is loaded or unloaded. This controls the whole trying to login loop.
         // m_shouldBeLoggedIn says whether we think we should be logged in. If true then the
@@ -124,7 +127,11 @@ namespace KeeKee.Comm.LLLP {
             set { m_myAgent = value; }
         }
 
-        public CommLLLP() {
+        public CommLLLP(KLogger<CommLLLP> pLog,
+                        IOptions<CommConfig> pConnectionParams) {
+            m_log = pLog;
+            ConnectionParams = pConnectionParams;
+
             InitVariables();
             InitLoginParameters();
         }
@@ -135,7 +142,6 @@ namespace KeeKee.Comm.LLLP {
             m_isLoggedIn = false;
             m_isLoggingIn = false;
             m_isLoggingOut = false;
-            m_connectionParams = new ParameterSet();
             m_regionList = new Dictionary<OMV.UUID, LLRegionContext>();
             m_waitTilOnline = new List<ParamBlock>();
             m_commStatistics = new ParameterSet();
@@ -213,7 +219,7 @@ namespace KeeKee.Comm.LLLP {
                     if (ret != null) return ret;
                 }
             } catch (Exception e) {
-                m_log.Log(LogLevel.DCOMM, "RuntimeValueFetch: failure getting {0}: {1}", key, e.ToString());
+                m_log.Log(KLogLevel.DCOMM, "RuntimeValueFetch: failure getting {0}: {1}", key, e.ToString());
             }
             return new OMVSD.OSDString("");
         }
@@ -222,9 +228,6 @@ namespace KeeKee.Comm.LLLP {
 
         protected string m_moduleName;
         public string ModuleName { get { return m_moduleName; } set { m_moduleName = value; } }
-
-        protected KeeKeeBase m_lgb = null;
-        public KeeKeeBase LGB { get { return m_lgb; } }
 
         public IAppParameters ModuleParams { get { return m_lgb.AppParams; } }
 
@@ -331,7 +334,7 @@ namespace KeeKee.Comm.LLLP {
                 m_client.Network.EventQueueRunning += Network_EventQueueRunning;
 
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "EXCEPTION BUILDING GRIDCLIENT: " + e.ToString());
+                m_log.Log(KLogLevel.DBADERROR, "EXCEPTION BUILDING GRIDCLIENT: " + e.ToString());
             }
 
             // fake like this is the initial teleport
@@ -350,7 +353,7 @@ namespace KeeKee.Comm.LLLP {
                 if (m_LoginThread == null) {
                     m_LoginThread = new Thread(KeepLoggedIn);
                     m_LoginThread.Name = "Communication Login";
-                    m_log.Log(LogLevel.DCOMM, "Starting keep logged in thread");
+                    m_log.Log(KLogLevel.DCOMM, "Starting keep logged in thread");
                     m_LoginThread.Start();
                 }
             }
@@ -359,14 +362,14 @@ namespace KeeKee.Comm.LLLP {
         // IModule.Stop()
         // If the base system says to stop, we make sure we're disconnected
         public virtual void Stop() {
-            m_log.Log(LogLevel.DCOMM, "Stopping. Attempting to disconnect");
+            m_log.Log(KLogLevel.DCOMM, "Stopping. Attempting to disconnect");
             Disconnect();
             Thread.Sleep(3000); // let the logout and disconnect happen
         }
 
         // IModule.PrepareForUnload()
         public virtual bool PrepareForUnload() {
-            m_log.Log(LogLevel.DCOMM, "communication unload. We'll never login again");
+            m_log.Log(KLogLevel.DCOMM, "communication unload. We'll never login again");
             if (m_commStatsHandler != null) {
                 m_commStatsHandler.Dispose();   // get rid of the handlers we created
                 m_commStatsHandler = null;
@@ -406,7 +409,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ICommProvider.Disconnect()
         public virtual bool Disconnect() {
-            m_log.Log(LogLevel.DCOMMDETAIL, "Disconnect request -- logout and disconnect");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "Disconnect request -- logout and disconnect");
             m_shouldBeLoggedIn = false;
             return true;
         }
@@ -424,7 +427,7 @@ namespace KeeKee.Comm.LLLP {
                 if (!float.TryParse(tokens[1], out x) ||
                                 !float.TryParse(tokens[2], out y) ||
                                 !float.TryParse(tokens[3], out z)) {
-                    m_log.Log(LogLevel.DBADERROR, "Could not parse teleport destination '{0}'", dest);
+                    m_log.Log(KLogLevel.DBADERROR, "Could not parse teleport destination '{0}'", dest);
                     ret = false;
                 }
             } else if (tokens.Length == 1) {
@@ -433,15 +436,15 @@ namespace KeeKee.Comm.LLLP {
                 y = 128;
                 z = 40;
             } else {
-                m_log.Log(LogLevel.DBADERROR, "Did not recognize format of teleport destination: '{0}'", dest);
+                m_log.Log(KLogLevel.DBADERROR, "Did not recognize format of teleport destination: '{0}'", dest);
                 ret = false;
             }
             if (ret) {
                 if (m_client.Self.Teleport(sim, new OMV.Vector3(x, y, z))) {
-                    m_log.Log(LogLevel.DBADERROR, "Teleport successful to '{0}'", dest);
+                    m_log.Log(KLogLevel.DBADERROR, "Teleport successful to '{0}'", dest);
                     ret = true;
                 } else {
-                    m_log.Log(LogLevel.DBADERROR, "Teleport to '{0}' failed", dest);
+                    m_log.Log(KLogLevel.DBADERROR, "Teleport to '{0}' failed", dest);
                     ret = false;
                 }
             }
@@ -462,16 +465,16 @@ namespace KeeKee.Comm.LLLP {
                 }
                 if (!LGB.KeepRunning && !IsLoggedIn && IsConnected) {
                     // if we're not supposed to be running, disconnect everything
-                    m_log.Log(LogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
+                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
                     m_client.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
                     m_isConnected = false;
                 }
                 if (!LGB.KeepRunning || (!m_shouldBeLoggedIn && IsLoggedIn)) {
                     // we shouldn't be logged in but it looks like we are
-                    m_log.Log(LogLevel.DCOMM, "KeepLoggedIn: Shouldn't be logged in");
+                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shouldn't be logged in");
                     if (!m_isLoggingIn && !m_isLoggingOut) {
                         // not in logging transistion. start the logout process
-                        m_log.Log(LogLevel.DCOMM, "KeepLoggedIn: Starting logout process");
+                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Starting logout process");
                         m_client.Network.Logout();
                         m_isLoggingIn = false;
                         m_isLoggingOut = true;
@@ -483,11 +486,11 @@ namespace KeeKee.Comm.LLLP {
 
                 Thread.Sleep(1 * 1000);
             }
-            m_log.Log(LogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
+            m_log.Log(KLogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
         }
 
         public void StartLogin() {
-            m_log.Log(LogLevel.DCOMM, "Starting login of {0} {1}", m_loginFirst, m_loginLast);
+            m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", m_loginFirst, m_loginLast);
             m_isLoggingIn = true;
             OMV.LoginParams loginParams = this.GridClient.Network.DefaultLoginParams(
                 m_loginFirst,
@@ -514,19 +517,19 @@ namespace KeeKee.Comm.LLLP {
                     if (parts.Length == 1) {
                         // just specifying last or home or just a simulator
                         if (parts[0] == "last" || parts[0] == "home") {
-                            m_log.Log(LogLevel.DCOMM, "StartLogin: prev location of {0}", parts[0]);
+                            m_log.Log(KLogLevel.DCOMM, "StartLogin: prev location of {0}", parts[0]);
                             loginSetting = parts[0];
                         } else {
                             // put the user in the center of teh specified sim
                             loginSetting = OMV.NetworkManager.StartLocation(parts[0], 128, 128, 40);
-                            m_log.Log(LogLevel.DCOMM, "StartLogin: user spec middle of {0} -> {1}", parts[0], loginSetting);
+                            m_log.Log(KLogLevel.DCOMM, "StartLogin: user spec middle of {0} -> {1}", parts[0], loginSetting);
                         }
                     } else if (parts.Length == 4) {
                         int posX = int.Parse(parts[1]);
                         int posY = int.Parse(parts[2]);
                         int posZ = int.Parse(parts[3]);
                         loginSetting = OMV.NetworkManager.StartLocation(parts[0], posX, posY, posZ);
-                        m_log.Log(LogLevel.DCOMM, "StartLogin: user spec start at {0}/{1}/{2}/Z -> {3}",
+                        m_log.Log(KLogLevel.DCOMM, "StartLogin: user spec start at {0}/{1}/{2}/Z -> {3}",
                             parts[0], posX, posY, loginSetting);
                     }
                 } catch {
@@ -538,7 +541,7 @@ namespace KeeKee.Comm.LLLP {
             World.World.Instance.Grids.SetCurrentGrid(m_loginGrid);
             loginParams.URI = World.World.Instance.Grids.GridLoginURI(World.Grids.Current);
             if (loginParams.URI == null) {
-                m_log.Log(LogLevel.DBADERROR, "COULD NOT FIND URL OF GRID. Grid=" + m_loginGrid);
+                m_log.Log(KLogLevel.DBADERROR, "COULD NOT FIND URL OF GRID. Grid=" + m_loginGrid);
                 m_loginMsg = "Unknown Grid name";
                 m_isLoggingIn = false;
                 m_shouldBeLoggedIn = false;
@@ -546,7 +549,7 @@ namespace KeeKee.Comm.LLLP {
                 try {
                     this.GridClient.Network.Login(loginParams);
                 } catch (Exception e) {
-                    m_log.Log(LogLevel.DBADERROR, "BeginLogin exception: " + e.ToString());
+                    m_log.Log(KLogLevel.DBADERROR, "BeginLogin exception: " + e.ToString());
                     m_isLoggingIn = false;
                     m_shouldBeLoggedIn = false;
                 }
@@ -559,14 +562,14 @@ namespace KeeKee.Comm.LLLP {
         public virtual void Network_LoginProgress(Object sender, OMV.LoginProgressEventArgs args) {
             this.m_statNetLoginProgress++;
             if (args.Status == OMV.LoginStatus.Success) {
-                m_log.Log(LogLevel.DCOMM, "Successful login: {0}", args.Message);
+                m_log.Log(KLogLevel.DCOMM, "Successful login: {0}", args.Message);
                 // m_isConnected = true;
                 m_isLoggedIn = true;
                 m_isLoggingIn = false;
                 m_loginMsg = args.Message;
                 Comm_OnLoggedIn();
             } else if (args.Status == OMV.LoginStatus.Failed) {
-                m_log.Log(LogLevel.DCOMM, "Login failed: {0}", args.Message);
+                m_log.Log(KLogLevel.DCOMM, "Login failed: {0}", args.Message);
                 m_isLoggingIn = false;
                 m_shouldBeLoggedIn = false;
                 m_loginMsg = args.Message;
@@ -575,14 +578,14 @@ namespace KeeKee.Comm.LLLP {
 
         public virtual void Network_Disconnected(Object sender, OMV.DisconnectedEventArgs args) {
             this.m_statNetDisconnected++;
-            m_log.Log(LogLevel.DCOMM, "Disconnected");
+            m_log.Log(KLogLevel.DCOMM, "Disconnected");
             m_isConnected = false;
         }
 
         /*
         public virtual void Network_EventQueueRunning(Object sender, OMV.EventQueueRunningEventArgs args) {
             this.m_statNetQueueRunning++;
-            m_log.Log(LogLevel.DCOMM, "Event queue running on {0}", args.Simulator.Name);
+            m_log.Log(KLogLevel.DCOMM, "Event queue running on {0}", args.Simulator.Name);
             if (args.Simulator == m_client.Network.CurrentSim) {
                 m_SwitchingSims = false;
             }
@@ -673,7 +676,7 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         public virtual void Network_SimConnected(Object sender, OMV.SimConnectedEventArgs args) {
             this.m_statNetSimConnected++;
-            m_log.Log(LogLevel.DWORLD, "Network_SimConnected: Simulator connected {0}", args.Simulator.Name);
+            m_log.Log(KLogLevel.DWORLD, "Network_SimConnected: Simulator connected {0}", args.Simulator.Name);
         }
 
         // ===============================================================
@@ -683,16 +686,16 @@ namespace KeeKee.Comm.LLLP {
                 // the sim isn't really up until the caps queue is running
                 m_isConnected = true;   // good enough reason to think we're connected
                 this.m_statNetEventQueueRunning++;
-                m_log.Log(LogLevel.DWORLD, "Network_EventQueueRunning: Simulator connected {0}", args.Simulator.Name);
+                m_log.Log(KLogLevel.DWORLD, "Network_EventQueueRunning: Simulator connected {0}", args.Simulator.Name);
 
                 regionContext = FindRegion(args.Simulator);
                 if (regionContext == null) {
-                    m_log.Log(LogLevel.DWORLD, "Network_EventQueueRunning: NO REGION CONTEXT FOR {0}", args.Simulator.Name);
+                    m_log.Log(KLogLevel.DWORLD, "Network_EventQueueRunning: NO REGION CONTEXT FOR {0}", args.Simulator.Name);
                     return;
                 }
 
                 if (regionContext.State.State == RegionStateCode.Online) {
-                    m_log.Log(LogLevel.DWORLD, "Network_EventQueueRunning: Region already online: {0}", args.Simulator.Name);
+                    m_log.Log(KLogLevel.DWORLD, "Network_EventQueueRunning: Region already online: {0}", args.Simulator.Name);
                     return;
                 }
                 // a kludge to handle race conditions. We lock the region state while we empty queues
@@ -724,7 +727,7 @@ namespace KeeKee.Comm.LLLP {
                 m_SwitchingSims = true;
             }
             if (args.PreviousSimulator != null) {      // there is no prev sim the first time
-                m_log.Log(LogLevel.DWORLD, "Simulator changed from {0}", args.PreviousSimulator.Name);
+                m_log.Log(KLogLevel.DWORLD, "Simulator changed from {0}", args.PreviousSimulator.Name);
                 LLRegionContext regionContext = FindRegion(args.PreviousSimulator);
                 if (regionContext == null) return;
                 // TODO: what to do with this operation?
@@ -733,7 +736,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Terrain_LandPatchReceived(object sender, OMV.LandPatchReceivedEventArgs args) {
-            // m_log.Log(LogLevel.DWORLDDETAIL, "Land patch for {0}: {1}, {2}, {3}", 
+            // m_log.Log(KLogLevel.DWORLDDETAIL, "Land patch for {0}: {1}, {2}, {3}", 
             //             args.Simulator.Name, args.X, args.Y, args.PatchSize);
             LLRegionContext regionContext = FindRegion(args.Simulator);
             if (regionContext == null) return;
@@ -772,7 +775,7 @@ namespace KeeKee.Comm.LLLP {
                 // a full update says everything changed
                 UpdateCodes updateFlags = 0;
                 updateFlags |= UpdateCodes.Position | UpdateCodes.Rotation;
-                m_log.Log(LogLevel.DUPDATEDETAIL, "Object update: id={0}, p={1}, r={2}",
+                m_log.Log(KLogLevel.DUPDATEDETAIL, "Object update: id={0}, p={1}, r={2}",
                     args.Prim.LocalID, args.Prim.Position.ToString(), args.Prim.Rotation.ToString());
                 try {
                     if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out updatedEntity, delegate () {
@@ -800,7 +803,7 @@ namespace KeeKee.Comm.LLLP {
                     // send updates for this entity updates
                     ProcessEntityUpdates(updatedEntity, updateFlags);
                 } catch (Exception e) {
-                    m_log.Log(LogLevel.DBADERROR, "FAILED CREATION OF NEW PRIM: " + e.ToString());
+                    m_log.Log(KLogLevel.DBADERROR, "FAILED CREATION OF NEW PRIM: " + e.ToString());
                 }
             }
 
@@ -835,7 +838,7 @@ namespace KeeKee.Comm.LLLP {
                         if (!ent.TryGet<IAnimation>(out anim)) {
                             anim = new LLAnimation();
                             ent.RegisterInterface<IAnimation>(anim);
-                            m_log.Log(LogLevel.DUPDATEDETAIL, "Created prim animation on {0}", ent.Name);
+                            m_log.Log(KLogLevel.DUPDATEDETAIL, "Created prim animation on {0}", ent.Name);
                         }
                         if (rotPerSec != anim.StaticRotationRotPerSec || axis != anim.StaticRotationAxis) {
                             anim.AngularVelocity = angularVelocity;   // legacy. Remove when other part plumbed
@@ -843,12 +846,12 @@ namespace KeeKee.Comm.LLLP {
                             anim.StaticRotationRotPerSec = rotPerSec;
                             anim.DoStaticRotation = true;
                             updateFlags |= UpdateCodes.Animation;
-                            m_log.Log(LogLevel.DUPDATEDETAIL, "Updating prim animation on {0}", ent.Name);
+                            m_log.Log(KLogLevel.DUPDATEDETAIL, "Updating prim animation on {0}", ent.Name);
                         }
                     }
                 }
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "FAILED ProcessEntityAnimation: " + e.ToString());
+                m_log.Log(KLogLevel.DBADERROR, "FAILED ProcessEntityAnimation: " + e.ToString());
             }
         }
 
@@ -865,7 +868,7 @@ namespace KeeKee.Comm.LLLP {
                     ent.Update(updateFlags);
                 }
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "FAILED ProcessEntityUpdates: " + e.ToString());
+                m_log.Log(KLogLevel.DBADERROR, "FAILED ProcessEntityUpdates: " + e.ToString());
             }
         }
         // ===============================================================
@@ -880,7 +883,7 @@ namespace KeeKee.Comm.LLLP {
                     return;
                 }
                 this.m_statObjAttachmentUpdate++;
-                m_log.Log(LogLevel.DUPDATEDETAIL, "OnNewAttachment: id={0}, lid={1}", args.Prim.ID.ToString(), args.Prim.LocalID);
+                m_log.Log(KLogLevel.DUPDATEDETAIL, "OnNewAttachment: id={0}, lid={1}", args.Prim.ID.ToString(), args.Prim.LocalID);
                 try {
                     // if new or not, assume everything about this entity has changed
                     UpdateCodes updateFlags = UpdateCodes.FullUpdate;
@@ -894,7 +897,7 @@ namespace KeeKee.Comm.LLLP {
                         string attachmentID = null;
                         if (args.Prim.NameValues != null) {
                             foreach (OMV.NameValue nv in args.Prim.NameValues) {
-                                m_log.Log(LogLevel.DCOMMDETAIL, "AttachmentUpdate: ent={0}, {1}->{2}", newEnt.Name, nv.Name, nv.Value);
+                                m_log.Log(KLogLevel.DCOMMDETAIL, "AttachmentUpdate: ent={0}, {1}->{2}", newEnt.Name, nv.Name, nv.Value);
                                 if (nv.Name == "AttachItemID") {
                                     attachmentID = nv.Value.ToString();
                                     break;
@@ -906,11 +909,11 @@ namespace KeeKee.Comm.LLLP {
                         return newEnt;
                     })) {
                     } else {
-                        m_log.Log(LogLevel.DBADERROR, "FAILED CREATION OF NEW ATTACHMENT");
+                        m_log.Log(KLogLevel.DBADERROR, "FAILED CREATION OF NEW ATTACHMENT");
                     }
                     ent.Update(updateFlags);
                 } catch (Exception e) {
-                    m_log.Log(LogLevel.DBADERROR, "FAILED CREATION OF NEW ATTACHMENT: " + e.ToString());
+                    m_log.Log(KLogLevel.DBADERROR, "FAILED CREATION OF NEW ATTACHMENT: " + e.ToString());
                 }
             }
             return;
@@ -931,12 +934,12 @@ namespace KeeKee.Comm.LLLP {
                 if (args.Prim.Rotation != args.Update.Rotation) updateFlags |= UpdateCodes.Rotation;
                 if (update.Avatar) updateFlags |= UpdateCodes.CollisionPlane;
                 if (update.Textures != null) updateFlags |= UpdateCodes.Textures;
-                m_log.Log(LogLevel.DUPDATEDETAIL, "Object update: id={0}, p={1}, r={2}",
+                m_log.Log(KLogLevel.DUPDATEDETAIL, "Object update: id={0}, p={1}, r={2}",
                         update.LocalID, update.Position.ToString(), update.Rotation.ToString());
 
                 try {
                     if (args.Prim.ID == OMV.UUID.Zero) {
-                        m_log.Log(LogLevel.DBADERROR, "TerseObjectUpdate: received prim with UUID zero");
+                        m_log.Log(KLogLevel.DBADERROR, "TerseObjectUpdate: received prim with UUID zero");
                         return;
                     }
                     if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out updatedEntity, delegate () {
@@ -964,7 +967,7 @@ namespace KeeKee.Comm.LLLP {
                     // send updates for this entity updates
                     ProcessEntityUpdates(updatedEntity, updateFlags);
                 } catch (Exception e) {
-                    m_log.Log(LogLevel.DBADERROR, "FAILED CREATION OF NEW PRIM: " + e.ToString());
+                    m_log.Log(KLogLevel.DBADERROR, "FAILED CREATION OF NEW PRIM: " + e.ToString());
                 }
             }
 
@@ -972,12 +975,12 @@ namespace KeeKee.Comm.LLLP {
         }
         // ===============================================================
         private void Objects_ObjectProperties(Object sender, OMV.ObjectPropertiesEventArgs args) {
-            m_log.Log(LogLevel.DUPDATEDETAIL, "Objects_ObjectProperties:");
+            m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectProperties:");
             this.m_statObjObjectProperties++;
         }
         // ===============================================================
         private void Objects_ObjectPropertiesUpdated(Object sender, OMV.ObjectPropertiesUpdatedEventArgs args) {
-            m_log.Log(LogLevel.DUPDATEDETAIL, "Objects_ObjectPropertiesUpdated:");
+            m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectPropertiesUpdated:");
             this.m_statObjObjectPropertiesUpdate++;
         }
         // ===============================================================
@@ -992,7 +995,7 @@ namespace KeeKee.Comm.LLLP {
                     return;
                 }
                 this.m_statObjAvatarUpdate++;
-                m_log.Log(LogLevel.DUPDATEDETAIL, "Objects_AvatarUpdate: cntl={0}, parent={1}, p={2}, r={3}",
+                m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_AvatarUpdate: cntl={0}, parent={1}, p={2}, r={3}",
                             args.Avatar.ControlFlags.ToString("x"), args.Avatar.ParentID,
                             args.Avatar.Position, args.Avatar.Rotation);
                 IEntity updatedEntity = null;
@@ -1006,7 +1009,7 @@ namespace KeeKee.Comm.LLLP {
                 rcontext.TryGet<IEntityCollection>(out coll);
                 // find the entity for this avatar and create if necessary
                 if (coll.TryGetCreateEntity(avatarEntityName, out updatedEntity, delegate () {
-                    m_log.Log(LogLevel.DUPDATEDETAIL, "AvatarUpdate: creating avatar {0} {1} ({2})",
+                    m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: creating avatar {0} {1} ({2})",
                         args.Avatar.FirstName, args.Avatar.LastName, args.Avatar.ID);
                     IEntityAvatar newEnt = new LLEntityAvatar(rcontext.AssetContext,
                                     rcontext, args.Simulator.Handle, args.Avatar);
@@ -1018,10 +1021,10 @@ namespace KeeKee.Comm.LLLP {
                     updatedEntity.Heading = args.Avatar.Rotation;
                     // We check here if this avatar goes with the agent in the world
                     // If this av is with the agent, make the connection
-                    m_log.Log(LogLevel.DUPDATEDETAIL, "AvatarUpdate: Alid={0}, Clid={1}",
+                    m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: Alid={0}, Clid={1}",
                                             args.Avatar.LocalID, m_client.Self.LocalID);
                     if (args.Avatar.LocalID == m_client.Self.LocalID) {
-                        m_log.Log(LogLevel.DUPDATEDETAIL, "AvatarUpdate: associating agent with new avatar");
+                        m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: associating agent with new avatar");
                         this.MainAgent.AssociatedAvatar = (IEntityAvatar)updatedEntity;
                     }
                 }
@@ -1036,7 +1039,7 @@ namespace KeeKee.Comm.LLLP {
             if (QueueTilOnline(args.Simulator, CommActionCode.KillObject, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
             m_statObjKillObject++;
-            m_log.Log(LogLevel.DWORLDDETAIL, "Object killed:");
+            m_log.Log(KLogLevel.DWORLDDETAIL, "Object killed:");
             try {
                 IEntity removedEntity;
                 if (rcontext.TryGetEntityLocalID(args.ObjectLocalID, out removedEntity)) {
@@ -1047,7 +1050,7 @@ namespace KeeKee.Comm.LLLP {
                     }
                 }
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "FAILED DELETION OF OBJECT: " + e.ToString());
+                m_log.Log(KLogLevel.DBADERROR, "FAILED DELETION OF OBJECT: " + e.ToString());
             }
             return;
         }
@@ -1056,7 +1059,7 @@ namespace KeeKee.Comm.LLLP {
         public virtual void Avatars_AvatarAppearance(Object sender, OMV.AvatarAppearanceEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAvatarAppearance, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
-            m_log.Log(LogLevel.DCOMMDETAIL, "AvatarAppearance: id={0}", args.AvatarID.ToString());
+            m_log.Log(KLogLevel.DCOMMDETAIL, "AvatarAppearance: id={0}", args.AvatarID.ToString());
             // the appearance information is stored in the avatar info in libomv
             // We just kick the system to look at it
             lock (m_opLock) {
@@ -1073,7 +1076,7 @@ namespace KeeKee.Comm.LLLP {
         /// Called when we just log in. We create our agent and put it into the world
         /// </summary>
         public virtual void Comm_OnLoggedIn() {
-            m_log.Log(LogLevel.DWORLD, "Comm_OnLoggedIn:");
+            m_log.Log(KLogLevel.DWORLD, "Comm_OnLoggedIn:");
             World.World.Instance.AddAgent(this.MainAgent);
             // I work by taking LLLP messages and updating the agent
             // The agent will be updated in the world (usually by the viewer)
@@ -1083,12 +1086,12 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Comm_OnLoggedOut() {
-            m_log.Log(LogLevel.DWORLD, "Comm_OnLoggedOut:");
+            m_log.Log(KLogLevel.DWORLD, "Comm_OnLoggedOut:");
         }
 
         // ===============================================================
         public virtual void Comm_OnAgentUpdated(IAgent agnt, UpdateCodes what) {
-            m_log.Log(LogLevel.DWORLDDETAIL, "Comm_OnAgentUpdated:");
+            m_log.Log(KLogLevel.DWORLDDETAIL, "Comm_OnAgentUpdated:");
 
         }
 
@@ -1113,7 +1116,7 @@ namespace KeeKee.Comm.LLLP {
                         ret.Comm = m_client;
                         ret.TerrainInfo.RegionContext = ret;
                         m_regionList.Add(sim.ID, ret);
-                        m_log.Log(LogLevel.DWORLD, "Creating region context for " + ret.Name);
+                        m_log.Log(KLogLevel.DWORLD, "Creating region context for " + ret.Name);
                     }
                 }
             }
@@ -1151,16 +1154,16 @@ namespace KeeKee.Comm.LLLP {
                 // If user specifies an URL to get textures from, get that asset fetcher
                 string otherAssets = World.World.Instance.Grids.GridParameter(World.Grids.Current, "OS.AssetServer.V1");
                 if (otherAssets != null && otherAssets.Length != 0) {
-                    m_log.Log(LogLevel.DCOMM, "CommLLLP: creating OSAssetContextV1 for {0}/{1}", m_loginGrid, sim.Name);
+                    m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating OSAssetContextV1 for {0}/{1}", m_loginGrid, sim.Name);
                     ret = new OSAssetContextV1(LoggedInGridName);
                 }
 
                 // If the simulator has the texture capability, use that
                 Uri textureUri = sim.Caps.CapabilityURI("GetTexture");
-                m_log.Log(LogLevel.DCOMM, "CommLLLP: OSAssetContextCap: fetched 'GetTexture' = {0}",
+                m_log.Log(KLogLevel.DCOMM, "CommLLLP: OSAssetContextCap: fetched 'GetTexture' = {0}",
                                 textureUri == null ? "NULL" : textureUri.ToString());
                 if (ret == null && textureUri != null && ModuleParams.ParamBool(ModuleName + ".Assets.EnableCaps")) {
-                    m_log.Log(LogLevel.DCOMM, "CommLLLP: creating OSAssetContextCap for {0}/{1}", m_loginGrid, sim.Name);
+                    m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating OSAssetContextCap for {0}/{1}", m_loginGrid, sim.Name);
                     ret = new OSAssetContextCap(LoggedInGridName, textureUri);
                 }
 
@@ -1168,7 +1171,7 @@ namespace KeeKee.Comm.LLLP {
                 if (ret == null) {
                     // Create the asset contect for this communication instance
                     // this should happen after connected. reconnection is a problem.
-                    m_log.Log(LogLevel.DCOMM, "CommLLLP: creating default asset context for {0}/{1}", m_loginGrid, sim.Name);
+                    m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating default asset context for {0}/{1}", m_loginGrid, sim.Name);
                     ret = new LLAssetContext(LoggedInGridName);
                 }
 
@@ -1230,7 +1233,7 @@ namespace KeeKee.Comm.LLLP {
         /// <param name="p3"></param>
         /// <param name="p4"></param>
         private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, Object p1, Object p2, Object p3, Object p4) {
-            // m_log.Log(LogLevel.DCOMMDETAIL, "QueueTilLater: c={0}", cac);
+            // m_log.Log(KLogLevel.DCOMMDETAIL, "QueueTilLater: c={0}", cac);
             Object[] parms = { sim, cac, p1, p2, p3, p4 };
             m_waitTilLater.DoLaterInitialDelay(QueueTilLaterDoIt, parms);
             return;
@@ -1239,7 +1242,7 @@ namespace KeeKee.Comm.LLLP {
         private bool QueueTilLaterDoIt(DoLaterBase dlb, Object p) {
             Object[] parms = (Object[])p;
             CommActionCode cac = (CommActionCode)parms[1];
-            // m_log.Log(LogLevel.DCOMMDETAIL, "QueueTilLaterDoIt: c={0}", cac);
+            // m_log.Log(KLogLevel.DCOMMDETAIL, "QueueTilLaterDoIt: c={0}", cac);
             RegionAction(cac, parms[2], parms[3], parms[4], parms[5]);
             return true;
         }
@@ -1285,7 +1288,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         private void DoAnyWaitingEvents(OMV.Simulator sim) {
-            m_log.Log(LogLevel.DCOMMDETAIL, "DoAnyWaitingEvents: examining {0} queued events", m_waitTilOnline.Count);
+            m_log.Log(KLogLevel.DCOMMDETAIL, "DoAnyWaitingEvents: examining {0} queued events", m_waitTilOnline.Count);
             List<ParamBlock> m_queuedActions = new List<ParamBlock>();
             lock (m_waitTilOnline) {
                 // get out all of teh actions saved for this sim
@@ -1300,7 +1303,7 @@ namespace KeeKee.Comm.LLLP {
                 }
             }
             // process each of the actions. If they should stay queued, they will get requeued
-            m_log.Log(LogLevel.DCOMMDETAIL, "DoAnyWaitingEvents: processing {0} queued events", m_queuedActions.Count);
+            m_log.Log(KLogLevel.DCOMMDETAIL, "DoAnyWaitingEvents: processing {0} queued events", m_queuedActions.Count);
             foreach (ParamBlock pb in m_queuedActions) {
                 RegionAction(pb.cac, pb.p1, pb.p2, pb.p3, pb.p4);
             }
@@ -1310,44 +1313,44 @@ namespace KeeKee.Comm.LLLP {
             try {
                 switch (cac) {
                     case CommActionCode.RegionStateChange:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: RegionStateChange");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: RegionStateChange");
                         // NOTE that this goes straight to the status update routine
                         ((RegionContextBase)p1).Update((World.UpdateCodes)p2);
                         break;
                     case CommActionCode.OnObjectDataBlockUpdated:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: OnObjectDataBlockUpdated");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: OnObjectDataBlockUpdated");
                         Objects_ObjectDataBlockUpdate(p1, (OMV.ObjectDataBlockUpdateEventArgs)p2);
                         break;
                     case CommActionCode.OnObjectUpdated:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: OnObjectUpdated");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: OnObjectUpdated");
                         // Objects_OnObjectUpdated((OMV.Simulator)p1, (OMV.ObjectUpdate)p2, (ulong)p3, (ushort)p4);
                         Objects_ObjectUpdate(p1, (OMV.PrimEventArgs)p2);
                         break;
                     case CommActionCode.TerseObjectUpdate:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: TerseObjectUpdate");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: TerseObjectUpdate");
                         Objects_TerseObjectUpdate(p1, (OMV.TerseObjectUpdateEventArgs)p2);
                         break;
                     case CommActionCode.OnAttachmentUpdate:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: OnAttachmentUpdated");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: OnAttachmentUpdated");
                         Objects_AttachmentUpdate(p1, (OMV.PrimEventArgs)p2);
                         break;
                     case CommActionCode.KillObject:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: KillObject");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: KillObject");
                         Objects_KillObject(p1, (OMV.KillObjectEventArgs)p2);
                         break;
                     case CommActionCode.OnAvatarUpdate:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: AvatarUpdate");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: AvatarUpdate");
                         Objects_AvatarUpdate(p1, (OMV.AvatarUpdateEventArgs)p2);
                         break;
                     case CommActionCode.OnAvatarAppearance:
-                        // m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: AvatarAppearance");
+                        // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: AvatarAppearance");
                         Avatars_AvatarAppearance(p1, (OMV.AvatarAppearanceEventArgs)p2);
                         break;
                     default:
                         break;
                 }
             } catch (Exception e) {
-                m_log.Log(LogLevel.DCOMMDETAIL, "RegionAction: FAILURE PROCESSING {0}: {1}", cac, e);
+                m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: FAILURE PROCESSING {0}: {1}", cac, e);
             }
         }
         #endregion DELAYED REGION MANAGEMENT

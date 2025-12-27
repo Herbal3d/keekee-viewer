@@ -9,13 +9,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using OMV = OpenMetaverse;
+using System.Reflection;
 
-namespace KeeKee {
+using OMV = OpenMetaverse;
+using OMVSD = OpenMetaverse.StructuredData;
+
+namespace KeeKee.Framework.Utilities {
+
     /// <summary>
     /// Every program has a place to put general, useful, tool routines.
     /// </summary>
@@ -53,23 +53,6 @@ public class Utilities {
         return f + separator + l;
     }
 
-    /// <summary>
-    /// The stupid application storage function MS defined adds "corporation/application/version"
-    /// to the end of the application path. This takes them off and just adds the application name.
-    /// </summary>
-    /// <returns></returns>
-    public static string GetDefaultApplicationStorageDir(string subdir) {
-        string appdir = System.Windows.Forms.Application.UserAppDataPath;
-        string[] pieces = appdir.Split(Path.DirectorySeparatorChar);
-        string newAppDir = pieces[0];
-        if (pieces.Length > 3) {
-            newAppDir = String.Join(System.Char.ToString(Path.DirectorySeparatorChar), pieces, 0, pieces.Length - 3);
-        }
-        newAppDir = Path.Combine(newAppDir, KeeKeeBase.ApplicationName);
-        if ((subdir != null) && (subdir.Length > 0)) newAppDir = Path.Combine(newAppDir, subdir);
-        return newAppDir;
-    }
-
     public static int TickCountMask = 0x3fffffff;
     public static int TickCount() {
         return System.Environment.TickCount & TickCountMask;
@@ -92,5 +75,33 @@ public class Utilities {
 		return v + v2 + v3;
     }
 
+    /// <summary>
+    /// Convert an OSDMap to a class of type T by matching field and property names.
+    /// Loops through all the fields in the class and, if a value of the same name
+    /// exists in the OSDMap, sets the field to that value (converted to the appropriate type).
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="map"></param>
+    /// <returns></returns>
+    public static T OSDMapToClass<T>(OMVSD.OSDMap map) where T : new() {
+        T obj = new T();
+        var objType = typeof(T);
+
+       // Get all fields
+        var fields = objType.GetFields(BindingFlags.Public);
+        var properties = objType.GetProperties(BindingFlags.Public);
+        foreach (var fieldInfo in fields) {
+            if (map.ContainsKey(fieldInfo.Name)) {
+                fieldInfo.SetValue(obj, Convert.ChangeType(map[fieldInfo.Name], fieldInfo.FieldType));
+            }
+        }
+        foreach (var propertyInfo in properties) {
+            if (map.ContainsKey(propertyInfo.Name) && propertyInfo.CanWrite) {
+                propertyInfo.SetValue(obj, Convert.ChangeType(map[propertyInfo.Name], propertyInfo.PropertyType));
+            }
+        }
+
+        return obj;
+    }
 }
 }
