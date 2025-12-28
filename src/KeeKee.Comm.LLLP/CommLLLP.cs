@@ -42,7 +42,7 @@ namespace KeeKee.Comm.LLLP {
         private IKLogger<CommLLLP> m_log;
 
         // ICommProvider.CommStatistics
-        public CommStats CommStatistics { get;  private set; }
+        public CommStats CommStatistics { get; private set; }
 
         protected RestHandler m_commStatsHandler;
         private int m_statNetDisconnected;
@@ -128,6 +128,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         public CommLLLP(KLogger<CommLLLP> pLog,
+                        UserPersistatntParams pUserParams,
                         IOptions<CommConfig> pConnectionParams) {
             m_log = pLog;
             ConnectionParams = pConnectionParams;
@@ -1190,23 +1191,23 @@ namespace KeeKee.Comm.LLLP {
         // We get events before the sim comes online. This is a way to queue up those
         // events until we're online.
         public enum CommActionCode {
-        RegionStateChange,
-        OnObjectDataBlockUpdated,
-        OnObjectUpdated,
-        TerseObjectUpdate,
-        OnAttachmentUpdate,
-        KillObject,
-        OnAvatarUpdate,
-        OnAvatarAppearance
-    }
-
-    protected struct ParamBlock {
-        public OMV.Simulator sim;
-        public CommActionCode cac;
-        public Object p1; public Object p2; public Object p3; public Object p4;
-        public ParamBlock(OMV.Simulator psim, CommActionCode pcac, Object pp1, Object pp2, Object pp3, Object pp4) {
-            sim = psim; cac = pcac; p1 = pp1; p2 = pp2; p3 = pp3; p4 = pp4;
+            RegionStateChange,
+            OnObjectDataBlockUpdated,
+            OnObjectUpdated,
+            TerseObjectUpdate,
+            OnAttachmentUpdate,
+            KillObject,
+            OnAvatarUpdate,
+            OnAvatarAppearance
         }
+
+        protected struct ParamBlock {
+            public OMV.Simulator sim;
+            public CommActionCode cac;
+            public Object p1; public Object p2; public Object p3; public Object p4;
+            public ParamBlock(OMV.Simulator psim, CommActionCode pcac, Object pp1, Object pp2, Object pp3, Object pp4) {
+                sim = psim; cac = pcac; p1 = pp1; p2 = pp2; p3 = pp3; p4 = pp4;
+            }
         }
         // ======================================================================
         private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, Object p1) {

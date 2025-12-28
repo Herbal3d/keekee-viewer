@@ -20,29 +20,6 @@ namespace KeeKee.Framework.Statistics {
     /// </summary>
     public class StatisticManager(ILogger<StatisticManager> Log) : IDisplayable {
 
-        private List<ICounter> m_counters = new List<ICounter>();
-
-        // a simple counter
-        public ICounter GetCounter(string counterName) {
-            ICounter newCounter = new StatCounter(counterName);
-            m_counters.Add(newCounter);
-            return newCounter;
-        }
-
-        // a counter who's value is kept outside one of these counter classes
-        public ICounter GetCounterValue(string counterName, CounterValueCallback valueCall) {
-            ICounter newCounter = new StatCounterValue(counterName, valueCall);
-            m_counters.Add(newCounter);
-            return newCounter;
-        }
-
-        // an interval with a begin and end
-        public IIntervalCounter GetIntervalCounter(string counterName) {
-            IIntervalCounter newCounter = new IntervalCounter(counterName);
-            m_counters.Add(newCounter);
-            return newCounter;
-        }
-
         /// <summary>
         /// A statistics collection returns an OSD structure which is a map
         /// of maps. The top level map are the individual counters and
@@ -51,6 +28,7 @@ namespace KeeKee.Framework.Statistics {
         /// <returns></returns>
         public OMVSD.OSDMap GetDisplayable() {
             OMVSD.OSDMap values = new OMVSD.OSDMap();
+            /*
             foreach (ICounter cntr in m_counters) {
                 try {
                     OMVSD.OSDMap ivals = new OMVSD.OSDMap();
@@ -68,6 +46,7 @@ namespace KeeKee.Framework.Statistics {
                     Log.LogError("FAILURE getting Displayable value: n={0}, {1}", cntr.Name, e.ToString());
                 }
             }
+            */
             return values;
         }
 

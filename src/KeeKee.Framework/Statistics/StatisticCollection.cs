@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Robert Adams
+// Copyright 2025 Robert Adams
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,27 +9,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Logging;
+
 using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Framework.Statistics {
-    public class StatCounter : Stat<long> {
-        public StatCounter(string pName, string pDescription, string pUnit = "") : base(pName, pDescription, pUnit) {
-            InternalValue = 0;
+
+    public class StatisticCollection : IDisplayable {
+
+        private readonly List<IStat> Stats = new List<IStat>();
+
+        public StatisticCollection() {
         }
 
-        public override void Event() {
-            InternalValue = InternalValue + 1;
-        }
-        public override void Event(int pCount) {
-            InternalValue = InternalValue + pCount;
+        public void AddStat(IStat pStat) {
+            Stats.Add(pStat);
         }
 
-        public override OMVSD.OSDMap GetDisplayable() {
+        public OMVSD.OSDMap GetDisplayable() {
             OMVSD.OSDMap map = new OMVSD.OSDMap();
-            map["Name"] = OMVSD.OSD.FromString(Name);
-            map["Description"] = OMVSD.OSD.FromString(Description);
-            map["Unit"] = OMVSD.OSD.FromString(Unit);
-            map["Value"] = OMVSD.OSD.FromLong(InternalValue);
+            foreach (IDisplayable stat in Stats) {
+                OMVSD.OSDMap statMap = stat.GetDisplayable();
+                string name = statMap["Name"].AsString();
+                map[name] = statMap;
+            }
             return map;
         }
     }

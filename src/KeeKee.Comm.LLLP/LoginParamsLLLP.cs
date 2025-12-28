@@ -10,7 +10,7 @@
 // limitations under the License.
 
 namespace KeeKee.Comm.LLLP {
-    public class LoginParamsLLLP: ILoginParams {
+    public class LoginParamsLLLP : ILoginParams {
         public string? UserName { get; set; }
         public string? Password { get; set; }
         public string? AuthURL { get; set; }
@@ -18,7 +18,5 @@ namespace KeeKee.Comm.LLLP {
         public string? LastName { get; set; }
         public string? StartLocation { get; set; } = "Last";
         public string? HomeURL { get; set; }
-        public bool   RememberUserName { get; set; } = false;
-        public bool   RememberPassword { get; set; } = false;
     }
 }

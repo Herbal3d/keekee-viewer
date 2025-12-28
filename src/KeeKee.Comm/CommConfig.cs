@@ -11,14 +11,8 @@
 
 namespace KeeKee.Comm {
     public class CommConfig {
-            public string ProviderName { get; set; } = "LL";
-            public string LoginURI { get; set; } = "https://login.agni.lindenlab.com/cgi-bin/login.cgi";
-            public string UserName { get; set; } = "YourUserName";
-            public string Password { get; set; } = "YourPassword";
-            public string FirstName { get; set; } = "First";
-            public string LastName { get; set; } = "Last";
-            public string StartLocation { get; set; } = "My Home";
-            public bool AutoConnect { get; set; } = true;
-        }
+        public string ProviderName { get; set; } = "LL";
+        public bool AutoConnect { get; set; } = true;
+    }
 
 }

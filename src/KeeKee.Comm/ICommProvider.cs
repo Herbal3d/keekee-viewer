@@ -24,7 +24,7 @@ namespace KeeKee.Comm {
 
     public delegate void ConnectionFailureCallback(ICommProvider source, string reason);
 
-    public interface ICommProvider : IProvider {
+    public interface ICommProvider {
         string Name { get; }
 
         bool IsConnected { get; }

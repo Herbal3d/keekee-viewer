@@ -10,6 +10,10 @@
 // limitations under the License.
 
 namespace KeeKee.Comm {
+
+    /// <summary>
+    /// Block of information needed to login to a grid.
+    /// </summary>
     public interface ILoginParams {
         string? UserName { get; set; }
         string? Password { get; set; }
@@ -18,7 +22,5 @@ namespace KeeKee.Comm {
         string? LastName { get; set; }
         string? StartLocation { get; set; }
         string? HomeURL { get; set; }
-        bool   RememberUserName { get; set; }
-        bool   RememberPassword { get; set; }
     }
 }

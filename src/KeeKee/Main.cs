@@ -81,45 +81,47 @@ namespace KeeKee {
                      // for more details on NLog configuration using appsettings.json.
                  })
                  .ConfigureServices((context, services) => {
-                    services.Configure<KeeKeeConfig>(context.Configuration.GetSection(KeeKeeConfig.subSectionName));
-                    services.AddTransient<IInstanceFactory, InstanceFactory>();
+                     services.Configure<KeeKeeConfig>(context.Configuration.GetSection(KeeKeeConfig.subSectionName));
+                     services.AddTransient<IInstanceFactory, InstanceFactory>();
 
-                    // Logger and KLogger wrapper for base logger
-                    services.Configure<KLoggerConfig>(context.Configuration.GetSection(KLoggerConfig.subSectionName));
-                    services.AddTransient(typeof(ILogger<>), typeof(KLogger<>));
+                     services.AddSingleton<UserPersistantParams>();
 
-                    // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
-                    services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subsectionName));
-                    services.AddTransient<RestHandlerFactory, RestHandlerFactory>();
-                    services.AddHostedService<RestManager>();
-                    
-                    // Communication services
+                     // Logger and KLogger wrapper for base logger
+                     services.Configure<KLoggerConfig>(context.Configuration.GetSection(KLoggerConfig.subSectionName));
+                     services.AddTransient(typeof(ILogger<>), typeof(KLogger<>));
 
-            // KeeKee.Rest, IModule
-            // KeeKee.Comm, ICommProvider
-            // KeeKee.World, IWorld
-            // KeeKee.View, IViewProvider
-            // KeeKee.View, IUserInterfaceProvider
-            // KeeKee.Renderer.OGL, IRendererProvider
-            // KeeKee.Comm.LLLP, IRestUser
-            // KeeKee.View, IViewSplash
-            // KeeKee.View, IViewAvatar
-            // KeeKee.View, IViewChat
-            // KeeKee.View, KeeKee.Renderer.OGL.IViewOGL
-            // KeeKee.View, IRegionTrackerProvider
-            // KeeKee.World.Services, IAvatarTrackerService
-            // KeeKee.Comm.LLLP, Comm.IChatProvider
+                     // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
+                     services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subsectionName));
+                     services.AddTransient<RestHandlerFactory, RestHandlerFactory>();
+                     services.AddHostedService<RestManager>();
 
-            // Asset Server example choosing implementation based on config
-            // pServices.AddSingleton<IAssetServer>(sp => {
-            //     var provider = config.GetValue<string>("AssetServer:Provider") ?? "LLLP";
-            //     OR var provider = sp.GetRequiredService<IOptions<IAssetServerOptions>>().Value.Provider ?? "LLLP";
-            //     return provider.ToLowerInvariant() switch {
-            //         "lllp" => services.AddSingleton<IAssetServer, LllpAssetServer>(),
-            //         "rest" => services.AddSingleton<IAssetServer, RestAssetServer>(),
-            //         _ => throw new ApplicationException($"Unknown AssetServer provider '{provider}'.")
-            //     };
-            // });
+                     // Communication services
+
+                     // KeeKee.Rest, IModule
+                     // KeeKee.Comm, ICommProvider
+                     // KeeKee.World, IWorld
+                     // KeeKee.View, IViewProvider
+                     // KeeKee.View, IUserInterfaceProvider
+                     // KeeKee.Renderer.OGL, IRendererProvider
+                     // KeeKee.Comm.LLLP, IRestUser
+                     // KeeKee.View, IViewSplash
+                     // KeeKee.View, IViewAvatar
+                     // KeeKee.View, IViewChat
+                     // KeeKee.View, KeeKee.Renderer.OGL.IViewOGL
+                     // KeeKee.View, IRegionTrackerProvider
+                     // KeeKee.World.Services, IAvatarTrackerService
+                     // KeeKee.Comm.LLLP, Comm.IChatProvider
+
+                     // Asset Server example choosing implementation based on config
+                     // pServices.AddSingleton<IAssetServer>(sp => {
+                     //     var provider = config.GetValue<string>("AssetServer:Provider") ?? "LLLP";
+                     //     OR var provider = sp.GetRequiredService<IOptions<IAssetServerOptions>>().Value.Provider ?? "LLLP";
+                     //     return provider.ToLowerInvariant() switch {
+                     //         "lllp" => services.AddSingleton<IAssetServer, LllpAssetServer>(),
+                     //         "rest" => services.AddSingleton<IAssetServer, RestAssetServer>(),
+                     //         _ => throw new ApplicationException($"Unknown AssetServer provider '{provider}'.")
+                     //     };
+                     // });
 
 
                  })
