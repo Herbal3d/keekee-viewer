@@ -31,7 +31,7 @@ namespace KeeKee.Comm {
 
         bool IsLoggedIn { get; }
 
-        bool Connect(IOptions<CommConfig> parms);
+        bool Connect(LoginParams parms);
 
         bool Disconnect();
 

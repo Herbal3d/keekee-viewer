@@ -9,7 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace KeeKee {
+namespace KeeKee.Framework {
 
     // The viewer can remember previous accounts used
     public class UPPAccounts {
@@ -34,6 +34,17 @@ namespace KeeKee {
         public string LastUsername { get; set; } = "YourUserName";
         public bool ShouldSaveUsername { get; set; } = false;
         public bool ShouldSavePassword { get; set; } = false;
+
+        public void AddUserAccount(UPPAccounts account) {
+            // see if we already have this account
+            foreach (UPPAccounts acc in SavedAccounts) {
+                if ((acc.Username == account.Username) && (acc.Grid == account.Grid)) {
+                    // already have it
+                    return;
+                }
+            }
+            SavedAccounts.Add(account);
+        }
 
         public static void WriteUserPersistantParams() {
             // Placeholder for future implementation

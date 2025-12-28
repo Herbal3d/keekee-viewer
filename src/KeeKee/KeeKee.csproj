@@ -19,6 +19,8 @@
 
 
   <ItemGroup>
+    <ProjectReference Include="..\KeeKee.Comm\KeeKee.Comm.csproj" />
+    <ProjectReference Include="..\KeeKee.Comm.LLLP\KeeKee.Comm.LLLP.csproj" />
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
     <ProjectReference Include="..\KeeKee.View\KeeKee.View.csproj" />

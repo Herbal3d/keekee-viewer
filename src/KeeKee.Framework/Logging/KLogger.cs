@@ -24,7 +24,7 @@ namespace KeeKee.Framework.Logging {
         private readonly IOptions<KLoggerConfig> _options;
 
         // This log level is used for detail logging
-        private const LogLevel LLForDetail = LogLevel.Information;
+        private const LogLevel LLDetail = LogLevel.Information;
 
         public KLogger(ILogger<T> pLogger, IOptions<KLoggerConfig> pOptions) {
             _innerLogger = pLogger ?? throw new ArgumentNullException(nameof(pLogger));
@@ -71,19 +71,19 @@ namespace KeeKee.Framework.Logging {
                     break;
                 case KLogLevel.UIDetail:
                     if (_options.Value.UIDetail)
-                        _innerLogger.Log(LLForDetail, message, args);
+                        _innerLogger.Log(LLDetail, message, args);
                     break;
                 case KLogLevel.RestDetail:
                     if (_options.Value.RestDetail)
-                        _innerLogger.Log(LLForDetail, message, args);
+                        _innerLogger.Log(LLDetail, message, args);
                     break;
                 case KLogLevel.DINIT:
                     if (_options.Value.DINIT)
-                        _innerLogger.Log(LLForDetail, message, args);
+                        _innerLogger.Log(LLDetail, message, args);
                     break;
                 case KLogLevel.DINITDETAIL:
                     if (_options.Value.DINITDETAIL)
-                        _innerLogger.Log(LLForDetail, message, args);
+                        _innerLogger.Log(LLDetail, message, args);
                     break;
                 case KLogLevel.None:
                     // Do nothing
@@ -93,11 +93,19 @@ namespace KeeKee.Framework.Logging {
                     break;
                 case KLogLevel.DCOMM:
                     if (_options.Value.DCOMM)
-                        _innerLogger.Log(LLForDetail, message, args);
+                        _innerLogger.Log(LLDetail, message, args);
                     break;
                 case KLogLevel.DCOMMDETAIL:
                     if (_options.Value.DCOMMDETAIL)
-                        _innerLogger.Log(LLForDetail, message, args);
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DWORLD:
+                    if (_options.Value.DWORLD)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DWORLDDETAIL:
+                    if (_options.Value.DWORLDDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
                     break;
                 default:
                     // Unknown level, log as Information

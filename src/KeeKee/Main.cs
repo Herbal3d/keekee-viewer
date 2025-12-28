@@ -13,12 +13,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NLog.Extensions.Logging;
 
+using KeeKee.Comm;
+using KeeKee.Comm.LLLP;
 using KeeKee.Framework.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
-using Microsoft.Extensions.Options;
 using KeeKee.Framework;
 
 namespace KeeKee {
@@ -96,6 +98,7 @@ namespace KeeKee {
                      services.AddHostedService<RestManager>();
 
                      // Communication services
+                     services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subsectionName));
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider

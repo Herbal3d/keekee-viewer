@@ -29,7 +29,9 @@ namespace KeeKee.Framework.Logging {
         DINIT,
         DINITDETAIL,
         DCOMM,
-        DCOMMDETAIL
+        DCOMMDETAIL,
+        DWORLD,
+        DWORLDDETAIL
 
     }
     public interface IKLogger<T> : ILogger<T> {

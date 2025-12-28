@@ -14,13 +14,13 @@ namespace KeeKee.Comm {
     /// <summary>
     /// Block of information needed to login to a grid.
     /// </summary>
-    public interface ILoginParams {
-        string? UserName { get; set; }
-        string? Password { get; set; }
-        string? AuthURL { get; set; }
-        string? FirstName { get; set; }
-        string? LastName { get; set; }
-        string? StartLocation { get; set; }
-        string? HomeURL { get; set; }
+    public class LoginParams {
+        public string? UserName { get; set; }
+        public string? Password { get; set; }
+        public string? AuthURL { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? StartLocation { get; set; }
+        public string? HomeURL { get; set; }
     }
 }
