@@ -16,9 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
-    <ProjectReference Include="..\KeeKee.World.LL\KeeKee.World.LL.csproj" />
-    <ProjectReference Include="..\KeeKee.World.OS\KeeKee.World.OS.csproj" />
   </ItemGroup>
-
 
 </Project>

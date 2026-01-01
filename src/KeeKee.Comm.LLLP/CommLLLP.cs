@@ -9,6 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using KeeKee.Comm;
@@ -16,8 +17,6 @@ using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
 using KeeKee.Framework.Statistics;
-using KeeKee.Framework.Utilities;
-using KeeKee.Rest;
 using KeeKee.World;
 using KeeKee.World.LL;
 using KeeKee.World.OS;
@@ -29,38 +28,43 @@ namespace KeeKee.Comm.LLLP {
     /// <summary>
     /// Communication handler for Linden Lab Legacy Protocol
     /// </summary>
-    public class CommLLLP : ICommProvider {
+    public class CommLLLP : BackgroundService, ICommProvider {
+        private IKLogger<CommLLLP> m_log;
+
+        public IOptions<CommConfig> ConnectionParams { get; set; }
+
+        private CancellationToken m_cancellationToken;
 
         // ICommProvider.Name
         public string Name { get { return "CommLLLP"; } }
 
-        private IKLogger<CommLLLP> m_log;
 
+        // Statistics ===============================================
+        // ICommProvider.CommStatistics
         public StatisticCollection CommStatistics { get; private set; }
-
-        protected RestHandler m_commStatsHandler;
-        private int m_statNetDisconnected;
-        private int m_statNetLoginProgress;
-        private int m_statNetSimChanged;
-        private int m_statNetSimConnected;
-        private int m_statNetEventQueueRunning;
-        private int m_statObjAttachmentUpdate;
-        private int m_statObjAvatarUpdate;
-        private int m_statObjKillObject;
-        private int m_statObjObjectProperties;
-        private int m_statObjObjectPropertiesUpdate;
-        private int m_statObjObjectUpdate;
-        private int m_statObjTerseUpdate;
-        private int m_statRequestLocalID;
+        private Stat<long> m_statNetDisconnected = new StatCounter("Network_Disconnected", "Number of 'network disconnected' messages");
+        private Stat<long> m_statNetLoginProgress = new StatCounter("Network_LoginProgress", "Number of 'login progress' messages");
+        private Stat<long> m_statNetSimChanged = new StatCounter("Network_SimChanged", "Number of 'sim changed' messages");
+        private Stat<long> m_statNetSimConnected = new StatCounter("Network_SimConnected", "Number of 'sim connected' messages");
+        private Stat<long> m_statNetEventQueueRunning = new StatCounter("Network_EventQueueRunning", "Number of 'event queue running' messages");
+        private Stat<long> m_statObjAttachmentUpdate = new StatCounter("Object_AttachmentUpdate", "Number of 'attachment update' messages");
+        private Stat<long> m_statObjAvatarUpdate = new StatCounter("Object_AvatarUpdate", "Number of 'avatar update' messages");
+        private Stat<long> m_statObjKillObject = new StatCounter("Object_KillObject", "Number of 'kill object' messages");
+        private Stat<long> m_statObjObjectProperties = new StatCounter("Object_ObjectProperties", "Number of 'object properties' messages");
+        private Stat<long> m_statObjObjectPropertiesUpdate = new StatCounter("Object_ObjectPropertiesUpdate", "Number of 'object properties update' messages");
+        private Stat<long> m_statObjObjectUpdate = new StatCounter("Object_ObjectUpdate", "Number of 'object update' messages");
+        private Stat<long> m_statObjTerseUpdate = new StatCounter("Object_TerseObjectUpdate", "Number of 'terse object update' messages");
+        private Stat<long> m_statRequestLocalID = new StatCounter("RequestLocalID", "Number of RequestLocalIDs made");
+        // ==========================================================
 
         // ICommProvider.GridClient
         public OMV.GridClient GridClient { get; private set; }
 
         // list of the region information build for the simulator
-        protected Dictionary<OMV.UUID, LLRegionContext> m_regionList;
+        protected Dictionary<OMV.UUID, LLRegionContext> m_regionList = new Dictionary<OMV.UUID, LLRegionContext>();
 
         // while we wait for a region to be online, we queue requests here
-        protected List<ParamBlock> m_waitTilOnline;
+        protected List<ParamBlock> m_waitTilOnline = new List<ParamBlock>();
         protected BasicWorkQueue m_waitTilLater = new BasicWorkQueue("CommDoTilLater");
 
         // There are some messages that come in that are rare but could use some locking.
@@ -75,15 +79,13 @@ namespace KeeKee.Comm.LLLP {
         public bool SwitchingSims { get { return m_SwitchingSims; } }
         protected bool m_SwitchingSims;       // true when we're setting up the connection to a different sim
 
-        public IOptions<CommConfig> ConnectionParams { get; set; }
-
         // The whole module is loaded or unloaded. This controls the whole trying to login loop.
         // m_shouldBeLoggedIn says whether we think we should be logged in. If true then the
         // first, last, ... parameters have the info to use logging in.
         // The logging in and out flags are true when we're doing that. Use to make sure
         // we don't try logging in or out again.
         // The module flag 'm_connected' is set true when logged in and connected.
-        protected Thread m_LoginThread = null;
+        protected Task m_LoginThread = null; // Task that keeps us logged in
         protected bool m_loaded { get; set; } = false;  // if comm is loaded and should be trying to connect
         protected bool m_shouldBeLoggedIn { get; set; } = false; // true if we should be logged in
         protected LoginParams? m_loginParams { get; set; } // parameters to use when logging in
@@ -94,6 +96,7 @@ namespace KeeKee.Comm.LLLP {
         protected string m_loginGrid { get; set; } = "unknown";
         protected string LoggedInGridName { get { return m_loginGrid.Replace(".", "_").ToLower(); } }
         protected string m_loginMsg { get; set; } = "";
+        /*
         public const string FIELDFIRST = "first";
         public const string FIELDLAST = "last";
         public const string FIELDPASS = "password";
@@ -107,6 +110,7 @@ namespace KeeKee.Comm.LLLP {
         public const string FIELDPOSITIONX = "positionx"; // the client relative location
         public const string FIELDPOSITIONY = "positiony";
         public const string FIELDPOSITIONZ = "positionz";
+        */
 
         // If true, hold children objects until parent is available
         protected bool m_shouldHoldChildren = false;
@@ -130,6 +134,65 @@ namespace KeeKee.Comm.LLLP {
             m_log = pLog;
             m_userPersistantParams = pUserParams;
             ConnectionParams = pConnectionParams;
+
+            CommStatistics = new StatisticCollection();
+            CommStatistics.AddStat(m_statNetDisconnected);
+            CommStatistics.AddStat(m_statNetLoginProgress);
+            CommStatistics.AddStat(m_statNetSimChanged);
+            CommStatistics.AddStat(m_statNetSimConnected);
+            CommStatistics.AddStat(m_statNetEventQueueRunning);
+            CommStatistics.AddStat(m_statObjAttachmentUpdate);
+            CommStatistics.AddStat(m_statObjAvatarUpdate);
+            CommStatistics.AddStat(m_statObjKillObject);
+            CommStatistics.AddStat(m_statObjObjectProperties);
+            CommStatistics.AddStat(m_statObjObjectPropertiesUpdate);
+            CommStatistics.AddStat(m_statObjObjectUpdate);
+            CommStatistics.AddStat(m_statObjTerseUpdate);
+            CommStatistics.AddStat(m_statRequestLocalID);
+
+            GridClient = new OMV.GridClient();
+        }
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+            m_log.Log(KLogLevel.RestDetail, "CommLLLP ExecuteAsync entered");
+            m_cancellationToken = cancellationToken;
+
+            while (!cancellationToken.IsCancellationRequested) {
+                InitConnectionFramework();
+
+                while (m_loaded && !cancellationToken.IsCancellationRequested) {
+                    if (m_shouldBeLoggedIn && !IsLoggedIn) {
+                        // we should be logged in and we are not
+                        if (!m_isLoggingIn) {
+                            StartLogin();
+                        }
+                    }
+                    if (!cancellationToken.IsCancellationRequested && !IsLoggedIn && IsConnected) {
+                        // if we're not supposed to be running, disconnect everything
+                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
+                        GridClient.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
+                        IsConnected = false;
+                    }
+                    if (!cancellationToken.IsCancellationRequested || (!m_shouldBeLoggedIn && IsLoggedIn)) {
+                        // we shouldn't be logged in but it looks like we are
+                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shouldn't be logged in");
+                        if (!m_isLoggingIn && !m_isLoggingOut) {
+                            // not in logging transistion. start the logout process
+                            m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Starting logout process");
+                            GridClient.Network.Logout();
+                            m_isLoggingIn = false;
+                            m_isLoggingOut = true;
+                            IsLoggedIn = false;
+                            m_shouldBeLoggedIn = false;
+                        }
+                    }
+                    // TODO: update our login parameters for the UI
+
+                    await Task.Delay(500, cancellationToken);
+                }
+                DisconnectConnectionFramework();
+
+                m_log.Log(KLogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
+            }
         }
 
         /* OLD CODE THAT PROBABLY CAN BE DELETED
@@ -173,40 +236,51 @@ namespace KeeKee.Comm.LLLP {
         protected void InitConnectionFramework() {
             // Initialize the SL client
             try {
-                GridClient = new OMV.GridClient();
+                var gc = GridClient;
                 // GridClient.Settings.ENABLE_CAPS = true;
-                GridClient.Settings.ENABLE_SIMSTATS = true;
-                GridClient.Settings.MULTIPLE_SIMS = ConnectionParams.Value.MultipleSims;
-                GridClient.Settings.ALWAYS_DECODE_OBJECTS = true;
-                GridClient.Settings.ALWAYS_REQUEST_OBJECTS = true;
-                GridClient.Settings.OBJECT_TRACKING = true; // We use our own object tracking system
-                GridClient.Settings.AVATAR_TRACKING = true; //but we want to use the libsl avatar system
-                GridClient.Settings.SEND_AGENT_APPEARANCE = true;    // for the moment, don't do appearance
-                GridClient.Settings.SEND_AGENT_THROTTLE = true;    // tell them how fast we want it when connected
-                GridClient.Settings.PARCEL_TRACKING = true;
-                GridClient.Settings.ALWAYS_REQUEST_PARCEL_ACL = false;
-                GridClient.Settings.ALWAYS_REQUEST_PARCEL_DWELL = false;
-                GridClient.Settings.USE_INTERPOLATION_TIMER = false;  // don't need the library helping
-                GridClient.Settings.SEND_AGENT_UPDATES = true;
-                GridClient.Self.Movement.AutoResetControls = false;
-                GridClient.Self.Movement.UpdateInterval = ConnectionParams.Value.MovementUpdateInterval;
-                GridClient.Settings.DISABLE_AGENT_UPDATE_DUPLICATE_CHECK = false;
-                GridClient.Settings.USE_ASSET_CACHE = false;
-                GridClient.Settings.PIPELINE_REQUEST_TIMEOUT = 120 * 1000;
-                GridClient.Settings.ASSET_CACHE_DIR = ConnectionParams.Value.Assets.CacheDir;
+                gc.Settings.ENABLE_SIMSTATS = true;
+                gc.Settings.MULTIPLE_SIMS = ConnectionParams.Value.MultipleSims;
+                gc.Settings.ALWAYS_DECODE_OBJECTS = true;
+                gc.Settings.ALWAYS_REQUEST_OBJECTS = true;
+                gc.Settings.OBJECT_TRACKING = true; // We use our own object tracking system
+                gc.Settings.AVATAR_TRACKING = true; //but we want to use the libsl avatar system
+                gc.Settings.SEND_AGENT_APPEARANCE = true;    // for the moment, don't do appearance
+                gc.Settings.SEND_AGENT_THROTTLE = true;    // tell them how fast we want it when connected
+                gc.Settings.PARCEL_TRACKING = true;
+                gc.Settings.ALWAYS_REQUEST_PARCEL_ACL = false;
+                gc.Settings.ALWAYS_REQUEST_PARCEL_DWELL = false;
+                gc.Settings.USE_INTERPOLATION_TIMER = false;  // don't need the library helping
+                gc.Settings.SEND_AGENT_UPDATES = true;
+                gc.Self.Movement.AutoResetControls = false;
+                gc.Self.Movement.UpdateInterval = ConnectionParams.Value.MovementUpdateInterval;
+                gc.Settings.DISABLE_AGENT_UPDATE_DUPLICATE_CHECK = false;
+                gc.Settings.USE_ASSET_CACHE = false;
+                gc.Settings.PIPELINE_REQUEST_TIMEOUT = 120 * 1000;
+                gc.Settings.ASSET_CACHE_DIR = ConnectionParams.Value.Assets.CacheDir;
                 OMV.Settings.RESOURCE_DIR = ConnectionParams.Value.Assets.OMVResources;
                 // Crank up the throttle on texture downloads
-                GridClient.Throttle.Total = 20000000.0f;
-                GridClient.Throttle.Texture = 2446000.0f;
-                GridClient.Throttle.Asset = 2446000.0f;
-                GridClient.Settings.THROTTLE_OUTGOING_PACKETS = false;
+                gc.Throttle.Total = 20000000.0f;
+                gc.Throttle.Texture = 2446000.0f;
+                gc.Throttle.Asset = 2446000.0f;
+                gc.Settings.THROTTLE_OUTGOING_PACKETS = false;
 
-                GridClient.Network.LoginProgress += Network_LoginProgress;
-                GridClient.Network.Disconnected += Network_Disconnected;
-                GridClient.Network.SimConnected += Network_SimConnected;
-                GridClient.Network.EventQueueRunning += Network_EventQueueRunning;
-                GridClient.Network.SimChanged += Network_SimChanged;
-                GridClient.Network.EventQueueRunning += Network_EventQueueRunning;
+                // gc.Network.LoginProgress += Network_LoginProgress;
+                gc.Network.Disconnected += Network_Disconnected;
+                gc.Network.SimConnected += Network_SimConnected;
+                gc.Network.EventQueueRunning += Network_EventQueueRunning;
+                gc.Network.SimChanged += Network_SimChanged;
+                gc.Network.EventQueueRunning += Network_EventQueueRunning;
+
+                gc.Objects.ObjectPropertiesUpdated += Objects_ObjectPropertiesUpdated;
+                gc.Objects.ObjectUpdate += Objects_ObjectUpdate;
+                gc.Objects.ObjectDataBlockUpdate += Objects_ObjectDataBlockUpdate;
+                gc.Objects.ObjectProperties += Objects_ObjectProperties;
+                gc.Objects.TerseObjectUpdate += Objects_TerseObjectUpdate;
+                gc.Objects.AvatarUpdate += Objects_AvatarUpdate;
+                gc.Objects.KillObject += Objects_KillObject;
+                gc.Avatars.AvatarAppearance += Avatars_AvatarAppearance;
+                gc.Settings.STORE_LAND_PATCHES = true;
+                gc.Terrain.LandPatchReceived += Terrain_LandPatchReceived;
 
             } catch (Exception e) {
                 m_log.Log(KLogLevel.DBADERROR, "EXCEPTION BUILDING GRIDCLIENT: " + e.ToString());
@@ -215,48 +289,37 @@ namespace KeeKee.Comm.LLLP {
             // fake like this is the initial teleport
             m_SwitchingSims = true;
         }
+        private void DisconnectConnectionFramework() {
+            var gc = GridClient;
+            // gc.Network.LoginProgress -= Network_LoginProgress;
+            gc.Network.Disconnected -= Network_Disconnected;
+            gc.Network.SimConnected -= Network_SimConnected;
+            gc.Network.EventQueueRunning -= Network_EventQueueRunning;
+            gc.Network.SimChanged -= Network_SimChanged;
+            gc.Network.EventQueueRunning -= Network_EventQueueRunning;
 
-        // IModule.Start()
-        public virtual void Start() {
-            Start2(true);
-        }
-
-        // internal Start to be used by derived classes
-        protected void Start2(bool shouldKeepLoggedin) {
-            m_loaded = true;
-            if (shouldKeepLoggedin) {
-                if (m_LoginThread == null) {
-                    m_LoginThread = new Thread(KeepLoggedIn);
-                    m_LoginThread.Name = "Communication Login";
-                    m_log.Log(KLogLevel.DCOMM, "Starting keep logged in thread");
-                    m_LoginThread.Start();
-                }
-            }
-        }
-
-        // IModule.Stop()
-        // If the base system says to stop, we make sure we're disconnected
-        public virtual void Stop() {
-            m_log.Log(KLogLevel.DCOMM, "Stopping. Attempting to disconnect");
-            Disconnect();
-            Thread.Sleep(3000); // let the logout and disconnect happen
-        }
-
-        // IModule.PrepareForUnload()
-        public virtual bool PrepareForUnload() {
-            m_log.Log(KLogLevel.DCOMM, "communication unload. We'll never login again");
-            if (m_commStatsHandler != null) {
-                m_commStatsHandler.Dispose();   // get rid of the handlers we created
-                m_commStatsHandler = null;
-            }
-            m_loaded = false; ;
-            return true;
+            gc.Objects.ObjectPropertiesUpdated -= Objects_ObjectPropertiesUpdated;
+            gc.Objects.ObjectUpdate -= Objects_ObjectUpdate;
+            gc.Objects.ObjectDataBlockUpdate -= Objects_ObjectDataBlockUpdate;
+            gc.Objects.ObjectProperties -= Objects_ObjectProperties;
+            gc.Objects.TerseObjectUpdate -= Objects_TerseObjectUpdate;
+            gc.Objects.AvatarUpdate -= Objects_AvatarUpdate;
+            gc.Objects.KillObject -= Objects_KillObject;
+            gc.Avatars.AvatarAppearance -= Avatars_AvatarAppearance;
+            gc.Terrain.LandPatchReceived -= Terrain_LandPatchReceived;
         }
 
         // ICommProvider.Connect()
+        /// <summary>
+        /// Called by the REST handler to connect to a simulator.
+        /// The login parameters are passed in which is the autorization info.
+        /// Sets the state to "should be logged in" and processing should continue.
+        /// </summary>
+        /// <param name="pLoginParams"></param>
+        /// <returns></returns>
         public virtual bool Connect(LoginParams pLoginParams) {
             // Are we already logged in?
-            if (m_isLoggedIn || m_isLoggingIn) {
+            if (IsLoggedIn || m_isLoggingIn) {
                 return false;
             }
 
@@ -298,7 +361,7 @@ namespace KeeKee.Comm.LLLP {
                 m_log.Log(KLogLevel.DBADERROR, "Did not recognize format of teleport destination: '{0}'", dest);
                 ret = false;
             }
-            if (ret && IsLoggedIn && (GridClient != null) && GridClient.IsConnected) {
+            if (ret && IsLoggedIn && (GridClient != null)) {
                 if (GridClient.Self.Teleport(sim, new OMV.Vector3(x, y, z))) {
                     m_log.Log(KLogLevel.DBADERROR, "Teleport successful to '{0}'", dest);
                     ret = true;
@@ -310,80 +373,48 @@ namespace KeeKee.Comm.LLLP {
             return ret;
         }
 
-        /// <summary>
-        /// Using its own thread, this sits around checking to see if we're logged in
-        /// and, if not, starting the login dialog so we can get logged in.
-        /// </summary>
-        protected void KeepLoggedIn() {
-            while (m_loaded) {
-                if (LGB.KeepRunning && m_shouldBeLoggedIn && !IsLoggedIn) {
-                    // we should be logged in and we are not
-                    if (!m_isLoggingIn) {
-                        StartLogin();
-                    }
-                }
-                if (!LGB.KeepRunning && !IsLoggedIn && IsConnected) {
-                    // if we're not supposed to be running, disconnect everything
-                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
-                    GridClient.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
-                    m_isConnected = false;
-                }
-                if (!LGB.KeepRunning || (!m_shouldBeLoggedIn && IsLoggedIn)) {
-                    // we shouldn't be logged in but it looks like we are
-                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shouldn't be logged in");
-                    if (!m_isLoggingIn && !m_isLoggingOut) {
-                        // not in logging transistion. start the logout process
-                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Starting logout process");
-                        GridClient.Network.Logout();
-                        m_isLoggingIn = false;
-                        m_isLoggingOut = true;
-                        m_isLoggedIn = false;
-                        m_shouldBeLoggedIn = false;
-                    }
-                }
-                // update our login parameters for the UI
-
-                Thread.Sleep(1 * 1000);
+        public async Task StartLogin() {
+            if (m_loginParams == null) {
+                m_log.Log(KLogLevel.DBADERROR, "StartLogin: no login parameters");
+                return;
             }
-            m_log.Log(KLogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
-        }
-
-        public void StartLogin() {
-            m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", m_loginFirst, m_loginLast);
+            m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", m_loginParams.FirstName, m_loginParams.LastName);
             m_isLoggingIn = true;
             OMV.LoginParams loginParams = this.GridClient.Network.DefaultLoginParams(
-                m_loginFirst,
-                m_loginLast,
-                m_loginPassword,
-                ModuleParams.ParamString(ModuleName + ".Settings.Connection.ApplicationName"),
-                ModuleParams.ParamString(ModuleName + ".Settings.Connection.Version"));
-
+                m_loginParams.FirstName,
+                m_loginParams.LastName,
+                m_loginParams.Password,
+                ConnectionParams.Value.Connection.ApplicationName,
+                ConnectionParams.Value.Connection.Version
+            );
 
             // Select sim in the grid
             // the format that we must pass is "uri:sim&x&y&z" or the strings "home" or "last"
             // The user inputs either "home", "last", "sim" or "sim/x/y/z"
-            string loginSetting = null;
-            if ((m_loginSim != null) && (m_loginSim.Length > 0)) {
+            string loginSetting = "";
+            string startLoc = m_loginParams.StartLocation ?? "";
+            if (!String.IsNullOrEmpty(startLoc)) {
                 try {
-                    // User specified a sim. In the form of "simname/x/y/z" where the locations
-                    // are optional.
+                    // User specified a sim. In the form of "simname/x/y/z" where the coords are optional.
                     char sep = '/';
-                    string[] parts = System.Uri.UnescapeDataString(m_loginSim).ToLower().Split(sep);
+                    string[] parts = System.Uri.UnescapeDataString(startLoc).ToLower().Split(sep);
                     if (parts.Length > 0) {
                         // since the name comes in through the web page, spaces get turned into pluses
                         parts[0] = parts[0].Replace('+', ' ');
                     }
+                    loginSetting = parts[0];    // default to just the sim name
                     if (parts.Length == 1) {
                         // just specifying last or home or just a simulator
                         if (parts[0] == "last" || parts[0] == "home") {
                             m_log.Log(KLogLevel.DCOMM, "StartLogin: prev location of {0}", parts[0]);
                             loginSetting = parts[0];
                         } else {
-                            // put the user in the center of teh specified sim
+                            // put the user in the center of the specified sim
                             loginSetting = OMV.NetworkManager.StartLocation(parts[0], 128, 128, 40);
                             m_log.Log(KLogLevel.DCOMM, "StartLogin: user spec middle of {0} -> {1}", parts[0], loginSetting);
                         }
-                    } else if (parts.Length == 4) {
+                    }
+                    if (parts.Length == 4) {
                         int posX = int.Parse(parts[1]);
                         int posY = int.Parse(parts[2]);
                         int posZ = int.Parse(parts[3]);
@@ -392,10 +423,11 @@ namespace KeeKee.Comm.LLLP {
                             parts[0], posX, posY, loginSetting);
                     }
                 } catch {
-                    loginSetting = null;
+                    loginSetting = "";
                 }
             }
-            loginParams.Start = (loginSetting == null) ? "last" : loginSetting;
+            // if we didn't get anything useful, default to last
+            loginParams.Start = String.IsNullOrEmpty(loginSetting) ? "last" : loginSetting;
 
             World.World.Instance.Grids.SetCurrentGrid(m_loginGrid);
             loginParams.URI = World.World.Instance.Grids.GridLoginURI(World.Grids.Current);
@@ -406,7 +438,20 @@ namespace KeeKee.Comm.LLLP {
                 m_shouldBeLoggedIn = false;
             } else {
                 try {
-                    this.GridClient.Network.Login(loginParams);
+                    OMV.LoginResponseData response = await GridClient.Network.LoginWithResponseAsync(loginParams, m_cancellationToken);
+                    if (response.Success) {
+                        m_log.Log(KLogLevel.DCOMM, "Login successful: {0}", response.Message);
+                        // m_isConnected = true;
+                        IsLoggedIn = true;
+                        m_isLoggingIn = false;
+                        m_loginMsg = response.Message;
+                        Comm_OnLoggedIn();
+                    } else {
+                        m_log.Log(KLogLevel.DCOMM, "Login failed: {0}", response.Message);
+                        m_isLoggingIn = false;
+                        m_shouldBeLoggedIn = false;
+                        m_loginMsg = response.Message;
+                    }
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.DBADERROR, "BeginLogin exception: " + e.ToString());
                     m_isLoggingIn = false;
@@ -416,34 +461,15 @@ namespace KeeKee.Comm.LLLP {
             return;
         }
 
-
-        // ===========================================================
-        public virtual void Network_LoginProgress(object? sender, OMV.LoginProgressEventArgs args) {
-            this.m_statNetLoginProgress++;
-            if (args.Status == OMV.LoginStatus.Success) {
-                m_log.Log(KLogLevel.DCOMM, "Successful login: {0}", args.Message);
-                // m_isConnected = true;
-                m_isLoggedIn = true;
-                m_isLoggingIn = false;
-                m_loginMsg = args.Message;
-                Comm_OnLoggedIn();
-            } else if (args.Status == OMV.LoginStatus.Failed) {
-                m_log.Log(KLogLevel.DCOMM, "Login failed: {0}", args.Message);
-                m_isLoggingIn = false;
-                m_shouldBeLoggedIn = false;
-                m_loginMsg = args.Message;
-            }
-        }
-
         public virtual void Network_Disconnected(object? sender, OMV.DisconnectedEventArgs args) {
-            this.m_statNetDisconnected++;
+            this.m_statNetDisconnected.Event();
             m_log.Log(KLogLevel.DCOMM, "Disconnected");
-            m_isConnected = false;
+            IsConnected = false;
         }
 
         /*
         public virtual void Network_EventQueueRunning(object? sender, OMV.EventQueueRunningEventArgs args) {
-            this.m_statNetQueueRunning++;
+               this.m_statNetDisconnected.Event();
             m_log.Log(KLogLevel.DCOMM, "Event queue running on {0}", args.Simulator.Name);
             if (args.Simulator == GridClient.Network.CurrentSim) {
                 m_SwitchingSims = false;
@@ -454,7 +480,7 @@ namespace KeeKee.Comm.LLLP {
         */
 
         public bool AfterAllModulesLoaded() {
-            m_shouldHoldChildren = ModuleParams.ParamBool(ModuleName + ".Settings.ShouldHoldChildren");
+            m_shouldHoldChildren = ConnectionParams.Value.ShouldHoldChildren;
 
             // make my connections for the communication events
             OMV.GridClient gc = GridClient;
@@ -470,81 +496,28 @@ namespace KeeKee.Comm.LLLP {
             gc.Settings.STORE_LAND_PATCHES = true;
             gc.Terrain.LandPatchReceived += Terrain_LandPatchReceived;
 
-            #region COMM REST STATS
-            m_commStatistics.Add("WaitingTilOnline",
-                delegate (string xx) { return new OMVSD.OSDString(m_waitTilOnline.Count.ToString()); },
-                "Number of event waiting until sim is online");
-            m_commStatistics.Add("Network_Disconnected",
-                delegate (string xx) { return new OMVSD.OSDString(m_statNetDisconnected.ToString()); },
-                "Number of 'network disconnected' messages");
-            // m_commStatistics.Add("Network_EventQueueRunning", 
-            //     delegate(string xx) { return new OMVSD.OSDString(m_statNetQueueRunning.ToString()); },
-            //     "Number of 'event queue running' messages");
-            m_commStatistics.Add("Network_LoginProgress",
-                delegate (string xx) { return new OMVSD.OSDString(m_statNetLoginProgress.ToString()); },
-                "Number of 'login progress' messages");
-            m_commStatistics.Add("Network_SimChanged",
-                delegate (string xx) { return new OMVSD.OSDString(m_statNetSimChanged.ToString()); },
-                "Number of 'sim changed' messages");
-            m_commStatistics.Add("Network_SimConnected",
-                delegate (string xx) { return new OMVSD.OSDString(m_statNetSimConnected.ToString()); },
-                "Number of 'sim connected' messages");
-            m_commStatistics.Add("Network_EventQueueRunning",
-                delegate (string xx) { return new OMVSD.OSDString(m_statNetEventQueueRunning.ToString()); },
-                "Number of 'event queue running' messages");
-            m_commStatistics.Add("Objects_AttachmentUpdate",
-                delegate (string xx) { return new OMVSD.OSDString(m_statObjAttachmentUpdate.ToString()); },
-                "Number of 'attachment update' messages");
-            m_commStatistics.Add("Objects_AvatarUpdate",
-                delegate (string xx) { return new OMVSD.OSDString(m_statObjAvatarUpdate.ToString()); },
-                "Number of 'avatar update' messages");
-            m_commStatistics.Add("Objects_KillObject",
-                delegate (string xx) { return new OMVSD.OSDString(m_statObjKillObject.ToString()); },
-                "Number of 'kill object' messages");
-            m_commStatistics.Add("Objects_ObjectProperties",
-                delegate (string xx) { return new OMVSD.OSDString(m_statObjObjectProperties.ToString()); },
-                "Number of 'object properties' messages");
-            m_commStatistics.Add("Objects_ObjectPropertiesUpdate",
-                delegate (string xx) { return new OMVSD.OSDString(m_statObjObjectPropertiesUpdate.ToString()); },
-                "Number of 'object properties update' messages");
-            m_commStatistics.Add("Objects_ObjectUpdate",
-                delegate (string xx) { return new OMVSD.OSDString(m_statObjObjectUpdate.ToString()); },
-                "Number of 'object update' messages");
-            m_commStatistics.Add("Objects_TerseObjectUpdate",
-                delegate (string xx) { return new OMVSD.OSDString(m_statObjTerseUpdate.ToString()); },
-                "Number of 'terse object update' messages");
-            m_commStatistics.Add("RequestLocalID",
-                delegate (string xx) { return new OMVSD.OSDString(m_statRequestLocalID.ToString()); },
-                "Number of RequestLocalIDs made");
-
-            m_commStatsHandler = new RestHandler("/stats/" + m_moduleName + "/stats", m_commStatistics);
-            #endregion COMM REST STATS
-
             return true;
         }
-        #endregion IModule methods
 
         #region ICommProvider
-        protected bool m_isConnected;
-        public bool IsConnected { get { return m_isConnected; } }
+        public bool IsConnected { get; private set; } = false;
 
-        protected bool m_isLoggedIn;
-        public bool IsLoggedIn { get { return m_isLoggedIn; } }
+        public bool IsLoggedIn { get; private set; } = false;
 
         #endregion ICommProvider
         // ===============================================================
         public virtual void Network_SimConnected(object? sender, OMV.SimConnectedEventArgs args) {
-            this.m_statNetSimConnected++;
+            this.m_statNetSimConnected.Event();
             m_log.Log(KLogLevel.DWORLD, "Network_SimConnected: Simulator connected {0}", args.Simulator.Name);
         }
 
         // ===============================================================
-        public virtual void Network_EventQueueRunning(Object sender, OMV.EventQueueRunningEventArgs args) {
+        public virtual void Network_EventQueueRunning(Object? sender, OMV.EventQueueRunningEventArgs args) {
             LLRegionContext regionContext;
             lock (m_opLock) {
                 // the sim isn't really up until the caps queue is running
-                m_isConnected = true;   // good enough reason to think we're connected
-                this.m_statNetEventQueueRunning++;
+                IsConnected = true;   // good enough reason to think we're connected
+                this.m_statNetEventQueueRunning.Event();
                 m_log.Log(KLogLevel.DWORLD, "Network_EventQueueRunning: Simulator connected {0}", args.Simulator.Name);
 
                 regionContext = FindRegion(args.Simulator);
@@ -581,7 +554,7 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         public virtual void Network_SimChanged(object? sender, OMV.SimChangedEventArgs args) {
             // disable teleports until we have a good connection to the simulator (event queue working)
-            this.m_statNetSimChanged++;
+            this.m_statNetSimChanged.Event();
             if (!GridClient.Network.CurrentSim.Caps.IsEventQueueRunning) {
                 m_SwitchingSims = true;
             }
@@ -594,7 +567,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         // ===============================================================
-        public virtual void Terrain_LandPatchReceived(object sender, OMV.LandPatchReceivedEventArgs args) {
+        public virtual void Terrain_LandPatchReceived(object? sender, OMV.LandPatchReceivedEventArgs args) {
             // m_log.Log(KLogLevel.DWORLDDETAIL, "Land patch for {0}: {1}, {2}, {3}", 
             //             args.Simulator.Name, args.X, args.Y, args.PatchSize);
             LLRegionContext regionContext = FindRegion(args.Simulator);
@@ -609,12 +582,12 @@ namespace KeeKee.Comm.LLLP {
         }
 
         // ===============================================================
-        public void Objects_ObjectDataBlockUpdate(Object sender, OMV.ObjectDataBlockUpdateEventArgs args) {
+        public void Objects_ObjectDataBlockUpdate(object? sender, OMV.ObjectDataBlockUpdateEventArgs args) {
             return;
         }
 
         // ===============================================================
-        public void Objects_ObjectUpdate(Object sender, OMV.PrimEventArgs args) {
+        public void Objects_ObjectUpdate(object? sender, OMV.PrimEventArgs args) {
             if (args.IsAttachment) {
                 Objects_AttachmentUpdate(sender, args);
                 return;
@@ -625,11 +598,11 @@ namespace KeeKee.Comm.LLLP {
                 if (!ParentExists(rcontext, args.Prim.ParentID)) {
                     // if this requires a parent and the parent isn't here yet, queue this operation til later
                     rcontext.RequestLocalID(args.Prim.ParentID);
-                    m_statRequestLocalID++;
+                    m_statRequestLocalID.Event();
                     QueueTilLater(args.Simulator, CommActionCode.OnObjectUpdated, sender, args);
                     return;
                 }
-                this.m_statObjObjectUpdate++;
+                m_statObjObjectUpdate.Event();
                 IEntity updatedEntity = null;
                 // a full update says everything changed
                 UpdateCodes updateFlags = 0;
@@ -731,7 +704,7 @@ namespace KeeKee.Comm.LLLP {
             }
         }
         // ===============================================================
-        public void Objects_AttachmentUpdate(Object sender, OMV.PrimEventArgs args) {
+        public void Objects_AttachmentUpdate(object? sender, OMV.PrimEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAttachmentUpdate, sender, args)) return;
             lock (m_opLock) {
                 LLRegionContext rcontext = FindRegion(args.Simulator);
@@ -741,7 +714,7 @@ namespace KeeKee.Comm.LLLP {
                     QueueTilLater(args.Simulator, CommActionCode.OnObjectUpdated, sender, args);
                     return;
                 }
-                this.m_statObjAttachmentUpdate++;
+                m_statObjAttachmentUpdate.Event();
                 m_log.Log(KLogLevel.DUPDATEDETAIL, "OnNewAttachment: id={0}, lid={1}", args.Prim.ID.ToString(), args.Prim.LocalID);
                 try {
                     // if new or not, assume everything about this entity has changed
@@ -778,12 +751,12 @@ namespace KeeKee.Comm.LLLP {
             return;
         }
         // ===============================================================
-        private void Objects_TerseObjectUpdate(Object sender, OMV.TerseObjectUpdateEventArgs args) {
+        private void Objects_TerseObjectUpdate(object? sender, OMV.TerseObjectUpdateEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.TerseObjectUpdate, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
             OMV.ObjectMovementUpdate update = args.Update;
-            this.m_statObjTerseUpdate++;
-            IEntity updatedEntity = null;
+            m_statObjTerseUpdate.Event();
+            IEntity? updatedEntity = null;
             UpdateCodes updateFlags = 0;
             lock (m_opLock) {
                 if (args.Prim.Acceleration != args.Update.Acceleration) updateFlags |= UpdateCodes.Acceleration;
@@ -835,12 +808,12 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         private void Objects_ObjectProperties(object? sender, OMV.ObjectPropertiesEventArgs args) {
             m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectProperties:");
-            this.m_statObjObjectProperties++;
+            m_statObjObjectProperties.Event();
         }
         // ===============================================================
         private void Objects_ObjectPropertiesUpdated(object? sender, OMV.ObjectPropertiesUpdatedEventArgs args) {
             m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectPropertiesUpdated:");
-            this.m_statObjObjectPropertiesUpdate++;
+            m_statObjObjectPropertiesUpdate.Event();
         }
         // ===============================================================
         public void Objects_AvatarUpdate(object? sender, OMV.AvatarUpdateEventArgs args) {
@@ -853,7 +826,7 @@ namespace KeeKee.Comm.LLLP {
                     QueueTilLater(args.Simulator, CommActionCode.OnAvatarUpdate, sender, args);
                     return;
                 }
-                this.m_statObjAvatarUpdate++;
+                m_statObjAvatarUpdate.Event();
                 m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_AvatarUpdate: cntl={0}, parent={1}, p={2}, r={3}",
                             args.Avatar.ControlFlags.ToString("x"), args.Avatar.ParentID,
                             args.Avatar.Position, args.Avatar.Rotation);
@@ -897,7 +870,7 @@ namespace KeeKee.Comm.LLLP {
         public virtual void Objects_KillObject(object? sender, OMV.KillObjectEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.KillObject, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
-            m_statObjKillObject++;
+            m_statObjKillObject.Event();
             m_log.Log(KLogLevel.DWORLDDETAIL, "Object killed:");
             try {
                 IEntity removedEntity;
@@ -1005,7 +978,7 @@ namespace KeeKee.Comm.LLLP {
         /// <returns>the AssetContextBase for this simulator</returns>
         private Dictionary<OMV.Simulator, AssetContextBase> m_assetContexts = new Dictionary<OpenMetaverse.Simulator, AssetContextBase>();
         private AssetContextBase SelectAssetContextForGrid(OMV.Simulator sim) {
-            AssetContextBase ret = null;
+            AssetContextBase? ret = null;
             lock (m_assetContexts) {
                 if (m_assetContexts.ContainsKey(sim)) {
                     return m_assetContexts[sim];
@@ -1021,7 +994,7 @@ namespace KeeKee.Comm.LLLP {
                 Uri textureUri = sim.Caps.CapabilityURI("GetTexture");
                 m_log.Log(KLogLevel.DCOMM, "CommLLLP: OSAssetContextCap: fetched 'GetTexture' = {0}",
                                 textureUri == null ? "NULL" : textureUri.ToString());
-                if (ret == null && textureUri != null && ModuleParams.ParamBool(ModuleName + ".Assets.EnableCaps")) {
+                if (ret == null && textureUri != null && ConnectionParams.Value.Assets.EnableCaps) {
                     m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating OSAssetContextCap for {0}/{1}", m_loginGrid, sim.Name);
                     ret = new OSAssetContextCap(LoggedInGridName, textureUri);
                 }
@@ -1037,8 +1010,9 @@ namespace KeeKee.Comm.LLLP {
                 if (ret != null) {
                     m_assetContexts.Add(sim, ret);
                     ret.InitializeContext(this,
-                        ModuleParams.ParamString(ModuleName + ".Assets.CacheDir"),
-                        ModuleParams.ParamInt(ModuleName + ".Texture.MaxRequests"));
+                        ConnectionParams.Value.Assets.CacheDir,
+                        ConnectionParams.Value.Assets.MaxTextureRequests
+                    );
                 }
             }
 

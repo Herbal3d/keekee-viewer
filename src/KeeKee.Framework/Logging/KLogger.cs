@@ -86,7 +86,7 @@ namespace KeeKee.Framework.Logging {
                         _innerLogger.Log(LLDetail, message, args);
                     break;
                 case KLogLevel.None:
-                    // Do nothing
+                // Do nothing
                 case KLogLevel.DBADERROR:
                     _innerLogger.Log(LogLevel.Error, message, args);
                     break;
@@ -105,6 +105,14 @@ namespace KeeKee.Framework.Logging {
                     break;
                 case KLogLevel.DWORLDDETAIL:
                     if (_options.Value.DWORLDDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DUPDATE:
+                    if (_options.Value.DUPDATE)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DUPDATEDETAIL:
+                    if (_options.Value.DUPDATEDETAIL)
                         _innerLogger.Log(LLDetail, message, args);
                     break;
                 default:

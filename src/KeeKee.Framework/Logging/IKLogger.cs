@@ -31,8 +31,9 @@ namespace KeeKee.Framework.Logging {
         DCOMM,
         DCOMMDETAIL,
         DWORLD,
-        DWORLDDETAIL
-
+        DWORLDDETAIL,
+        DUPDATE,
+        DUPDATEDETAIL
     }
     public interface IKLogger<T> : ILogger<T> {
         // Log with our KLogLevel

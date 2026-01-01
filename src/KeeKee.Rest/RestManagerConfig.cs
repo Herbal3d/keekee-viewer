@@ -11,7 +11,7 @@
 
 public class RestManagerConfig {
 
-    public const string subsectionName = "RestManager";
+    public const string subSectionName = "RestManager";
 
     // Local port used for rest interfaces
     public int Port { get; set; } = 9144;
@@ -23,6 +23,7 @@ public class RestManagerConfig {
     public string UIContentDir { get; set; } =
             Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "./KeeKeeUI");
     // If specified, the subdirectory under StaticContentDir to take files from
-    public string Skin { get; set; } = "";
+    public string APIBase { get; set; } = "/api";
+    public string Skin { get; set; } = "Default";
 }
 

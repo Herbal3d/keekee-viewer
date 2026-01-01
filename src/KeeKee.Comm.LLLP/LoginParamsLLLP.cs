@@ -10,13 +10,13 @@
 // limitations under the License.
 
 namespace KeeKee.Comm.LLLP {
-    public class LoginParamsLLLP : ILoginParams {
-        public string? UserName { get; set; }
-        public string? Password { get; set; }
-        public string? AuthURL { get; set; }
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-        public string? StartLocation { get; set; } = "Last";
-        public string? HomeURL { get; set; }
+    public class LoginParamsLLLP : LoginParams {
+        public override string? UserName { get; set; }
+        public override string? Password { get; set; }
+        public override string? AuthURL { get; set; }
+        public override string? FirstName { get; set; }
+        public override string? LastName { get; set; }
+        public override string? StartLocation { get; set; } = "Last";
+        public override string? HomeURL { get; set; }
     }
 }

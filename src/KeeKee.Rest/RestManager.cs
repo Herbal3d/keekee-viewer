@@ -9,6 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
 using System.Net;
 using System.Text;
 
@@ -86,7 +87,7 @@ namespace KeeKee.Rest {
             m_log.Log(KLogLevel.RestDetail, "RestManager constructor");
         }
 
-        protected override Task ExecuteAsync(CancellationToken cancellationToken) {
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             m_log.Log(KLogLevel.RestDetail, "RestManager ExecuteAsync entered");
 
             m_listener = new HttpListener();
@@ -132,32 +133,32 @@ namespace KeeKee.Rest {
             m_listener.Start();
 
             while (cancellationToken.IsCancellationRequested == false) {
-                HttpListenerContext context = m_listener.GetContext();
-                HttpListenerRequest request = context.Request;
-                HttpListenerResponse response = context.Response;
-                string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
-                m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
-                RestHandler? thisHandler = null;
-                foreach (RestHandler rh in m_handlers) {
-                    if (absURL.StartsWith(rh.Prefix.ToLower())) {
-                        thisHandler = rh;
-                        break;
+                await m_listener.GetContextAsync().ContinueWith((task) => {
+                    try {
+                        HttpListenerContext context = task.Result;
+                        HttpListenerRequest request = context.Request;
+                        HttpListenerResponse response = context.Response;
+
+                        string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
+                        m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
+
+                        RestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
+
+                        if (thisHandler != null) {
+                            string afterString = absURL.Substring(thisHandler.Prefix.Length);
+                            thisHandler.ProcessGetOrPostRequest(context, request, response, afterString);
+                        } else {
+                            m_log.Log(KLogLevel.Warning, "Request not processed because no matching handler, URL={0}", absURL);
+                        }
+                    } catch (Exception e) {
+                        m_log.Log(KLogLevel.Error, "RestManager listener exception: {0}", e.ToString());
                     }
-                }
-                if (thisHandler != null) {
-                    string afterString = absURL.Substring(thisHandler.Prefix.Length);
-                    thisHandler.ListenerContext = context;
-                    thisHandler.ListenerRequest = request;
-                    thisHandler.ListenerResponse = response;
-                    thisHandler.GetPostAsync(afterString);
-                } else {
-                    m_log.Log(KLogLevel.RestDetail, "Request not processed because no matching handler");
-                }
+                }, cancellationToken);
             }
 
             // TODO: cleanup on exit
             m_log.Log(KLogLevel.RestDetail, "RestManager ExecuteAsync exiting");
-            return Task.CompletedTask;
+            return;
         }
 
         public void RegisterListener(RestHandler handler) {
@@ -167,42 +168,43 @@ namespace KeeKee.Rest {
 
         #region HTML Helper Routines
 
-        public delegate void ConstructResponseRoutine(ref StringBuilder buff);
+        public delegate byte[] ConstructResponseBody();
 
         /// <summary>
-        /// Just like 'ConstructResponse' but has very simplified headers. Good for AJAX reponsses.
+        /// Construct and return the HTTP response
         /// </summary>
-        /// <param name="context">The request information</param>
-        /// <param name="title">The title for the HTML page</param>
-        /// <param name="addHeader">Called to add HTML to the header. May be null.</param>
-        /// <param name="addContent">Called to add HTML to the body. May be null.</param>
-        public void ConstructSimpleResponse(HttpListenerResponse? context,
-                        string contentType,
-                        ConstructResponseRoutine addContent) {
-            StringBuilder buff = new StringBuilder();
-            if (context == null) return;
+        /// <param name="pResponse">The response structure</param>
+        /// <param name="pContentType">The MIME type of the response</param>
+        /// <param name="pContentBodySource">Routine to call to generate the content body</param>
+        public void DoSimpleResponse(HttpListenerResponse? pResponse,
+                        string? pContentType,
+                        ConstructResponseBody? pContentBodySource) {
+
+            if (pResponse == null) return;
+
+            byte[] encodedBuff;
+
             try {
-                context.ContentType = contentType == null ? MIMEDEFAULT : contentType;
-                context.AddHeader("Server", m_keeKeeConfig.Value.AppName);
-                context.AddHeader("Cache-Control", "no-cache");
+                pResponse.ContentType = pContentType == null ? MIMEDEFAULT : pContentType;
+                pResponse.AddHeader("Server", m_keeKeeConfig.Value.AppName);
+                pResponse.AddHeader("Cache-Control", "no-cache");
                 // context.Connection = ConnectionType.Close;
 
-                if (addContent != null) addContent(ref buff);
-                context.StatusCode = (int)HttpStatusCode.OK;
+                encodedBuff = pContentBodySource != null ? pContentBodySource() : new byte[0];
+
+                pResponse.StatusCode = (int)HttpStatusCode.OK;
             } catch {
-                buff = new StringBuilder();
-                buff.Append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\r\n");
-                buff.Append("<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n");
-                buff.Append("<head></head><body></body></html>\r\n");
-                context.StatusCode = (int)HttpStatusCode.InternalServerError;
+                encodedBuff = OneNullBody();
+                pResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
             }
 
-            byte[] encodedBuff = System.Text.Encoding.UTF8.GetBytes(buff.ToString());
+            // byte[] encodedBuff = System.Text.Encoding.UTF8.GetBytes(buff.ToString());
 
-            context.ContentLength64 = encodedBuff.Length;
-            System.IO.Stream output = context.OutputStream;
+            pResponse.ContentLength64 = encodedBuff.Length;
+            Stream output = pResponse.OutputStream;
             output.Write(encodedBuff, 0, encodedBuff.Length);
             output.Close();
+
             return;
         }
 
@@ -212,36 +214,48 @@ namespace KeeKee.Rest {
         /// <param name="context">The request information</param>
         /// <param name="errCode">The HTTP error code toreturn</param>
         /// <param name="addContent">Called to add HTML to the body. May be null.</param>
-        public void ConstructErrorResponse(HttpListenerResponse? context,
+        public void DoErrorResponse(HttpListenerResponse? pResponse,
                         HttpStatusCode errCode,
-                        ConstructResponseRoutine addContent) {
-            StringBuilder buff = new StringBuilder();
-            if (context == null) return;
+                        ConstructResponseBody? pContentBodySource) {
+
+            if (pResponse == null) return;
+
+            byte[] encodedBuff;
+
             try {
-                context.ContentType = MIMEDEFAULT;
-                context.AddHeader("Server", m_keeKeeConfig.Value.AppName);
+                pResponse.ContentType = MIMEDEFAULT;
+                pResponse.AddHeader("Server", m_keeKeeConfig.Value.AppName);
                 // context.Connection = ConnectionType.Close;
 
-                buff.Append("<body>\r\n");
-                if (addContent != null) addContent(ref buff);
-                buff.Append("</body>\r\n");
-                buff.Append("</html>\r\n\r\n");
-                context.StatusCode = (int)errCode;
+                encodedBuff = pContentBodySource != null ? pContentBodySource() : new byte[0];
+
+                pResponse.StatusCode = (int)errCode;
             } catch {
-                buff = new StringBuilder();
-                buff.Append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\r\n");
-                buff.Append("<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n");
-                buff.Append("<head></head><body></body></html>\r\n");
-                context.StatusCode = (int)HttpStatusCode.InternalServerError;
+                encodedBuff = OneNullBody();
+                pResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
             }
 
-            byte[] encodedBuff = System.Text.Encoding.UTF8.GetBytes(buff.ToString());
+            // Ways to turn a StringBuilder into a byte array:
+            // byte[] encodedBuff = System.Text.Encoding.UTF8.GetBytes(buff.ToString());
+            // buff.Append(OMVSD.OSDParser.SerializeJsonString(resp));
 
-            context.ContentLength64 = encodedBuff.Length;
-            System.IO.Stream output = context.OutputStream;
+            pResponse.ContentLength64 = encodedBuff.Length;
+            System.IO.Stream output = pResponse.OutputStream;
             output.Write(encodedBuff, 0, encodedBuff.Length);
             output.Close();
             return;
+        }
+
+        /// <summary>
+        /// Return a simple HTML body with nothing in it.
+        /// </summary>
+        /// <returns></returns>
+        private byte[] OneNullBody() {
+            var buff = new StringBuilder();
+            buff.Append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\r\n");
+            buff.Append("<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n");
+            buff.Append("<head></head><body></body></html>\r\n");
+            return System.Text.Encoding.UTF8.GetBytes(buff.ToString());
         }
 
 

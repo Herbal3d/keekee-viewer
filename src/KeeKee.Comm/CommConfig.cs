@@ -12,11 +12,31 @@
 using LibreMetaverse;
 
 namespace KeeKee.Comm {
+    public class CommConfig {
+        public static string subSectionName { get; set; } = "Comm";
+
+        public AssetConfig Assets { get; set; } = new AssetConfig();
+
+        // Whether Comm should hold objects if the parent doesn't exist
+        public bool ShouldHoldChildren { get; set; } = true;
+        // Wether to connect to multiple sims
+        public bool MultipleSims { get; set; } = false;
+        // Milliseconds between movement messages sent to server
+        public int MovementUpdateInterval { get; set; } = 100;
+        public ConnectionConfig Connection { get; set; } = new ConnectionConfig();
+        public WorldConfig World { get; set; } = new WorldConfig();
+        public LLAgentConfig LLAgent { get; set; } = new LLAgentConfig();
+
+    }
+
+    // ============================================================
     public class AssetConfig {
         // Filesystem location to build the texture cache
         public string? CacheDir { get; set; }
         // Whether to use the caps asset system if available
         public bool EnableCaps { get; set; } = true;
+        // "Maximum number of outstanding textures requests
+        public int MaxTextureRequests { get; set; } = 10;
         // Directory for resources used by libopenmetaverse (mostly for appearance)
         public string OMVResources { get; set; } = "./KeeKeeResources/openmetaverse_data";
         // Filename of texture to display when we can't get the real texture
@@ -26,25 +46,26 @@ namespace KeeKee.Comm {
         // whether to convert incoming JPEG2000 files to PNG files in the cache
         public bool ConvertPNG { get; set; } = true;
     }
-    public class TextureConfig {
-        // "Maximum number of outstanding textures requests
-        public int MaxRequests { get; set; } = 10;
-    }
-
 
     public class LLAgentConfig {
         // Distance in meters to consider "close enough" for sitting on an object
         public float SitCloseEnough { get; set; } = 1.5f;
-            // Whether to move avatar when user types (otherwise wait for server round trip)");
-            public bool PreMoveAvatar { get; set; } = true;
-            // Degrees to rotate avatar when user turns (float)
-            public float PreMoveRotFudge { get; set; } = 3.0f;
-            // Meters to move avatar when moves forward when flying (float)
-            public float PreMoveFlyFudge { get; set; } = 2.5f;
-            // Meters to move avatar when moves forward when running (float)
-            public float PreMoveRunFudge { get; set; } = 1.5f;
-            //"Meters to move avatar when moves forward when walking (float)
-            public float PreMoveFudge { get; set;} = 0.4f;
+        // Whether to move avatar when user types (otherwise wait for server round trip)");
+        public bool PreMoveAvatar { get; set; } = true;
+        // Degrees to rotate avatar when user turns (float)
+        public float PreMoveRotFudge { get; set; } = 3.0f;
+        // Meters to move avatar when moves forward when flying (float)
+        public float PreMoveFlyFudge { get; set; } = 2.5f;
+        // Meters to move avatar when moves forward when running (float)
+        public float PreMoveRunFudge { get; set; } = 1.5f;
+        //"Meters to move avatar when moves forward when walking (float)
+        public float PreMoveFudge { get; set; } = 0.4f;
+    }
+    public class ConnectionConfig {
+        // Application name sent when logging in
+        public string ApplicationName { get; set; } = "KeeKee Viewer";
+        // Version string sent when logging in
+        public string Version { get; set; } = "0.1.0";
     }
 
     public class WorldConfig {
@@ -58,29 +79,4 @@ namespace KeeKee.Comm {
         public LLAgentConfig LLAgent { get; set; } = new LLAgentConfig();
 
     }
-
-    public class CommConfig {
-        public string subSectionName { get; set; } = "Comm";
-
-        public AssetConfig Assets { get; set; } = new AssetConfig();
-
-        public TextureConfig Texture { get; set; } = new TextureConfig();
-
-        // Whether Comm should hold objects if the parent doesn't exist
-        public bool ShouldHoldChildren { get; set; } = true;
-        // Wether to connect to multiple sims
-        public bool MultipleSims { get; set; } = false;
-        // Milliseconds between movement messages sent to server
-        public int MovementUpdateInterval { get; set; } = 100;
-        public class ConnectionConfig {
-            // Application name sent when logging in
-            public string ApplicationName { get; set; } = "KeeKee Viewer";
-            // Version string sent when logging in
-            public string Version { get; set; } = "0.1.0";
-        }
-        public ConnectionConfig Connection { get; set; } = new ConnectionConfig();
-
-        public WorldConfig World { get; set; } = new WorldConfig();
-    }
-
 }

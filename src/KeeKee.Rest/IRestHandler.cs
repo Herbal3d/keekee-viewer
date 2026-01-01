@@ -18,35 +18,34 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
     // called to process GET. The Uri is the full request uri and 'after' is everything after the 'api'
-    public delegate OMVSD.OSD ProcessGetCallback(IRestHandler handler, Uri uri, string after);
-    public delegate OMVSD.OSD ProcessPostCallback(IRestHandler handler, Uri uri, string after, OMVSD.OSD body);
+    public delegate OMVSD.OSD ProcessGetCallback(IRestHandler handler, Uri uri, string after,
+                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
+    public delegate OMVSD.OSD ProcessPostCallback(IRestHandler handler, Uri uri, string after, OMVSD.OSD body,
+                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
 
     public interface IRestHandler {
 
 
-        void GetPostAsync(string afterString);
+        void ProcessGetOrPostRequest(HttpListenerContext context, HttpListenerRequest request, HttpListenerResponse response, string afterString);
 
-        OMVSD.OSD ProcessGetParam(IRestHandler handler, Uri uri, string afterString);
-        OMVSD.OSD ProcessPostParam(IRestHandler handler, Uri uri, string afterString, OMVSD.OSD rawbody);
-
-        const string APINAME = "/api";
+        OMVSD.OSD ProcessGetParam(IRestHandler handler, Uri uri, string afterString,
+            HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
+        OMVSD.OSD ProcessPostParam(IRestHandler handler, Uri uri, string afterString, OMVSD.OSD rawbody,
+            HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
 
         const string RESTREQUESTERRORCODE = "RESTRequestError";
         const string RESTREQUESTERRORMSG = "RESTRequestMsg";
 
-        HttpListener Handler { get; }
         string BaseUrl { get; }
+        // Optional callbacks to process GET and POST requests
         ProcessGetCallback? ProcessGet { get; }
         ProcessPostCallback? ProcessPost { get; }
+        // Optional displayable interface to get parameters from
         IDisplayable? Displayable { get; }
+        // Directory where static files are located for this handler
         string? Dir { get; }
-        bool ParameterSetWritable { get; }
+        // The prefix string for this handler. The stuff after the 'api/' in the URL
         string Prefix { get; }
-
-        HttpListenerContext? ListenerContext { get; set; }
-        HttpListenerRequest? ListenerRequest { get; set; }
-        HttpListenerResponse? ListenerResponse { get; set; }
-
     }
 
 

@@ -9,13 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using KeeKee.Framework.Statistics;
 
-using KeeKee;
-using KeeKee.Framework;
-
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 using OMV = OpenMetaverse;
@@ -42,6 +37,6 @@ namespace KeeKee.Comm {
         OMV.GridClient GridClient { get; }
 
         // each comm provider has a block of statistics
-        CommStats CommStatistics { get; }
+        StatisticCollection CommStatistics { get; }
     }
 }

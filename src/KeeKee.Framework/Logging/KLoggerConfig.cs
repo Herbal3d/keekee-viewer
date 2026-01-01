@@ -28,5 +28,7 @@ public class KLoggerConfig {
     public bool DCOMMDETAIL { get; set; } = false;
     public bool DWORLD { get; set; } = false;
     public bool DWORLDDETAIL { get; set; } = false;
+    public bool DUPDATE { get; set; } = false;
+    public bool DUPDATEDETAIL { get; set; } = false;
 }
 
