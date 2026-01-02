@@ -163,7 +163,7 @@ namespace KeeKee.Comm.LLLP {
                     if (m_shouldBeLoggedIn && !IsLoggedIn) {
                         // we should be logged in and we are not
                         if (!m_isLoggingIn) {
-                            StartLogin();
+                            await StartLogin();
                         }
                     }
                     if (!cancellationToken.IsCancellationRequested && !IsLoggedIn && IsConnected) {
@@ -309,7 +309,7 @@ namespace KeeKee.Comm.LLLP {
             gc.Terrain.LandPatchReceived -= Terrain_LandPatchReceived;
         }
 
-        // ICommProvider.Connect()
+        // ICommProvider.DoLogin()
         /// <summary>
         /// Called by the REST handler to connect to a simulator.
         /// The login parameters are passed in which is the autorization info.
@@ -317,26 +317,29 @@ namespace KeeKee.Comm.LLLP {
         /// </summary>
         /// <param name="pLoginParams"></param>
         /// <returns></returns>
-        public virtual bool Connect(LoginParams pLoginParams) {
+        public virtual async Task<OMV.LoginResponseData?> DoLogin(LoginParams pLoginParams) {
             // Are we already logged in?
             if (IsLoggedIn || m_isLoggingIn) {
-                return false;
+                return null;
             }
 
             m_loginParams = pLoginParams;
             m_shouldBeLoggedIn = true;
 
-            return true;
+            var loginResponse = await StartLogin();
+
+            return loginResponse;
         }
 
-        // ICommProvider.Disconnect()
-        public virtual bool Disconnect() {
+        // ICommProvider.StartLogout()
+        public virtual bool StartLogout() {
             m_log.Log(KLogLevel.DCOMMDETAIL, "Disconnect request -- logout and disconnect");
             m_shouldBeLoggedIn = false;
             return true;
         }
 
-        public virtual bool DoTeleport(string dest) {
+        // ICommProvider.StartTeleport()
+        public virtual bool StartTeleport(string dest) {
             bool ret = true;
             string sim = "";
             float x = 128;
@@ -373,10 +376,11 @@ namespace KeeKee.Comm.LLLP {
             return ret;
         }
 
-        public async Task StartLogin() {
+        // ICommProvider.StartLogin()
+        public async Task<OMV.LoginResponseData?> StartLogin() {
             if (m_loginParams == null) {
                 m_log.Log(KLogLevel.DBADERROR, "StartLogin: no login parameters");
-                return;
+                return null;
             }
             m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", m_loginParams.FirstName, m_loginParams.LastName);
             m_isLoggingIn = true;
@@ -452,13 +456,14 @@ namespace KeeKee.Comm.LLLP {
                         m_shouldBeLoggedIn = false;
                         m_loginMsg = response.Message;
                     }
+                    return response;
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.DBADERROR, "BeginLogin exception: " + e.ToString());
                     m_isLoggingIn = false;
                     m_shouldBeLoggedIn = false;
                 }
             }
-            return;
+            return null;
         }
 
         public virtual void Network_Disconnected(object? sender, OMV.DisconnectedEventArgs args) {
@@ -499,12 +504,10 @@ namespace KeeKee.Comm.LLLP {
             return true;
         }
 
-        #region ICommProvider
         public bool IsConnected { get; private set; } = false;
 
         public bool IsLoggedIn { get; private set; } = false;
 
-        #endregion ICommProvider
         // ===============================================================
         public virtual void Network_SimConnected(object? sender, OMV.SimConnectedEventArgs args) {
             this.m_statNetSimConnected.Event();

@@ -34,18 +34,6 @@ namespace KeeKee.Rest {
         public IRestHandler CreateHandler<T>(params object[] parameters) where T : IRestHandler {
             return ActivatorUtilities.CreateInstance<T>(m_serviceProvider, parameters);
         }
-        // Create a REST handler that calls back for gets and posts to the specified urlBase.
-        public IRestHandler Create(string urlBase, ProcessGetCallback? pget, ProcessPostCallback? ppost) {
-            return ActivatorUtilities.CreateInstance<IRestHandler>(m_serviceProvider, urlBase, pget, ppost);
-        }
-        // Create a REST handler that returns the values from a IDisplayable instance.
-        public IRestHandler Create(string urlBase, IDisplayable pDisplayable) {
-            return ActivatorUtilities.CreateInstance<IRestHandler>(m_serviceProvider, urlBase, pDisplayable);
-        }
-        // Create a REST handler that returns the contents of a file
-        public IRestHandler Create(string urlBase, string pDirectory) {
-            return ActivatorUtilities.CreateInstance<IRestHandler>(m_serviceProvider, urlBase, pDirectory);
-        }
     }
 
     public class RestHandler : IRestHandler, IDisposable {
@@ -263,39 +251,6 @@ namespace KeeKee.Rest {
                 }
                 return;
             }
-        }
-
-        /// <summary>
-        /// Convert the body string into an OSDMap.
-        /// If the body starts with '{' we assume it's JSON formatted.
-        /// Otherwise we assume it's key=value&key=value form.
-        /// </summary>
-        /// <param name="body"></param>
-        /// <returns></returns>
-        private OMVSD.OSDMap MapizeTheBody(string body) {
-            OMVSD.OSDMap retMap = new OMVSD.OSDMap();
-            if (body.Length > 0 && body.Substring(0, 1).Equals("{")) { // kludge test for JSON formatted body
-                try {
-                    retMap = (OMVSD.OSDMap)OMVSD.OSDParser.DeserializeJson(body);
-                } catch (Exception e) {
-                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of JSON body: " + e.ToString());
-                }
-            } else {
-                try {
-                    string[] amp = body.Split('&');
-                    if (amp.Length > 0) {
-                        foreach (string kvp in amp) {
-                            string[] kvpPieces = kvp.Split('=');
-                            if (kvpPieces.Length == 2) {
-                                retMap.Add(kvpPieces[0].Trim(), new OMVSD.OSDString(kvpPieces[1].Trim()));
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of query body: " + e.ToString());
-                }
-            }
-            return retMap;
         }
 
         /// <summary>

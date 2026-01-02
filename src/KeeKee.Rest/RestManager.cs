@@ -9,7 +9,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO;
 using System.Net;
 using System.Text;
 
@@ -18,7 +17,8 @@ using Microsoft.Extensions.Options;
 
 using KeeKee.Framework.Config;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework;
+
+using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
 
@@ -51,16 +51,13 @@ namespace KeeKee.Rest {
 
         public int Port { get; private set; }
         private HttpListener? m_listener;
-        private Thread? m_listenerThread;
-        List<RestHandler> m_handlers = new List<RestHandler>();
+        List<IRestHandler> m_handlers = new List<IRestHandler>();
 
         private readonly RestHandlerFactory m_RestHandlerFactory;
 
-#pragma warning disable 414 // I know these are set and never referenced
         private IRestHandler? m_staticHandler;
         private IRestHandler? m_stdHandler;
         private IRestHandler? m_faviconHandler;
-#pragma warning restore 414
 
         // Some system wide rest handlers to make information available
         private IRestHandler? m_workQueueRestHandler;
@@ -93,47 +90,16 @@ namespace KeeKee.Rest {
             m_listener = new HttpListener();
             m_listener.Prefixes.Add(BaseURL + "/");
 
-            // m_baseUIDIR = "/.../bin/KeeKeeUI/"
-            string baseUIDir = m_config.Value.UIContentDir;
-            if (!baseUIDir.EndsWith("/")) baseUIDir += "/";
-
-            // things referenced as static are from the skinning directory below the UI dir
-            // m_staticDir = "/.../bin/KeeKeeUI/Default/"
-            string staticDir = baseUIDir;
-            if (m_config.Value.Skin != null && m_config.Value.Skin.Length > 0) {
-                string skinName = m_config.Value.Skin;
-                skinName = skinName.Replace("/", "");  // skin names shouldn't fool with directories
-                skinName = skinName.Replace("\\", "");
-                skinName = skinName.Replace("..", "");
-                staticDir = staticDir + skinName;
-            }
-            if (!staticDir.EndsWith("/")) staticDir += "/";
-
-            // stdDir = "/.../bin/KeeKeeUI/std/";
-            string stdDir = baseUIDir + "std/";
-
-            m_log.Log(KLogLevel.RestDetail, "Registering FileHandler {0} -> {1}", "/static/", staticDir);
-            m_staticHandler = m_RestHandlerFactory.Create("/static/", staticDir);
-
-            m_log.Log(KLogLevel.RestDetail, "Registering FileHandler {0} -> {1}", "/std/", stdDir);
-            m_stdHandler = m_RestHandlerFactory.Create("/std/", stdDir);
-            m_faviconHandler = m_RestHandlerFactory.Create("/favicon.ico", baseUIDir);
-
-            // some Framework structures that can be referenced
-            // m_log.Log(KLogLevel.RestDetail, "Registering work queue stats at 'api/stats/workQueues'");
-            // m_workQueueRestHandler = new RestHandler("/stats/workQueues", WorkQueueManager.Instance);
-
-            // m_log.Log(KLogLevel.DINITDETAIL, "Registering parmeters at 'api/params/Default' and 'Ini', 'User', 'Override'");
-            // m_paramDefaultRestHandler = new RestHandler("/params/Default", m_lgb.AppParams.DefaultParameters);
-            // m_paramIniRestHandler = new RestHandler("/params/Ini", m_lgb.AppParams.IniParameters);
-            // m_paramUserRestHandler = new RestHandler("/params/User", m_lgb.AppParams.UserParameters);
-            // m_paramOverrideRestHandler = new RestHandler("/params/Override", m_lgb.AppParams.OverrideParameters);
+            m_staticHandler = m_RestHandlerFactory.CreateHandler<RestHandlerStatic>();
+            m_stdHandler = m_RestHandlerFactory.CreateHandler<RestHandlerStd>();
+            // m_faviconHandler = m_RestHandlerFactory.CreateHandler<RestHandlerFavicon>();
+            // m_workQueueHandler = m_RestHandlerFactory.CreateHandler<RestHandlerWorkQueueStats>();
 
             m_log.Log(KLogLevel.RestDetail, "Start(). Starting listening");
             m_listener.Start();
 
             while (cancellationToken.IsCancellationRequested == false) {
-                await m_listener.GetContextAsync().ContinueWith((task) => {
+                await m_listener.GetContextAsync().ContinueWith(async (task) => {
                     try {
                         HttpListenerContext context = task.Result;
                         HttpListenerRequest request = context.Request;
@@ -142,11 +108,11 @@ namespace KeeKee.Rest {
                         string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
                         m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
 
-                        RestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
+                        IRestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
 
                         if (thisHandler != null) {
                             string afterString = absURL.Substring(thisHandler.Prefix.Length);
-                            thisHandler.ProcessGetOrPostRequest(context, request, response, afterString);
+                            await thisHandler.ProcessGetOrPostRequest(context, request, response, cancellationToken);
                         } else {
                             m_log.Log(KLogLevel.Warning, "Request not processed because no matching handler, URL={0}", absURL);
                         }
@@ -161,7 +127,7 @@ namespace KeeKee.Rest {
             return;
         }
 
-        public void RegisterListener(RestHandler handler) {
+        public void RegisterListener(IRestHandler handler) {
             m_log.Log(KLogLevel.RestDetail, "Registering prefix {0}", handler.Prefix);
             m_handlers.Add(handler);
         }
@@ -257,6 +223,40 @@ namespace KeeKee.Rest {
             buff.Append("<head></head><body></body></html>\r\n");
             return System.Text.Encoding.UTF8.GetBytes(buff.ToString());
         }
+
+        /// <summary>
+        /// Convert the body string into an OSDMap.
+        /// If the body starts with '{' we assume it's JSON formatted.
+        /// Otherwise we assume it's key=value&key=value form.
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        public OMVSD.OSDMap MapizeTheBody(string body) {
+            OMVSD.OSDMap retMap = new OMVSD.OSDMap();
+            if (body.Length > 0 && body.Substring(0, 1).Equals("{")) { // kludge test for JSON formatted body
+                try {
+                    retMap = (OMVSD.OSDMap)OMVSD.OSDParser.DeserializeJson(body);
+                } catch (Exception e) {
+                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of JSON body: " + e.ToString());
+                }
+            } else {
+                try {
+                    string[] amp = body.Split('&');
+                    if (amp.Length > 0) {
+                        foreach (string kvp in amp) {
+                            string[] kvpPieces = kvp.Split('=');
+                            if (kvpPieces.Length == 2) {
+                                retMap.Add(kvpPieces[0].Trim(), new OMVSD.OSDString(kvpPieces[1].Trim()));
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of query body: " + e.ToString());
+                }
+            }
+            return retMap;
+        }
+
 
 
         #endregion HTML Helper Routines

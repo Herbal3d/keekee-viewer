@@ -26,9 +26,11 @@ namespace KeeKee.Comm {
 
         bool IsLoggedIn { get; }
 
-        bool Connect(LoginParams parms);
+        Task<OMV.LoginResponseData?> DoLogin(LoginParams parms);
 
-        bool Disconnect();
+        bool StartLogout();
+
+        bool StartTeleport(string destination);
 
         // initiate a connection
         IOptions<CommConfig> ConnectionParams { get; }

@@ -64,106 +64,15 @@ namespace KeeKee.Comm.LLLP {
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             m_log.LogInfo("CommLLLPRest starting.");
 
-            m_loginHandler = m_restFactory.Create("/LLLP/action/login", null, ProcessPostLogin);
-            m_logoutHandler = m_restFactory.Create("/LLLP/action/logout", null, ProcessPostLogout);
-            m_teleportHandler = m_restFactory.Create("/LLLP/action/teleport", null, ProcessPostTeleport);
-            m_exitHandler = m_restFactory.Create("/LLLP/action/exit", null, ProcessPostExit);
+            m_loginHandler = m_restFactory.CreateHandler<RestHandlerLogin>();
+            m_logoutHandler = m_restFactory.CreateHandler<RestHandlerLogout>();
+            m_teleportHandler = m_restFactory.CreateHandler<RestHandlerTeleport>();
+            m_exitHandler = m_restFactory.CreateHandler<RestHandlerExit>();
 
-            m_paramGetHandler = m_restFactory.Create("/LLLP/status", ref connParams);
-            m_statHandler = m_restFactory.Create("/LLLP/stats", m_comm.CommStatistics);
+            // m_paramGetHandler = m_restFactory.Create("/LLLP/status", ref connParams);
+            // m_statHandler = m_restFactory.Create("/LLLP/stats", m_comm.CommStatistics);
 
             await Task.CompletedTask;
-        }
-
-        // OBSOLETE: not used now that RestHandler does ParameterSets
-        public OMVSD.OSD ProcessGet(Uri uri, string after) {
-            OMVSD.OSDMap ret = new OMVSD.OSDMap();
-            if (m_comm == null) {
-                m_log.Log(KLogLevel.DBADERROR, "GET WITHOUT COMM CONNECTION!! URL=" + uri.ToString());
-                return new OMVSD.OSD();
-            }
-            m_log.Log(KLogLevel.DCOMMDETAIL, "Parameter request: {0}", uri.ToString());
-            string[] segments = after.Split('/');
-            // the after should be "/NAME/param" where "NAME" is my apiname. If 'param' is there return one
-            if (segments.Length > 2) {
-                string paramName = segments[2];
-                if (m_comm.ConnectionParams.Value.HasParameter(paramName)) {
-                    ret.Add(paramName, new OMVSD.OSDString(m_comm.ConnectionParams.ParamString(paramName)));
-                }
-            } else {
-                // they want the whole set
-                ret = m_comm.ConnectionParams.GetDisplayable();
-            }
-            return ret;
-        }
-
-        public OMVSD.OSD ProcessPostLogin(IRestHandler handler, Uri uri, string after, OMVSD.OSD body,
-                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse) {
-
-            OMVSD.OSDMap ret = new OMVSD.OSDMap();
-            ParameterSet loginParams = new ParameterSet();
-            try {
-                OMVSD.OSDMap paramMap = (OMVSD.OSDMap)body;
-                loginParams.Add(CommLLLP.FIELDFIRST, paramMap["LOGINFIRST"].AsString());
-                loginParams.Add(CommLLLP.FIELDLAST, paramMap["LOGINLAST"].AsString());
-                loginParams.Add(CommLLLP.FIELDPASS, paramMap["LOGINPASS"].AsString());
-                loginParams.Add(CommLLLP.FIELDGRID, paramMap["LOGINGRID"].AsString());
-                loginParams.Add(CommLLLP.FIELDSIM, paramMap["LOGINSIM"].AsString());
-            } catch {
-                m_log.Log(KLogLevel.DBADERROR, "MISFORMED POST REQUEST: ");
-                ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
-                ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Misformed POST request"));
-                return ret;
-            }
-
-            try {
-                if (!m_comm.Connect(loginParams)) {
-                    m_log.Log(KLogLevel.DBADERROR, "CONNECT FAILED");
-                    ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
-                    ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Could not log in"));
-                    return ret;
-                }
-            } catch (Exception e) {
-                m_log.Log(KLogLevel.DBADERROR, "CONNECT EXCEPTION: " + e.ToString());
-                ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
-                ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Connection threw exception: " + e.ToString()));
-                return ret;
-            }
-
-            return ret;
-        }
-
-        public OMVSD.OSD ProcessPostTeleport(IRestHandler handler, Uri uri, string after, OMVSD.OSD body,
-                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse) {
-            OMVSD.OSDMap ret = new OMVSD.OSDMap();
-            ParameterSet loginParams = new ParameterSet();
-            try {
-                OMVSD.OSDMap paramMap = (OMVSD.OSDMap)body;
-                string dest = paramMap["DESTINATION"].AsString();
-                m_log.Log(KLogLevel.DCOMMDETAIL, "Request to teleport to {0}", dest);
-                m_comm.DoTeleport(dest);
-            } catch (Exception e) {
-                m_log.Log(KLogLevel.DBADERROR, "CONNECT EXCEPTION: " + e.ToString());
-                ret.Add(RestHandler.RESTREQUESTERRORCODE, new OMVSD.OSDInteger(1));
-                ret.Add(RestHandler.RESTREQUESTERRORMSG, new OMVSD.OSDString("Connection threw exception: " + e.ToString()));
-                return ret;
-            }
-            return ret;
-        }
-
-
-        public OMVSD.OSD ProcessPostLogout(IRestHandler handler, Uri uri, string after, OMVSD.OSD body,
-                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse) {
-            OMVSD.OSDMap ret = new OMVSD.OSDMap();
-            m_comm.Disconnect();
-            return ret;
-        }
-
-        public OMVSD.OSD ProcessPostExit(IRestHandler handler, Uri uri, string after, OMVSD.OSD body,
-                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse) {
-            OMVSD.OSDMap ret = new OMVSD.OSDMap();
-            LGB.KeepRunning = false;
-            return ret;
         }
     }
 }

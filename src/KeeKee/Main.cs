@@ -95,12 +95,21 @@ namespace KeeKee {
                      // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
                      services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subSectionName));
                      services.AddTransient<RestHandlerFactory, RestHandlerFactory>();
+                     services.AddTransient<RestHandlerStd, RestHandlerStd>();
+                     services.AddTransient<RestHandlerStatic, RestHandlerStatic>();
                      services.AddHostedService<RestManager>();
 
                      // Communication services
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
+                     services.AddTransient<RestHandlerLogin, RestHandlerLogin>();
+                     services.AddTransient<RestHandlerLogout, RestHandlerLogout>();
+                     services.AddTransient<RestHandlerTeleport, RestHandlerTeleport>();
+                     services.AddTransient<RestHandlerExit, RestHandlerExit>();
                      services.AddHostedService<CommLLLP>();
                      services.AddHostedService<CommLLLPRest>();
+
+                     // World services
+                     // services.AddTransient<World.WorldManager, World.WorldManager>();
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider

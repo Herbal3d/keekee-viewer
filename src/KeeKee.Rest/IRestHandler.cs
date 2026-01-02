@@ -12,40 +12,22 @@
 using System.Net;
 
 using KeeKee.Framework;
-using KeeKee.Rest;
-
-using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
-    // called to process GET. The Uri is the full request uri and 'after' is everything after the 'api'
-    public delegate OMVSD.OSD ProcessGetCallback(IRestHandler handler, Uri uri, string after,
-                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
-    public delegate OMVSD.OSD ProcessPostCallback(IRestHandler handler, Uri uri, string after, OMVSD.OSD body,
-                HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
 
     public interface IRestHandler {
 
+        // The prefix string for this handler. The stuff after the 'api/' in the URL
+        string Prefix { get; protected set; }
 
-        void ProcessGetOrPostRequest(HttpListenerContext context, HttpListenerRequest request, HttpListenerResponse response, string afterString);
+        // Process a GET or POST request
+        Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+                                    HttpListenerRequest pRequest,
+                                    HttpListenerResponse pResponse,
+                                    CancellationToken pCancelToken);
 
-        OMVSD.OSD ProcessGetParam(IRestHandler handler, Uri uri, string afterString,
-            HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
-        OMVSD.OSD ProcessPostParam(IRestHandler handler, Uri uri, string afterString, OMVSD.OSD rawbody,
-            HttpListenerContext pContext, HttpListenerRequest pRequest, HttpListenerResponse pResponse);
-
-        const string RESTREQUESTERRORCODE = "RESTRequestError";
-        const string RESTREQUESTERRORMSG = "RESTRequestMsg";
-
-        string BaseUrl { get; }
-        // Optional callbacks to process GET and POST requests
-        ProcessGetCallback? ProcessGet { get; }
-        ProcessPostCallback? ProcessPost { get; }
         // Optional displayable interface to get parameters from
         IDisplayable? Displayable { get; }
-        // Directory where static files are located for this handler
-        string? Dir { get; }
-        // The prefix string for this handler. The stuff after the 'api/' in the URL
-        string Prefix { get; }
     }
 
 
