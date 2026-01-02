@@ -13,11 +13,13 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+
 using KeeKee.Comm;
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.World;
 using KeeKee.World.LL;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.Comm.LLLP {
@@ -26,100 +28,96 @@ namespace KeeKee.Comm.LLLP {
     /// suck the state out of the OpenMetaverse library and push it into
     /// our world representation.
     /// </summary>
-public class LoadWorldObjects {
-    static LoadWorldObjects() {
-    }
+    /// 
+    public class LoadWorldObjects {
+        private KLogger<LoadWorldObjects> m_log;
 
-    public static void Load(OMV.GridClient netComm, CommLLLP worldComm) {
-        LogManager.Log.Log(LogLevel.DCOMM, "LoadWorldObjects: loading existing context");
-        List<OMV.Simulator> simsToLoad = new List<OMV.Simulator>();
-        lock (netComm.Network.Simulators) {
-            foreach (OMV.Simulator sim in netComm.Network.Simulators) {
-                if (WeDontKnowAboutThisSimulator(sim, netComm, worldComm)) {
-                    // tell the world about this simulator
-                    LogManager.Log.Log(LogLevel.DCOMMDETAIL, "LoadWorldObjects: adding simulator {0}", sim.Name);
-                    worldComm.Network_SimConnected(netComm, new OMV.SimConnectedEventArgs(sim));
-                    simsToLoad.Add(sim);
+        public LoadWorldObjects(KLogger<LoadWorldObjects> pLogger) {
+            m_log = pLogger;
+        }
+
+        public void Load(OMV.GridClient netComm, CommLLLP worldComm) {
+            m_log.Log(KLogLevel.DCOMM, "LoadWorldObjects: loading existing context");
+            List<OMV.Simulator> simsToLoad = new List<OMV.Simulator>();
+            lock (netComm.Network.Simulators) {
+                foreach (OMV.Simulator sim in netComm.Network.Simulators) {
+                    if (WeDontKnowAboutThisSimulator(sim, netComm, worldComm)) {
+                        // tell the world about this simulator
+                        m_log.Log(KLogLevel.DCOMMDETAIL, "LoadWorldObjects: adding simulator {0}", sim.Name);
+                        worldComm.Network_SimConnected(netComm, new OMV.SimConnectedEventArgs(sim));
+                        simsToLoad.Add(sim);
+                    }
                 }
             }
+            Object[] loadParams = { simsToLoad, netComm, worldComm };
+            ThreadPool.QueueUserWorkItem(LoadSims, loadParams);
+            // ThreadPool.UnsafeQueueUserWorkItem(LoadSims, loadParams);
+            m_log.Log(KLogLevel.DCOMM, "LoadWorldObjects: started thread to load sim objects");
         }
-        Object[] loadParams = { simsToLoad, netComm, worldComm };
-        ThreadPool.QueueUserWorkItem(LoadSims, loadParams);
-        // ThreadPool.UnsafeQueueUserWorkItem(LoadSims, loadParams);
-        LogManager.Log.Log(LogLevel.DCOMM, "LoadWorldObjects: started thread to load sim objects");
-    }
 
-    /// <summary>
-    /// Routine called on a separate thread to load the avatars and objects from the simulators
-    /// into KeeKee.
-    /// </summary>
-    /// <param name="loadParam"></param>
-    private static void LoadSims(Object loadParam) {
-        LogManager.Log.Log(LogLevel.DCOMM, "LoadWorldObjects: starting to load sim objects");
-        try {
-            Object[] loadParams = (Object[])loadParam;
-            List<OMV.Simulator> simsToLoad = (List<OMV.Simulator>)loadParams[0];
-            OMV.GridClient netComm = (OMV.GridClient)loadParams[1];
-            CommLLLP worldComm = (CommLLLP)loadParams[2];
-
-            OMV.Simulator simm = null;
+        /// <summary>
+        /// Routine called on a separate thread to load the avatars and objects from the simulators
+        /// into KeeKee.
+        /// </summary>
+        /// <param name="loadParam"></param>
+        private void LoadSims(Object loadParam) {
+            m_log.Log(KLogLevel.DCOMM, "LoadWorldObjects: starting to load sim objects");
             try {
-                foreach (OMV.Simulator sim in simsToLoad) {
-                    simm = sim;
-                    LoadASim(sim, netComm, worldComm);
+                Object[] loadParams = (Object[])loadParam;
+                List<OMV.Simulator> simsToLoad = (List<OMV.Simulator>)loadParams[0];
+                OMV.GridClient netComm = (OMV.GridClient)loadParams[1];
+                CommLLLP worldComm = (CommLLLP)loadParams[2];
+
+                OMV.Simulator simm = null;
+                try {
+                    foreach (OMV.Simulator sim in simsToLoad) {
+                        simm = sim;
+                        LoadASim(sim, netComm, worldComm);
+                    }
+                } catch (Exception e) {
+                    m_log.Log(KLogLevel.DBADERROR, "LoadWorldObjects: exception loading {0}: {1}",
+                        (simm == null ? "NULL" : simm.Name), e.ToString());
                 }
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.DBADERROR, "LoadWorldObjects: exception: {0}", e.ToString());
             }
-            catch (Exception e) {
-                LogManager.Log.Log(LogLevel.DBADERROR, "LoadWorldObjects: exception loading {0}: {1}",
-                    (simm == null ? "NULL" : simm.Name), e.ToString());
-            }
+            m_log.Log(KLogLevel.DCOMM, "LoadWorldObjects: completed loading sim objects");
         }
-        catch (Exception e) {
-            LogManager.Log.Log(LogLevel.DBADERROR, "LoadWorldObjects: exception: {0}", e.ToString());
+
+        public void LoadASim(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
+            m_log.Log(KLogLevel.DCOMM, "LoadWorldObjects: loading avatars and objects for sim {0}", sim.Name);
+            AddAvatars(sim, netComm, worldComm);
+            AddObjects(sim, netComm, worldComm);
         }
-        LogManager.Log.Log(LogLevel.DCOMM, "LoadWorldObjects: completed loading sim objects");
-    }
 
-    public static void LoadASim(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
-        LogManager.Log.Log(LogLevel.DCOMM, "LoadWorldObjects: loading avatars and objects for sim {0}", sim.Name);
-        AddAvatars(sim, netComm, worldComm);
-        AddObjects(sim, netComm, worldComm);
-    }
-
-    // Return 'true' if we don't have this region in our world yet
-    private static bool WeDontKnowAboutThisSimulator(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
-        LLRegionContext regn = worldComm.FindRegion(delegate(LLRegionContext rgn) {
-            return rgn.Simulator.ID == sim.ID;
-        });
-        return (regn == null);
-    }
-
-    private static void AddAvatars(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
-        LogManager.Log.Log(LogLevel.DCOMM, "LoadWorldObjects: loading {0} avatars", sim.ObjectsAvatars.Count);
-        List<OMV.Avatar> avatarsToNew = new List<OpenMetaverse.Avatar>();
-        sim.ObjectsAvatars.ForEach(delegate(OMV.Avatar av) {
-            avatarsToNew.Add(av);
-        });
-        // this happens outside the avatar list lock
-        foreach (OMV.Avatar av in avatarsToNew) {
-            worldComm.Objects_AvatarUpdate(netComm, new OMV.AvatarUpdateEventArgs(sim, av, 0, true));
+        // Return 'true' if we don't have this region in our world yet
+        private static bool WeDontKnowAboutThisSimulator(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
+            LLRegionContext regn = worldComm.FindRegion(delegate (LLRegionContext rgn) {
+                return rgn.Simulator.ID == sim.ID;
+            });
+            return (regn == null);
         }
-    }
 
-    private static void AddObjects(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
-        LogManager.Log.Log(LogLevel.DCOMM, "LoadWorldObjects: loading {0} primitives", sim.ObjectsPrimitives.Count);
-        List<OMV.Primitive> primsToNew = new List<OpenMetaverse.Primitive>();
-        sim.ObjectsPrimitives.ForEach(delegate(OMV.Primitive prim) {
-            primsToNew.Add(prim);
-        });
-        foreach (OMV.Primitive prim in primsToNew) {
-            // TODO: how can we tell if this prim might be an attachment?
-            worldComm.Objects_ObjectUpdate(netComm, new OpenMetaverse.PrimEventArgs(sim, prim, 0, true, false));
+        private void AddAvatars(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
+            m_log.Log(KLogLevel.DCOMM, "LoadWorldObjects: loading {0} avatars", sim.ObjectsAvatars.Count);
+            List<OMV.Avatar> avatarsToNew = new List<OpenMetaverse.Avatar>(sim.ObjectsAvatars.Values);
+            // this happens outside the avatar list lock
+            avatarsToNew.ForEach(av => {
+                worldComm.Objects_AvatarUpdate(netComm, new OMV.AvatarUpdateEventArgs(sim, av, 0, true));
+            });
         }
+
+        private void AddObjects(OMV.Simulator sim, OMV.GridClient netComm, CommLLLP worldComm) {
+            m_log.Log(KLogLevel.DCOMM, "LoadWorldObjects: loading {0} primitives", sim.ObjectsPrimitives.Count);
+            List<OMV.Primitive> primsToNew = new List<OpenMetaverse.Primitive>(sim.ObjectsPrimitives.Values);
+            // this happens outside the primitive list lock
+            primsToNew.ForEach(prim => {
+                worldComm.Objects_ObjectUpdate(netComm, new OpenMetaverse.PrimEventArgs(sim, prim, 0, true, false));
+            });
+        }
+
+
+
+
     }
-
-
-
-
-}
 }

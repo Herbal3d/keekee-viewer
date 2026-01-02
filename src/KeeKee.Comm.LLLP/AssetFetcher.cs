@@ -14,14 +14,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Statistics;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.Comm.LLLP {
 
-public delegate void AssetFetcherCompletionCallback(OMV.UUID id, string filename);
+    public delegate void AssetFetcherCompletionCallback(OMV.UUID id, string filename);
 
     /// <summary>
     /// WORK IN PROGRESS.
@@ -32,88 +34,91 @@ public delegate void AssetFetcherCompletionCallback(OMV.UUID id, string filename
     /// plugged also.  This routine was a start of that and this code could either grow
     /// or be thrown out.
     /// </summary>
-public class AssetFetcher {
-    private ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
+    public class AssetFetcher {
+        private KLogger<AssetFetcher> m_log;
 
-    // number of texture fetchings we set running in parallel
-    public int OutStandingRequests {
-        get { return m_requests.Count; }
-    }
-
-    private int m_maxParallelRequests = 5;
-    public int MaxParallelRequests {
-        get { return m_maxParallelRequests; }
-        set { m_maxParallelRequests = value; }
-    }
-
-    public StatisticManager m_stats;
-    public ICounter m_totalRequests;         // count of total requests
-    public ICounter m_duplicateRequests;     // count of requests for things we're already queued for
-    public ICounter m_requestsForExisting;   // count of requests for assets that are already in files
-
-    struct TRequest {
-        public OMV.UUID ID;
-        public string Filename;
-        public int QueueTime;
-        // public int RequestTime;
-        public OMV.AssetType Type;
-        public AssetFetcherCompletionCallback DoneCall;
-    };
-
-    private Dictionary<string, TRequest> m_requests;
-    private List<TRequest> m_outstandingRequests;
-    private OMV.GridClient m_client;
-
-    public AssetFetcher(OMV.GridClient grid) {
-        m_client = grid;
-        // m_client.Assets.OnAssetReceived += new OMV.AssetManager.AssetReceivedCallback(Assets_OnAssetReceived);
-        m_requests = new Dictionary<string, TRequest>();
-        m_outstandingRequests = new List<TRequest>();
-        m_stats = new StatisticManager("AssetFetcher");
-        m_totalRequests = m_stats.GetCounter("TotalRequests");
-        m_duplicateRequests = m_stats.GetCounter("DuplicateRequests");
-        m_requestsForExisting = m_stats.GetCounter("RequestsForExistingAsset");
-    }
-
-    public void AssetIntoFile(OMV.UUID getID, OMV.AssetType type, string filename, AssetFetcherCompletionCallback doneCall) {
-        m_totalRequests.Event();
-        if (File.Exists(filename)) {
-            m_requestsForExisting.Event();
-            // doneCall.BeginInvoke(getID, filename, null, null);
-            ThreadPool.QueueUserWorkItem((WaitCallback)delegate(Object x) {
-            // ThreadPool.UnsafeQueueUserWorkItem((WaitCallback)delegate(Object x) {
-                doneCall(getID, filename);
-            }, null);
-
-
+        // number of texture fetchings we set running in parallel
+        public int OutStandingRequests {
+            get { return m_requests.Count; }
         }
-        lock (m_requests) {
-            if (!m_requests.ContainsKey(filename)) {
-                TRequest treq = new TRequest();
-                treq.ID = getID;
-                treq.Filename = filename;
-                treq.Type = type;
-                treq.DoneCall = doneCall;
-                treq.QueueTime = System.Environment.TickCount;
-                m_requests.Add(filename, treq);
+
+        private int m_maxParallelRequests = 5;
+        public int MaxParallelRequests {
+            get { return m_maxParallelRequests; }
+            set { m_maxParallelRequests = value; }
+        }
+
+        public StatisticCollection m_stats;
+        public StatCounter m_totalRequests;         // count of total requests
+        public StatCounter m_duplicateRequests;     // count of requests for things we're already queued for
+        public StatCounter m_requestsForExisting;   // count of requests for assets that are already in files
+
+        struct TRequest {
+            public OMV.UUID ID;
+            public string Filename;
+            public int QueueTime;
+            // public int RequestTime;
+            public OMV.AssetType Type;
+            public AssetFetcherCompletionCallback DoneCall;
+        };
+
+        private Dictionary<string, TRequest> m_requests;
+        private List<TRequest> m_outstandingRequests;
+        private OMV.GridClient m_client;
+
+        public AssetFetcher(KLogger<AssetFetcher> pLog,
+                            OMV.GridClient pGrid) {
+            m_log = pLog;
+            m_client = pGrid;
+
+            // m_client.Assets.OnAssetReceived += new OMV.AssetManager.AssetReceivedCallback(Assets_OnAssetReceived);
+            m_requests = new Dictionary<string, TRequest>();
+            m_outstandingRequests = new List<TRequest>();
+
+            m_stats = new StatisticCollection();
+            m_totalRequests = new StatCounter("TotalRequests", "Total asset requests made");
+            m_duplicateRequests = new StatCounter("DuplicateRequests", "Count of requests for things we're already queued for");
+            m_requestsForExisting = new StatCounter("RequestsForExistingAsset", "Count of requests for assets that are already in files");
+            m_stats.AddStat(m_totalRequests);
+            m_stats.AddStat(m_duplicateRequests);
+            m_stats.AddStat(m_requestsForExisting);
+        }
+
+        public void AssetIntoFile(OMV.UUID getID, OMV.AssetType type, string filename, AssetFetcherCompletionCallback doneCall) {
+            m_totalRequests.Event();
+
+            if (File.Exists(filename)) {
+                m_requestsForExisting.Event();
+                // doneCall.BeginInvoke(getID, filename, null, null);
+                ThreadPool.QueueUserWorkItem((x) => { doneCall(getID, filename); }, null);
             }
-            else {
-                m_duplicateRequests.Event();
+            lock (m_requests) {
+                if (!m_requests.ContainsKey(filename)) {
+                    TRequest treq = new TRequest() {
+                        ID = getID,
+                        Filename = filename,
+                        Type = type,
+                        DoneCall = doneCall,
+                        QueueTime = System.Environment.TickCount,
+                    };
+                    m_requests.Add(filename, treq);
+                } else {
+                    m_duplicateRequests.Event();
+                }
+            }
+            PushRequests();
+        }
+
+        private void PushRequests() {
+            lock (m_requests) {
+                if ((m_outstandingRequests.Count < m_maxParallelRequests) && (m_requests.Count > 0)) {
+                    // there is room for more requests
+                    // TODO: Move some requests from m_requests to m_outstandingRequests and start the request
+                }
             }
         }
-        PushRequests();
-    }
 
-    private void PushRequests() {
-        lock (m_requests) {
-            if ((m_outstandingRequests.Count < m_maxParallelRequests) && (m_requests.Count > 0)) {
-                // there is room for more requests
-                // TODO: Move some requests from m_requests to m_outstandingRequests and start the request
-            }
+        private void Assets_OnAssetReceived() {
         }
     }
-
-    private void Assets_OnAssetReceived() {
-    }
-}
 }

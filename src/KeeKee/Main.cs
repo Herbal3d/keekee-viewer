@@ -105,6 +105,9 @@ namespace KeeKee {
                      services.AddTransient<RestHandlerLogout, RestHandlerLogout>();
                      services.AddTransient<RestHandlerTeleport, RestHandlerTeleport>();
                      services.AddTransient<RestHandlerExit, RestHandlerExit>();
+                     services.AddTransient<RestHandlerChat, RestHandlerChat>();
+                     services.AddSingleton<LoadWorldObjects, LoadWorldObjects>();
+                     services.AddSingleton<AssetFetcher, AssetFetcher>();
                      services.AddHostedService<CommLLLP>();
                      services.AddHostedService<CommLLLPRest>();
 

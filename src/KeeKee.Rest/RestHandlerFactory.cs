@@ -17,18 +17,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace KeeKee.Rest {
 
-    public interface IRestHandler {
+    public class RestHandlerFactory {
+        private readonly ServiceProvider m_serviceProvider;
 
-        // The prefix string for this handler. The stuff after the 'api/' in the URL
-        string Prefix { get; protected set; }
+        public RestHandlerFactory(ServiceProvider pServiceProvider) {
+            m_serviceProvider = pServiceProvider;
+        }
 
-        // Process a GET or POST request
-        Task ProcessGetOrPostRequest(HttpListenerContext pContext,
-                                    HttpListenerRequest pRequest,
-                                    HttpListenerResponse pResponse,
-                                    CancellationToken pCancelToken);
-
-        // Optional displayable interface to get parameters from
-        IDisplayable? Displayable { get; }
+        public IRestHandler CreateHandler<T>(params object[] parameters) where T : IRestHandler {
+            return ActivatorUtilities.CreateInstance<T>(m_serviceProvider, parameters);
+        }
     }
 }

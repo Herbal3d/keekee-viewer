@@ -44,12 +44,13 @@ namespace KeeKee.Comm.LLLP {
         public IOptions<CommConfig> ConnectionParams { get; private set; }
         RestHandlerFactory m_restFactory;
 
-        IRestHandler? m_paramGetHandler = null;
         IRestHandler? m_loginHandler = null;
         IRestHandler? m_logoutHandler = null;
         IRestHandler? m_teleportHandler = null;
         IRestHandler? m_exitHandler = null;
+        IRestHandler? m_chatHandler = null;
         IRestHandler? m_statHandler = null;
+        IRestHandler? m_paramGetHandler = null;
 
         public CommLLLPRest(KLogger<CommLLLPRest> pLog,
                         RestHandlerFactory pRestFactory,
@@ -68,6 +69,7 @@ namespace KeeKee.Comm.LLLP {
             m_logoutHandler = m_restFactory.CreateHandler<RestHandlerLogout>();
             m_teleportHandler = m_restFactory.CreateHandler<RestHandlerTeleport>();
             m_exitHandler = m_restFactory.CreateHandler<RestHandlerExit>();
+            m_chatHandler = m_restFactory.CreateHandler<RestHandlerChat>();
 
             // m_paramGetHandler = m_restFactory.Create("/LLLP/status", ref connParams);
             // m_statHandler = m_restFactory.Create("/LLLP/stats", m_comm.CommStatistics);
