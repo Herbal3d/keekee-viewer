@@ -23,6 +23,8 @@ using KeeKee.World.OS;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
+using Microsoft.Extensions.DependencyInjection;
+using OpenMetaverse.ImportExport.Collada14;
 
 namespace KeeKee.Comm.LLLP {
     /// <summary>
@@ -56,6 +58,9 @@ namespace KeeKee.Comm.LLLP {
         private Stat<long> m_statObjTerseUpdate = new StatCounter("Object_TerseObjectUpdate", "Number of 'terse object update' messages");
         private Stat<long> m_statRequestLocalID = new StatCounter("RequestLocalID", "Number of RequestLocalIDs made");
         // ==========================================================
+
+        public IInstanceFactory InstanceCreator { get; private set; }
+        public IWorld m_World;
 
         // ICommProvider.GridClient
         public OMV.GridClient GridClient { get; private set; }
@@ -96,21 +101,6 @@ namespace KeeKee.Comm.LLLP {
         protected string m_loginGrid { get; set; } = "unknown";
         protected string LoggedInGridName { get { return m_loginGrid.Replace(".", "_").ToLower(); } }
         protected string m_loginMsg { get; set; } = "";
-        /*
-        public const string FIELDFIRST = "first";
-        public const string FIELDLAST = "last";
-        public const string FIELDPASS = "password";
-        public const string FIELDGRID = "grid";
-        public const string FIELDSIM = "sim";
-        public const string FIELDMSG = "msg";
-        public const string FIELDCURRENTSIM = "currentsim"; // the current simulator
-        public const string FIELDCURRENTGRID = "currentgrid"; // the current simulator
-        public const string FIELDLOGINSTATE = "loginstate"; // the current login state
-        public const string FIELDPOSSIBLEGRIDS = "possiblegrids"; // the list of possible grids
-        public const string FIELDPOSITIONX = "positionx"; // the client relative location
-        public const string FIELDPOSITIONY = "positiony";
-        public const string FIELDPOSITIONZ = "positionz";
-        */
 
         // If true, hold children objects until parent is available
         protected bool m_shouldHoldChildren = false;
@@ -130,10 +120,14 @@ namespace KeeKee.Comm.LLLP {
 
         public CommLLLP(KLogger<CommLLLP> pLog,
                         UserPersistantParams pUserParams,
-                        IOptions<CommConfig> pConnectionParams) {
+                        IOptions<CommConfig> pConnectionParams,
+                        InstanceFactory pInstanceFactory,
+                        IWorld pWorld) {
             m_log = pLog;
             m_userPersistantParams = pUserParams;
             ConnectionParams = pConnectionParams;
+            InstanceCreator = pInstanceFactory;
+            m_World = pWorld;
 
             CommStatistics = new StatisticCollection();
             CommStatistics.AddStat(m_statNetDisconnected);
@@ -152,6 +146,7 @@ namespace KeeKee.Comm.LLLP {
 
             GridClient = new OMV.GridClient();
         }
+
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             m_log.Log(KLogLevel.RestDetail, "CommLLLP ExecuteAsync entered");
             m_cancellationToken = cancellationToken;
@@ -433,8 +428,8 @@ namespace KeeKee.Comm.LLLP {
             // if we didn't get anything useful, default to last
             loginParams.Start = String.IsNullOrEmpty(loginSetting) ? "last" : loginSetting;
 
-            World.World.Instance.Grids.SetCurrentGrid(m_loginGrid);
-            loginParams.URI = World.World.Instance.Grids.GridLoginURI(World.Grids.Current);
+            m_World.Grids.SetCurrentGrid(m_loginGrid);
+            loginParams.URI = m_World.Grids.GridLoginURI(World.Grids.Current);
             if (loginParams.URI == null) {
                 m_log.Log(KLogLevel.DBADERROR, "COULD NOT FIND URL OF GRID. Grid=" + m_loginGrid);
                 m_loginMsg = "Unknown Grid name";
@@ -538,7 +533,7 @@ namespace KeeKee.Comm.LLLP {
             }
 
             // tell the world there is a new region
-            World.World.Instance.AddRegion(regionContext);
+            m_World.AddRegion(regionContext);
 
             // regionContext.State.IfOnline(delegate() {
             // this region is online and here. This can start a lot of IO
@@ -912,7 +907,7 @@ namespace KeeKee.Comm.LLLP {
         /// </summary>
         public virtual void Comm_OnLoggedIn() {
             m_log.Log(KLogLevel.DWORLD, "Comm_OnLoggedIn:");
-            World.World.Instance.AddAgent(this.MainAgent);
+            m_World.AddAgent(this.MainAgent);
             // I work by taking LLLP messages and updating the agent
             // The agent will be updated in the world (usually by the viewer)
             // Create the two way communication linkage
@@ -933,36 +928,37 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         // given a simulator. Find the region info that we store the stuff in
         // Note that, if we are not connected, we just return null thus showing our unhappiness.
-        public virtual LLRegionContext FindRegion(OMV.Simulator sim) {
-            LLRegionContext ret = null;
+        public virtual LLRegionContext? FindRegion(OMV.Simulator sim) {
+            LLRegionContext? foundRegion = null;
             if (IsConnected) {
                 lock (m_regionList) {
-                    if (!m_regionList.TryGetValue(sim.ID, out ret)) {
+                    if (!m_regionList.TryGetValue(sim.ID, out foundRegion)) {
                         // we are connected but doen't have a regionContext for this simulator. Build one.
                         AssetContextBase assetContext = SelectAssetContextForGrid(sim);
-                        LLTerrainInfo llterr = new LLTerrainInfo(null, assetContext);
+
+                        foundRegion = InstanceCreator.Create<LLRegionContext>(null, assetContext, llterr, sim);
+                        // foundRegion.Name = new EntityNameLL(LoggedInGridName + "/Region/" + sim.Name.Trim());
+                        foundRegion.Name = new EntityNameLL(LoggedInGridName + "/" + sim.Name.Trim());
+                        foundRegion.RegionContext = foundRegion;    // since we don't know ourself before
+                        foundRegion.Comm = GridClient;
+
+                        LLTerrainInfo llterr = InstanceCreator.Create<LLTerrainInfo>(foundRegion, assetContext);
                         llterr.WaterHeight = sim.WaterHeight;
                         // TODO: copy terrain texture IDs
 
-                        ret = new LLRegionContext(null, assetContext, llterr, sim);
-                        // ret.Name = new EntityNameLL(LoggedInGridName + "/Region/" + sim.Name.Trim());
-                        ret.Name = new EntityNameLL(LoggedInGridName + "/" + sim.Name.Trim());
-                        ret.RegionContext = ret;    // since we don't know ourself before
-                        ret.Comm = GridClient;
-                        ret.TerrainInfo.RegionContext = ret;
-                        m_regionList.Add(sim.ID, ret);
-                        m_log.Log(KLogLevel.DWORLD, "Creating region context for " + ret.Name);
+                        m_regionList.Add(sim.ID, foundRegion);
+                        m_log.Log(KLogLevel.DWORLD, "Creating region context for " + foundRegion.Name);
                     }
                 }
             }
-            return ret;
+            return foundRegion;
         }
 
         // Use a uniqe test to select a region
-        public LLRegionContext FindRegion(Predicate<LLRegionContext> pred) {
-            LLRegionContext ret = null;
+        public LLRegionContext? FindRegion(Predicate<LLRegionContext> pred) {
+            LLRegionContext? ret = null;
             lock (m_regionList) {
-                foreach (KeyValuePair<OMV.UUID, LLRegionContext> kvp in m_regionList) {
+                foreach (var kvp in m_regionList) {
                     if (pred(kvp.Value)) {
                         ret = kvp.Value;
                         break;
@@ -987,7 +983,7 @@ namespace KeeKee.Comm.LLLP {
                     return m_assetContexts[sim];
                 }
                 // If user specifies an URL to get textures from, get that asset fetcher
-                string otherAssets = World.World.Instance.Grids.GridParameter(World.Grids.Current, "OS.AssetServer.V1");
+                string otherAssets = m_World.Grids.GridParameter(World.Grids.Current, "OS.AssetServer.V1");
                 if (otherAssets != null && otherAssets.Length != 0) {
                     m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating OSAssetContextV1 for {0}/{1}", m_loginGrid, sim.Name);
                     ret = new OSAssetContextV1(LoggedInGridName);

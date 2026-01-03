@@ -18,7 +18,7 @@ namespace KeeKee.Framework {
     /// and then do a "_factory.Create<TheClassYouWant>()".
     /// </summary>
     public interface IInstanceFactory {
-        T Create<T>() where T : class;
+        T Create<T>(params object[] parameters) where T : class;
     }
     public class InstanceFactory : IInstanceFactory {
 
@@ -27,8 +27,8 @@ namespace KeeKee.Framework {
             _provider = pProvider;
         }
 
-        public T Create<T>() where T : class {
-            return ActivatorUtilities.CreateInstance<T>(_provider);
+        public T Create<T>(params object[] parameters) where T : class {
+            return ActivatorUtilities.CreateInstance<T>(_provider, parameters);
         }
     }
 }

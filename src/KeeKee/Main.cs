@@ -22,6 +22,8 @@ using KeeKee.Framework.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 using KeeKee.Framework;
+using KeeKee.World;
+using KeeKee.World.LL;
 
 namespace KeeKee {
 
@@ -112,7 +114,18 @@ namespace KeeKee {
                      services.AddHostedService<CommLLLPRest>();
 
                      // World services
-                     // services.AddTransient<World.WorldManager, World.WorldManager>();
+                     services.AddSingleton<IWorld, KeeKee.World.World>();
+                     services.AddTransient<IEntityName, EntityNameLL>();
+                     services.AddTransient<IAgent, LLAgent>();
+                     services.AddTransient<IAnimation, LLAnimation>();
+                     services.AddTransient<IAssetContext, LLAssetContext>();
+                     services.AddTransient<IAttachment, LLAttachment>();
+                     services.AddTransient<IEntity, LLEntity>();
+                     services.AddTransient<IEntityAvatar, LLEntityAvatar>();
+                     services.AddTransient<IEntityPhysical, LLEntityPhysical>();
+                     services.AddTransient<IRegionContext, LLRegionContext>();
+                     services.AddTransient<ISpecialRenderType, LLSpecialRenderType>();
+                     services.AddTransient<ITerrainInfo, LLTerrainInfo>();
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider
