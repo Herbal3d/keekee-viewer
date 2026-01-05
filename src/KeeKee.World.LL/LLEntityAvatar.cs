@@ -20,17 +20,9 @@ using OMV = OpenMetaverse;
 namespace KeeKee.World.LL {
     public sealed class LLEntityAvatar : LLEntityBase, IEntityAvatar {
 
-        private OMV.Avatar m_avatar = null;
-        public OMV.Avatar Avatar { 
-            get { return m_avatar; } 
-            set { m_avatar = value; } 
-        }
+        public OMV.Avatar Avatar { get; set; }
 
-        private OMV.AvatarManager m_avatarManager = null;
-        public OMV.AvatarManager AvatarManager {
-            get { return m_avatarManager; }
-            set { m_avatarManager = value; }
-        }
+        public OMV.AvatarManager? AvatarManager { get; set; }
 
         public string DisplayName {
             get {
@@ -53,51 +45,55 @@ namespace KeeKee.World.LL {
             }
         }
 
-        public LLEntityAvatar(AssetContextBase acontext, LLRegionContext rcontext, 
-                ulong regionHandle, OMV.Avatar av) : base(rcontext, acontext) {
-                // base(acontext, rcontext, regionHandle, av.LocalID, null) { // base for EntityPhysical
+        public LLEntityAvatar(KLogger<LLEntityAvatar> pLog,
+                            IAssetContext pAContext,
+                            LLRegionContext pRContext,
+                            ulong regionHandle,
+                            OMV.Avatar av)
+                        : base(pLog, pRContext, pAContext) {
+
             // let people looking at IEntity's get at my avatarness
-            RegisterInterface<IEntityAvatar>(this);
-            this.Sim = rcontext.Simulator;
+            this.Sim = pRContext.Simulator;
             this.RegionHandle = regionHandle;
             this.LocalID = av.LocalID;
             this.Avatar = av;
-            this.Name = AvatarEntityNameFromID(acontext, m_avatar.ID);
-            LogManager.Log.Log(LogLevel.DCOMMDETAIL, "LLEntityAvatar: create id={0}, lid={1}",
+            this.Name = AvatarEntityNameFromID(pAContext, Avatar.ID);
+
+            m_log.Log(KLogLevel.DCOMMDETAIL, "LLEntityAvatar: create id={0}, lid={1}",
                             av.ID.ToString(), this.LocalID);
         }
 
-        public static EntityName AvatarEntityNameFromID(AssetContextBase acontext, OMV.UUID ID) {
-            return new EntityNameLL(acontext, "Avatar/" + ID.ToString());
+        public static EntityName AvatarEntityNameFromID(AssetContextBase pAContext, OMV.UUID ID) {
+            return new EntityNameLL(pAContext, "Avatar/" + ID.ToString());
         }
 
         #region POSITION
         override public OMV.Quaternion Heading {
             get {
-                if (m_avatar != null) {
-                    base.Heading = m_avatar.Rotation;
-                    return m_avatar.Rotation;
+                if (Avatar != null) {
+                    base.Heading = Avatar.Rotation;
+                    return Avatar.Rotation;
                 }
                 return base.Heading;
             }
             set {
                 base.Heading = value;
-                if (m_avatar != null) m_avatar.Rotation = base.Heading;
+                if (Avatar != null) Avatar.Rotation = base.Heading;
             }
         }
 
         override public OMV.Vector3 LocalPosition {
             get {
-                if (m_avatar != null) {
-                    base.LocalPosition = m_avatar.Position;
-                    return m_avatar.Position;
+                if (Avatar != null) {
+                    base.LocalPosition = Avatar.Position;
+                    return Avatar.Position;
                 }
                 return base.LocalPosition;
             }
             set {
                 base.LocalPosition = value;
-                if (m_avatar != null) {
-                    m_avatar.Position = base.LocalPosition;
+                if (Avatar != null) {
+                    Avatar.Position = base.LocalPosition;
                 }
             }
         }
@@ -105,9 +101,9 @@ namespace KeeKee.World.LL {
             get {
                 // this works in conjunction with the base class to calculate region location
                 OMV.Vector3 regionRelative = this.RegionPosition;
-                if (m_avatar != null) {
+                if (Avatar != null) {
                     return m_regionContext.CalculateGlobalPosition(regionRelative);
-                } 
+                }
                 return base.GlobalPosition;
             }
         }
@@ -117,7 +113,7 @@ namespace KeeKee.World.LL {
             // if we are the agent in the world, also update the agent
             base.Update(what);
             if (World.Instance.Agent != null && this == World.Instance.Agent.AssociatedAvatar) {
-                LogManager.Log.Log(LogLevel.DUPDATEDETAIL, "LLEntityAvatar: calling World.UpdateAgent: what={0}", what);
+                m_log.Log(KLogLevel.DUPDATEDETAIL, "LLEntityAvatar: calling World.UpdateAgent: what={0}", what);
                 World.Instance.UpdateAgent(what);
             }
             // do any rendering or whatever for this avatar

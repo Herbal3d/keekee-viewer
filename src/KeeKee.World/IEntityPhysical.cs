@@ -9,16 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace KeeKee.Framework.Config {
-
-    public class KeeKeeConfig {
-
-        public const string subSectionName = "KeeKeeViewer";
-
-        public string AppTitle { get; set; } = "KeeKee Viewer";
-        public string AppName { get; set; } = "KeeKeeViewer";
-        public string AppVersion { get; set; } = "0.1.0";
-
+namespace KeeKee.World {
+    public interface IEntityPhysical : IEntity {
     }
 }
 

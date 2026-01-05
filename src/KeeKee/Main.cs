@@ -16,9 +16,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NLog.Extensions.Logging;
 
-using KeeKee.Comm;
+using KeeKee.Config;
 using KeeKee.Comm.LLLP;
-using KeeKee.Framework.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 using KeeKee.Framework;
@@ -101,8 +100,13 @@ namespace KeeKee {
                      services.AddTransient<RestHandlerStatic, RestHandlerStatic>();
                      services.AddHostedService<RestManager>();
 
-                     // Communication services
+                     // Configuration services
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
+                     services.Configure<AssetConfig>(context.Configuration.GetSection(AssetConfig.subSectionName));
+                     services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
+                     services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
+
+                     // Communication services
                      services.AddTransient<RestHandlerLogin, RestHandlerLogin>();
                      services.AddTransient<RestHandlerLogout, RestHandlerLogout>();
                      services.AddTransient<RestHandlerTeleport, RestHandlerTeleport>();
@@ -113,19 +117,19 @@ namespace KeeKee {
                      services.AddHostedService<CommLLLP>();
                      services.AddHostedService<CommLLLPRest>();
 
-                     // World services
-                     services.AddSingleton<IWorld, KeeKee.World.World>();
-                     services.AddTransient<IEntityName, EntityNameLL>();
+                     // World services using LL implementations
+                     services.AddTransient<ILLInstanceFactory, LLInstanceFactory>();
+                     services.AddTransient<EntityName, EntityNameLL>();
+                     services.AddTransient<IRegionContext, LLRegionContext>();
+                     services.AddTransient<ITerrainInfo, LLTerrainInfo>();
+                     services.AddTransient<IEntityAvatar, LLEntityAvatar>();
+                     services.AddTransient<IEntityPhysical, LLEntityPhysical>();
                      services.AddTransient<IAgent, LLAgent>();
                      services.AddTransient<IAnimation, LLAnimation>();
                      services.AddTransient<IAssetContext, LLAssetContext>();
                      services.AddTransient<IAttachment, LLAttachment>();
-                     services.AddTransient<IEntity, LLEntity>();
-                     services.AddTransient<IEntityAvatar, LLEntityAvatar>();
-                     services.AddTransient<IEntityPhysical, LLEntityPhysical>();
-                     services.AddTransient<IRegionContext, LLRegionContext>();
-                     services.AddTransient<ISpecialRenderType, LLSpecialRenderType>();
-                     services.AddTransient<ITerrainInfo, LLTerrainInfo>();
+                     services.AddTransient<SpecialRenderType, LLSpecialRenderType>();
+                     services.AddHostedService<World.World>();
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider

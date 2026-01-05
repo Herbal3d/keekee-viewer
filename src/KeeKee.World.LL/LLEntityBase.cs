@@ -9,33 +9,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using KeeKee.Framework.Logging;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
 
     public abstract class LLEntityBase : EntityBase {
 
-        protected OMV.Primitive m_prim;
-        public OMV.Primitive Prim { get { return m_prim; } set { m_prim = value; } }
+        protected IKLogger m_log;
+        public OMV.Primitive? Prim { get; set; }
 
         public const ulong NOREGION = 0xffffffff;
-        protected ulong m_regionHandle;
-        public ulong RegionHandle { get { return m_regionHandle; } set { m_regionHandle = value; } }
+        public ulong RegionHandle { get; set; }
 
-        protected OMV.Simulator m_simulator;
-        public OMV.Simulator Sim { get { return m_simulator; } set { m_simulator = value; } }
+        public OMV.Simulator? Sim { get; set; }
 
         public const uint NOLOCALID = 0xffffffff;
         protected uint m_localID;
         // an LL localID is a per sim unique handle for the item
-        public uint LocalID { get { return m_localID; } set { m_localID = value; m_LGID = m_localID;  } }
+        public uint LocalID { get { return m_localID; } set { m_localID = value; m_LGID = m_localID; } }
 
-        public LLEntityBase(RegionContextBase rcontext, AssetContextBase acontext) 
-                    : base(rcontext, acontext) {
+        public LLEntityBase(IKLogger pLog,
+                            RegionContextBase pRContext,
+                            AssetContextBase pAContext)
+                        : base(pRContext, pAContext) {
+            this.m_log = pLog;
             this.Prim = null;
             this.Sim = null;
             this.RegionHandle = LLEntityBase.NOREGION;
@@ -45,17 +44,15 @@ namespace KeeKee.World.LL {
         public override OMV.Quaternion Heading {
             get {
                 if (Prim != null) {
-                    return this.m_prim.Rotation;
-                }
-                else {
+                    return this.Prim.Rotation;
+                } else {
                     return base.Heading;
                 }
             }
             set {
                 if (Prim != null) {
-                    this.m_prim.Rotation = value;
-                }
-                else {
+                    this.Prim.Rotation = value;
+                } else {
                     base.Heading = value;
                 }
             }
@@ -66,8 +63,7 @@ namespace KeeKee.World.LL {
                 if (Prim != null) {
                     base.LocalPosition = Prim.Position;
                     return Prim.Position;
-                }
-                else {
+                } else {
                     return base.LocalPosition;
                 }
             }
@@ -84,8 +80,7 @@ namespace KeeKee.World.LL {
                 OMV.Vector3 regionRelative = this.RegionPosition;
                 if (Prim != null) {
                     return m_regionContext.CalculateGlobalPosition(regionRelative);
-                }
-                else {
+                } else {
                     return base.GlobalPosition;
                 }
             }
@@ -109,11 +104,10 @@ namespace KeeKee.World.LL {
                         if (parentEntity != null) {
                             this.ContainingEntity = parentEntity;
                             parentEntity.AddEntityToContainer(this);
-                            LogManager.Log.Log(LogLevel.DCOMMDETAIL, "ProcessEntityContainer: adding entity {0} to container {1}",
+                            m_log.Log(KLogLevel.DCOMMDETAIL, "ProcessEntityContainer: adding entity {0} to container {1}",
                                              this.Name, parentEntity.Name);
-                        }
-                        else {
-                            LogManager.Log.Log(LogLevel.DCOMMDETAIL, "Can't assign parent. Entity not found. ent={0}", this.Name);
+                        } else {
+                            m_log.Log(KLogLevel.DCOMMDETAIL, "Can't assign parent. Entity not found. ent={0}", this.Name);
                         }
                     }
                     if (parentID == 0 && this.ContainingEntity != null) {
@@ -122,9 +116,8 @@ namespace KeeKee.World.LL {
                         this.DisconnectFromContainer();
                     }
                 }
-            }
-            catch (Exception e) {
-                LogManager.Log.Log(LogLevel.DBADERROR, "FAILED ProcessEntityContainer: " + e);
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.DBADERROR, "FAILED ProcessEntityContainer: " + e);
             }
 
             // tell the world about our updating

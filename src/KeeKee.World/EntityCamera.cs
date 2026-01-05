@@ -18,7 +18,7 @@ namespace KeeKee.World {
     public class EntityCamera : EntityBase {
 
         protected OMV.Vector3 m_initialDirection;
-        public OMV.Vector3 InitDirection { 
+        public OMV.Vector3 InitDirection {
             get { return m_initialDirection; }
             set { m_initialDirection = value; }
         }
@@ -57,8 +57,7 @@ namespace KeeKee.World {
                 zvec.Normalize();
                 m_heading = zvec * m_heading;
                 m_heading = m_heading * xvec;
-            }
-            else {
+            } else {
                 OMV.Quaternion rot = new OMV.Quaternion(X, Y, Z);
                 rot.Normalize();
                 rotate(rot);
@@ -75,8 +74,8 @@ namespace KeeKee.World {
         protected double m_far;
         public double Far { get { return m_far; } set { m_far = value; } }
 
-        public EntityCamera(RegionContextBase rcontext, AssetContextBase acontext) 
-                    : base(rcontext, acontext) {
+        public EntityCamera(RegionContextBase pRContext, AssetContextBase pAContext)
+                    : base(pRContext, pAContext) {
             m_yawFixed = true;
             m_globalPosition = new OMV.Vector3d(40f, 40f, 30f);
             m_heading = new OMV.Quaternion(0f, 1f, 0f);

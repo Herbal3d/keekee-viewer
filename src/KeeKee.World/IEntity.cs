@@ -17,41 +17,43 @@ using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
 
-public interface IEntity : IRegistryCore, IDisposable {
-    ulong LGID { get; }
-    EntityName Name { get; set; }
-    World WorldContext { get; }
-    RegionContextBase RegionContext { get; }
-    AssetContextBase AssetContext { get; }
+    public interface IEntity : IDisposable {
+        ulong LGID { get; }
+        EntityName Name { get; set; }
 
-    // Returns the entity which implements IEntityCollection which contains this entity
-    IEntity ContainingEntity { get; set;  }
-    // do what is necessary to set ContainingEntity to null (remove from parent if necessary)
-    void DisconnectFromContainer();
+        // Contexts for this entity
+        IWorld WorldContext { get; }
+        IRegionContext RegionContext { get; }
+        IAssetContext AssetContext { get; }
 
-    void AddEntityToContainer( IEntity ent);
-    void RemoveEntityFromContainer( IEntity ent);
+        // Returns the entity which implements IEntityCollection which contains this entity
+        IEntity? ContainingEntity { get; set; }
+        // do what is necessary to set ContainingEntity to null (remove from parent if necessary)
+        void DisconnectFromContainer();
 
-    OMV.Quaternion Heading { get; set; }
-    OMV.Vector3 LocalPosition { get; set; }     // position relative to parent (if any)
-    OMV.Vector3 RegionPosition { get; }         // position relative to RegionContext
-    OMV.Vector3d GlobalPosition { get; }
+        void AddEntityToContainer(IEntity ent);
+        void RemoveEntityFromContainer(IEntity ent);
 
-    // code to check to see if this thing has changed from before
-    int LastEntityHashCode { get; set; }
-    // Notify the object that some of it state changed
-    void Update(UpdateCodes what);
+        OMV.Quaternion Heading { get; set; }
+        OMV.Vector3 LocalPosition { get; set; }     // position relative to parent (if any)
+        OMV.Vector3 RegionPosition { get; }         // position relative to RegionContext
+        OMV.Vector3d GlobalPosition { get; }
 
-    /// <summary>
-    /// An entity is decorated with additional Objects by other subsystems
-    /// that either build information about or references to an entity.
-    /// These additional objects are kept in a small array of objects for
-    /// speed. The index into the array is an integer for the subsystem.
-    /// There are predefined codes for the Viewer and Render but other
-    /// systems can create a new subsystem index.
-    /// </summary>
-    Object Addition(int i);
-    Object Addition(string s);
-    void SetAddition(int i, Object obj);
-}
+        // code to check to see if this thing has changed from before
+        int LastEntityHashCode { get; set; }
+        // Notify the object that some of it state changed
+        void Update(UpdateCodes what);
+
+        /// <summary>
+        /// An entity is decorated with additional Objects by other subsystems
+        /// that either build information about or references to an entity.
+        /// These additional objects are kept in a small array of objects for
+        /// speed. The index into the array is an integer for the subsystem.
+        /// There are predefined codes for the Viewer and Render but other
+        /// systems can create a new subsystem index.
+        /// </summary>
+        Object Addition(int i);
+        Object Addition(string s);
+        void SetAddition(int i, Object obj);
+    }
 }

@@ -15,7 +15,7 @@ using System.Text;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-using KeeKee.Framework.Config;
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
 
 using OMVSD = OpenMetaverse.StructuredData;
@@ -43,7 +43,7 @@ namespace KeeKee.Rest {
     /// </summary>
     public class RestManager : BackgroundService {
 
-        private readonly IKLogger<RestManager> m_log;
+        private readonly KLogger<RestManager> m_log;
         private readonly IOptions<RestManagerConfig> m_config;
         private readonly IOptions<KeeKeeConfig> m_keeKeeConfig;
 
@@ -69,7 +69,7 @@ namespace KeeKee.Rest {
         // return the full base URL with the port added
         public readonly string BaseURL;
 
-        public RestManager(IKLogger<RestManager> pLog,
+        public RestManager(KLogger<RestManager> pLog,
                         IOptions<RestManagerConfig> pConfig,
                         IOptions<KeeKeeConfig> pKeeKeeConfig,
                         RestHandlerFactory pRestHandlerFactory) {

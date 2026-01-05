@@ -18,7 +18,7 @@ namespace KeeKee.Framework.Logging {
     /// Implements IKLogger for dependency injection.
     /// </summary>
     /// <typeparam name="T">The type associated with the logger (for categorization).</typeparam>
-    public class KLogger<T> : IKLogger<T> {
+    public class KLogger<T> : IKLogger {
         private readonly ILogger<T> _innerLogger;
         private readonly string _categoryName = typeof(T).FullName ?? nameof(T);
         private readonly IOptions<KLoggerConfig> _options;
@@ -113,6 +113,14 @@ namespace KeeKee.Framework.Logging {
                     break;
                 case KLogLevel.DUPDATEDETAIL:
                     if (_options.Value.DUPDATEDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DTEXTURE:
+                    if (_options.Value.DTEXTURE)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DTEXTUREDETAIL:
+                    if (_options.Value.DTEXTUREDETAIL)
                         _innerLogger.Log(LLDetail, message, args);
                     break;
                 default:

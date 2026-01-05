@@ -16,7 +16,7 @@ using System.Text;
 using KeeKee;
 using KeeKee.Framework.Logging;
 using KeeKee.World;
-
+using Microsoft.Extensions.Options;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
@@ -49,7 +49,11 @@ namespace KeeKee.World.LL {
             }
         }
 
-        public LLAgent(OMV.GridClient theClient) {
+        public LLAgent(KLogger<LLAgent> pLog,
+                        IOptions<LLAgentConfig> pConfig,
+                        OMV.GridClient theClient) {
+            m_log = pLog;
+
             m_client = theClient;
             if (KeeKeeBase.Instance.AppParams.HasParameter("World.LL.Agent.PreMoveAvatar")) {
                 m_shouldPreMoveAvatar = KeeKeeBase.Instance.AppParams.ParamBool("World.LL.Agent.PreMoveAvatar");

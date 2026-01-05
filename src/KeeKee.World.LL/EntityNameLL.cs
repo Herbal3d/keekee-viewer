@@ -19,65 +19,65 @@ using KeeKee.World;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-// class to hold the LLLP specific name conversion routines
-public class EntityNameLL : EntityName {
+    // class to hold the LLLP specific name conversion routines
+    public class EntityNameLL : EntityName {
 
-    // being created with just a resource name. We extract the parts
-    public EntityNameLL(string name) : base(name) {
-    }
-
-    public EntityNameLL(EntityName ent) 
-            : base(ent.Name) {
-    }
-
-    public EntityNameLL(IEntity entityContext, string name) 
-            : base(entityContext.AssetContext, name) {
-    }
-
-    public EntityNameLL(AssetContextBase acontext, string name) 
-            : base(acontext, name) {
-    }
-
-    public static EntityNameLL ConvertTextureWorldIDToEntityName(AssetContextBase context, OMV.UUID textureWorldID) {
-        return ConvertTextureWorldIDToEntityName(context, textureWorldID.ToString());
-    }
-
-    public static EntityNameLL ConvertTextureWorldIDToEntityName(AssetContextBase context, string textureWorldID) {
-        return new EntityNameLL(context, textureWorldID);
-    }
-
-    // Return the cache filename for this entity. This is not based in the cache directory.
-    // At the moment, closely tied to the Ogre resource storage structure
-    public override string CacheFilename {
-        get {
-            string entReplace = Regex.Replace(EntityPart, EntityNameMatch, CachedNameReplace);
-            // if the replacement didn't happen entReplace == entName
-            string newName = base.CombineEntityName(HeaderPart, HostPart, entReplace);
-            // LogManager.Log.Log(LogLevel.DRENDERDETAIL, "ConvertTextureEntityNameToCacheFilename: " + entName.ToString() + " => " + newName);
-
-            // if windows, fix all the entity separators so they become directory separators
-            if (Path.DirectorySeparatorChar != '/') {
-                newName.Replace('/', Path.DirectorySeparatorChar);
-            }
-            return newName;
+        // being created with just a resource name. We extract the parts
+        public EntityNameLL(string name) : base(name) {
         }
-    }
 
-    // This class has a little more specific knowlege of how the complete entity name
-    // can be converted into its parts or override the default routines.
-    private const string HostPartMatch = @"^(.*)/........-....-....-....-.*$";
-    private const string HostPartReplace = @"$1";
-    // the host part is embedded in the name somewhere. See if we can find it.
-    public override string ExtractHostPartFromEntityName() {
-        return Regex.Replace(this.Name, HostPartMatch, HostPartReplace);
-    }
+        public EntityNameLL(EntityName ent)
+                : base(ent.Name) {
+        }
 
-    private const string UUIDMatch = @"^.*/(........-....-....-....-............).*$";
-    private const string UUIDReplace = @"$1";
-    // LL entities have a UUID in them of the real name of the entity
-    public override string ExtractEntityFromEntityName() {
-        return Regex.Replace(this.Name, UUIDMatch, UUIDReplace);
-    }
+        public EntityNameLL(IEntity entityContext, string name)
+                : base(entityContext.AssetContext, name) {
+        }
 
-}
+        public EntityNameLL(AssetContextBase acontext, string name)
+                : base(acontext, name) {
+        }
+
+        public static EntityNameLL ConvertTextureWorldIDToEntityName(AssetContextBase context, OMV.UUID textureWorldID) {
+            return ConvertTextureWorldIDToEntityName(context, textureWorldID.ToString());
+        }
+
+        public static EntityNameLL ConvertTextureWorldIDToEntityName(AssetContextBase context, string textureWorldID) {
+            return new EntityNameLL(context, textureWorldID);
+        }
+
+        // Return the cache filename for this entity. This is not based in the cache directory.
+        // At the moment, closely tied to the Ogre resource storage structure
+        public override string CacheFilename {
+            get {
+                string entReplace = Regex.Replace(EntityPart, EntityNameMatch, CachedNameReplace);
+                // if the replacement didn't happen entReplace == entName
+                string newName = base.CombineEntityName(HeaderPart, HostPart, entReplace);
+                // LogManager.Log.Log(LogLevel.DRENDERDETAIL, "ConvertTextureEntityNameToCacheFilename: " + entName.ToString() + " => " + newName);
+
+                // if windows, fix all the entity separators so they become directory separators
+                if (Path.DirectorySeparatorChar != '/') {
+                    newName.Replace('/', Path.DirectorySeparatorChar);
+                }
+                return newName;
+            }
+        }
+
+        // This class has a little more specific knowlege of how the complete entity name
+        // can be converted into its parts or override the default routines.
+        private const string HostPartMatch = @"^(.*)/........-....-....-....-.*$";
+        private const string HostPartReplace = @"$1";
+        // the host part is embedded in the name somewhere. See if we can find it.
+        public override string ExtractHostPartFromEntityName() {
+            return Regex.Replace(this.Name, HostPartMatch, HostPartReplace);
+        }
+
+        private const string UUIDMatch = @"^.*/(........-....-....-....-............).*$";
+        private const string UUIDReplace = @"$1";
+        // LL entities have a UUID in them of the real name of the entity
+        public override string ExtractEntityFromEntityName() {
+            return Regex.Replace(this.Name, UUIDMatch, UUIDReplace);
+        }
+
+    }
 }

@@ -9,21 +9,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using KeeKee.Framework.Logging;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public class LLEntityPhysical : LLEntityBase {
+    public class LLEntityPhysical : LLEntityBase, IEntityPhysical {
 
-        public LLEntityPhysical(AssetContextBase acontext, LLRegionContext rcontext, 
-                ulong regionHandle, uint localID, OMV.Primitive prim) : base(rcontext, acontext) {
-            this.Sim = rcontext.Simulator;
+        public LLEntityPhysical(KLogger<LLEntityPhysical> pLog,
+                                AssetContextBase pAContext,
+                                LLRegionContext pRContext,
+                                ulong regionHandle,
+                                uint localID,
+                                OMV.Primitive prim)
+                            : base(pLog, pRContext, pAContext) {
+
+            this.Sim = pRContext.Simulator;
             this.RegionHandle = regionHandle;
             this.LocalID = localID;
             this.Prim = prim;
-            this.Name = new EntityNameLL(acontext, m_prim.ID.ToString());
+
+            this.Name = new EntityNameLL(pAContext, Prim.ID.ToString());
         }
 
         public override void Dispose() {

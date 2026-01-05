@@ -9,18 +9,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Text;
+using Microsoft.Extensions.Options;
 
+using KeeKee.Config;
 using KeeKee.Comm;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
-using OMV = OpenMetaverse;
 
-using CSJ2K;
+using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
     /// <summary>
@@ -31,24 +27,25 @@ namespace KeeKee.World {
     /// that actually find and fetch the data. The information goes into the caching
     /// system for access by the renderer and other subsystems.
     /// </summary>
-    public abstract class AssetContextBase : IDisposable {
-        private ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
+    public abstract class AssetContextBase : IAssetContext, IDisposable {
+
+        protected IKLogger m_log;
 
         // When a requested download is finished, you can be called with the ID of the
         // completed asset and the entityName of ??
-        public delegate void DownloadFinishedCallback(string entName, bool hasTransparancy);
-        public delegate void DownloadProgressCallback(string entName);
+        // public delegate void DownloadFinishedCallback(string entName, bool hasTransparancy);
+        // public delegate void DownloadProgressCallback(string entName);
 
 #pragma warning disable 0067   // disable unused event warning
-        public event DownloadFinishedCallback OnDownloadFinished;
-        public event DownloadProgressCallback OnDownloadProgress;
+        public event DownloadFinishedCallback? OnDownloadFinished;
+        public event DownloadProgressCallback? OnDownloadProgress;
 #pragma warning restore 0067
 
         // =========================================================
         protected class WaitingInfo : IComparable<WaitingInfo> {
             public OMV.UUID worldID;
             public DownloadFinishedCallback callback;
-            public string filename;
+            public string? filename;
             public AssetType type;
             public WaitingInfo(OMV.UUID wid, DownloadFinishedCallback cback) {
                 worldID = wid;
@@ -59,21 +56,11 @@ namespace KeeKee.World {
             }
         }
 
-        public enum AssetType {
-            Texture,
-            SculptieTexture,
-            BakedTexture
-        }
+        public string Name { get; set; } = "UNKNOWN";
 
-        protected string m_Name;
-        public string Name { get { return m_Name; } }
+        public string CacheDirBase { get; set; } = "";
 
-        protected string m_cacheDir;
-        public string CacheDirBase {
-            get { return m_cacheDir; }
-        }
-
-        public static List<AssetContextBase> AssetContexts;
+        public static List<AssetContextBase> AssetContexts = new List<AssetContextBase>();
 
         // used to lock access to the filesystem so the threads and instances of this don't get too tangled
         protected static readonly object FileSystemAccessLock = new object();
@@ -84,14 +71,18 @@ namespace KeeKee.World {
         protected static int m_numAssetContextBase = 0;
 
         protected ICommProvider m_comm;       // handle to the underlying comm provider
+        protected IOptions<AssetConfig> m_assetConfig;
 
-        static AssetContextBase() {
-            AssetContexts = new List<AssetContextBase>();
-        }
+        public AssetContextBase(IKLogger pLog,
+                                ICommProvider pCommProvider,
+                                IOptions<AssetConfig> pAssetConfig,
+                                string name) {
+            m_log = pLog;
+            m_comm = pCommProvider;
+            m_assetConfig = pAssetConfig;
 
-        public AssetContextBase(string name) {
             m_numAssetContextBase++;
-            m_Name = name;
+            Name = name;
             // remember all the contexts
             lock (AssetContexts) {
                 if (!AssetContexts.Contains(this)) {
@@ -105,7 +96,7 @@ namespace KeeKee.World {
 
         public void InitializeContext(ICommProvider comm, string cacheDir, int maxrequests) {
             m_comm = comm;
-            m_cacheDir = cacheDir;
+            CacheDirBase = cacheDir;
             m_maxRequests = maxrequests;
             InitializeContextFinish();
         }
@@ -121,6 +112,7 @@ namespace KeeKee.World {
         /// <param name="textureEntityName">the entity name of this texture</param>
         public abstract void DoTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finished);
 
+        /*
         /// <summary>
         /// Get the texture right now. If the texture is not immediately available (not on local
         /// computer's disk or memory), return null saying it's not here.
@@ -140,15 +132,16 @@ namespace KeeKee.World {
                     }
                 }
             } catch (OutOfMemoryException) {
-                // m_log.Log(LogLevel.DBADERROR, "GetTexture: OUT OF MEMORY!!!");
+                // m_log.Log(KLogLevel.DBADERROR, "GetTexture: OUT OF MEMORY!!!");
                 bitmap = null;
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "GetTexture: Exception getting texture {0}: {1}",
+                m_log.Log(KLogLevel.DBADERROR, "GetTexture: Exception getting texture {0}: {1}",
                     textureEnt.Name, e.ToString());
                 bitmap = null;
             }
             return bitmap;
         }
+        */
 
 
         /// <summary>
@@ -160,10 +153,10 @@ namespace KeeKee.World {
         /// <param name="textureEntityName"></param>
         /// <param name="finished"></param>
         /// <returns></returns>
-        public static void RequestTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finished) {
-            AssetContextBase textureOwner = null;
+        public void RequestTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finished) {
+            IAssetContext? textureOwner = null;
             lock (AssetContexts) {
-                foreach (AssetContextBase acb in AssetContexts) {
+                foreach (IAssetContext acb in AssetContexts) {
                     if (acb.isTextureOwner(textureEntityName)) {
                         textureOwner = acb;
                         break;
@@ -173,7 +166,7 @@ namespace KeeKee.World {
             if (textureOwner != null) {
                 textureOwner.DoTextureLoad(textureEntityName, typ, finished);
             } else {
-                LogManager.Log.Log(LogLevel.DBADERROR, "RequestTextureLoad: found not asset context for texture " + textureEntityName);
+                m_log.Log(KLogLevel.DBADERROR, "RequestTextureLoad: found not asset context for texture " + textureEntityName);
             }
         }
 
@@ -206,7 +199,7 @@ namespace KeeKee.World {
                     }
                 }
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "CheckIfCached: exception: {0}", e);
+                m_log.Log(KLogLevel.DBADERROR, "CheckIfCached: exception: {0}", e);
                 ret = false;
             }
             return ret;
@@ -216,11 +209,13 @@ namespace KeeKee.World {
         /// Given a fully qualified filename, make sure all the parent directies exist
         /// </summary>
         /// <param name="filename"></param>
-        protected static void MakeParentDirectoriesExist(string filename) {
-            string textureDirName = Path.GetDirectoryName(filename);
-            lock (AssetContextBase.FileSystemAccessLock) {
-                if (!Directory.Exists(textureDirName)) {
-                    Directory.CreateDirectory(textureDirName);
+        protected void MakeParentDirectoriesExist(string? filename) {
+            string? textureDirName = Path.GetDirectoryName(filename ?? "");
+            if (textureDirName != null) {
+                lock (AssetContextBase.FileSystemAccessLock) {
+                    if (!Directory.Exists(textureDirName)) {
+                        Directory.CreateDirectory(textureDirName);
+                    }
                 }
             }
         }
@@ -237,7 +232,7 @@ namespace KeeKee.World {
                 OMV.Assets.AssetTexture assetTexture = new OMV.Assets.AssetTexture(OMV.UUID.Zero, data);
                 ret = CheckAssetTextureForTransparancy(assetTexture);
             } catch (Exception e) {
-                m_log.Log(LogLevel.DTEXTURE, "CheckTextureFileForTransparancy: error checking {0}: {1}",
+                m_log.Log(KLogLevel.DTEXTURE, "CheckTextureFileForTransparancy: error checking {0}: {1}",
                     textureFilename, e.ToString());
                 ret = true;
             }
@@ -296,7 +291,7 @@ namespace KeeKee.World {
             // if texture could not be downloaded, create a fake texture
             OMV.UUID assetWorldID = assetTexture.AssetID;
             List<WaitingInfo> toCall = new List<WaitingInfo>();
-            m_log.Log(LogLevel.DTEXTUREDETAIL, "ProcessDownloadFinished: Completion for " + assetWorldID.ToString());
+            m_log.Log(KLogLevel.DTEXTUREDETAIL, "ProcessDownloadFinished: Completion for " + assetWorldID.ToString());
             lock (m_waiting) {
                 foreach (KeyValuePair<OMV.UUID, WaitingInfo> kvp in m_waiting) {
                     if (kvp.Value.worldID == assetWorldID) {
@@ -318,10 +313,10 @@ namespace KeeKee.World {
                 foreach (WaitingInfo wi in toCall) {
                     try {
                         WriteOutNotFoundTexture(wi);
-                        m_log.Log(LogLevel.DTEXTURE,
+                        m_log.Log(KLogLevel.DTEXTURE,
                             "ProcessDownloadFinished: Texture fetch failed={0}. Using not found texture.", wi.worldID.ToString());
                     } catch (Exception e) {
-                        m_log.Log(LogLevel.DBADERROR,
+                        m_log.Log(KLogLevel.DBADERROR,
                             "ProcessDownloadFinished: Texture fetch failed. Could not create default texture: " + e.ToString());
                     }
                 }
@@ -335,12 +330,12 @@ namespace KeeKee.World {
 
         // For some reason this work item failed. Put the not found texture in it's place
         private void WriteOutNotFoundSculpty(WaitingInfo wi) {
-            string noSculptyFilename = KeeKeeBase.Instance.AppParams.ParamString(m_comm.Name + ".Assets.NoSculptyFilename");
+            string noSculptyFilename = m_assetConfig.Value.NoSculptyFilename;
             WriteOutNotFoundFile(wi, noSculptyFilename);
         }
 
         private void WriteOutNotFoundTexture(WaitingInfo wi) {
-            string noTextureFilename = KeeKeeBase.Instance.AppParams.ParamString(m_comm.Name + ".Assets.NoTextureFilename");
+            string noTextureFilename = m_assetConfig.Value.NoTextureFilename;
             WriteOutNotFoundFile(wi, noTextureFilename);
         }
 
@@ -352,10 +347,10 @@ namespace KeeKee.World {
                     // fetch the texture. This copy is not a good thing.
                     File.Copy(filename, wi.filename);
                 }
-                m_log.Log(LogLevel.DTEXTURE,
+                m_log.Log(KLogLevel.DTEXTURE,
                     "ProcessDownloadFinished: Texture fetch failed={0}. Using not found texture.", wi.worldID.ToString());
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR,
+                m_log.Log(KLogLevel.DBADERROR,
                     "ProcessDownloadFinished: Texture fetch failed. Could not create default texture: " + e.ToString());
             }
         }
@@ -367,9 +362,10 @@ namespace KeeKee.World {
             string m_commName = (string)lParams[2];
             bool hasTransparancy;
 
+            /*
             foreach (WaitingInfo wii in m_completeWork) {
                 EntityName textureEntityName = ConvertToEntityName(this, wii.worldID.ToString());
-                bool m_convertToPng = KeeKeeBase.Instance.AppParams.ParamBool(m_commName + ".Assets.ConvertPNG");
+                bool m_convertToPng = m_assetConfig.Value.ConvertPNG;
                 System.Drawing.Image tempImage = null;
                 if (wii.type == AssetType.Texture) {
                     // a regular texture we write out as it's JPEG2000 image
@@ -396,7 +392,7 @@ namespace KeeKee.World {
                                     }
                                 }
                             } catch (Exception e) {
-                                m_log.Log(LogLevel.DBADERROR, "ProcessDownloadFinished: TEXTURE DOWNLOAD COMPLETE. FAILED PNG FILE CREATION FOR {0}: {1}",
+                                m_log.Log(KLogLevel.DBADERROR, "ProcessDownloadFinished: TEXTURE DOWNLOAD COMPLETE. FAILED PNG FILE CREATION FOR {0}: {1}",
                                         textureEntityName.Name, e.ToString());
                                 WriteOutNotFoundTexture(wii);
                             }
@@ -411,18 +407,18 @@ namespace KeeKee.World {
                                     }
                                 }
                             } catch (Exception e) {
-                                m_log.Log(LogLevel.DBADERROR, "ProcessDownloadFinished: TEXTURE DOWNLOAD COMPLETE. ERROR JPEG2000 FILE CREATION FOR {0}: {1}",
+                                m_log.Log(KLogLevel.DBADERROR, "ProcessDownloadFinished: TEXTURE DOWNLOAD COMPLETE. ERROR JPEG2000 FILE CREATION FOR {0}: {1}",
                                             textureEntityName.Name, e.ToString());
                                 WriteOutNotFoundTexture(wii);
                             }
                         }
-                        m_log.Log(LogLevel.DTEXTUREDETAIL, "ProcessDownloadFinished: Download finished callback: " + wii.worldID.ToString());
+                        m_log.Log(KLogLevel.DTEXTUREDETAIL, "ProcessDownloadFinished: Download finished callback: " + wii.worldID.ToString());
                         // wii.callback(textureEntityName.Name, hasTransparancy);
                         // schedule callback on another thread (it could call back into this routine)
                         Object[] finishCallParams = { wii.callback, textureEntityName.Name, hasTransparancy };
                         m_completionWork.DoLater(FinishCallDoLater, finishCallParams);
                     } catch (Exception e) {
-                        m_log.Log(LogLevel.DBADERROR, "ProcessDownloadFinished: TEXTURE DOWNLOAD COMPLETE. UNKNOWN FAILURE CREATING FILE FOR {0}: {1}",
+                        m_log.Log(KLogLevel.DBADERROR, "ProcessDownloadFinished: TEXTURE DOWNLOAD COMPLETE. UNKNOWN FAILURE CREATING FILE FOR {0}: {1}",
                             textureEntityName.Name, e.ToString());
                         WriteOutNotFoundTexture(wii);
                     }
@@ -453,21 +449,22 @@ namespace KeeKee.World {
                                     }
                                 }
                             } catch (Exception e) {
-                                m_log.Log(LogLevel.DBADERROR, "ProcessDownloadFinished: SCULPTIE TEXTURE DOWNLOAD COMPLETE. FAILED FILE CREATION FOR {0}: {1}",
+                                m_log.Log(KLogLevel.DBADERROR, "ProcessDownloadFinished: SCULPTIE TEXTURE DOWNLOAD COMPLETE. FAILED FILE CREATION FOR {0}: {1}",
                                         textureEntityName.Name, e.ToString());
                                 // the usual error is 'file already exists' so let the system use it
                             }
-                            m_log.Log(LogLevel.DTEXTUREDETAIL, "ProcessDownloadFinished: Download sculpty finished callback: " + wii.worldID.ToString());
+                            m_log.Log(KLogLevel.DTEXTUREDETAIL, "ProcessDownloadFinished: Download sculpty finished callback: " + wii.worldID.ToString());
                             Object[] finishCallParams = { wii.callback, textureEntityName.Name, false };
                             m_completionWork.DoLater(FinishCallDoLater, finishCallParams);
                         }
                     } catch (Exception e) {
-                        m_log.Log(LogLevel.DBADERROR, "ProcessDownloadFinished: SCULPTIE TEXTURE DOWNLOAD COMPLETE. UNKNOWN ERROR PROCESSING {0}: {1}",
+                        m_log.Log(KLogLevel.DBADERROR, "ProcessDownloadFinished: SCULPTIE TEXTURE DOWNLOAD COMPLETE. UNKNOWN ERROR PROCESSING {0}: {1}",
                             textureEntityName.Name, e.ToString());
                         WriteOutNotFoundSculpty(wii);
                     }
                 }
             }
+            */
             m_completeWork.Clear();
             CompletionWorkComplete();
             return true;

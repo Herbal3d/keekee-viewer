@@ -33,9 +33,11 @@ namespace KeeKee.Framework.Logging {
         DWORLD,
         DWORLDDETAIL,
         DUPDATE,
-        DUPDATEDETAIL
+        DUPDATEDETAIL,
+        DTEXTURE,
+        DTEXTUREDETAIL
     }
-    public interface IKLogger<T> : ILogger<T> {
+    public interface IKLogger : ILogger {
         // Log with our KLogLevel
         void Log(KLogLevel level, string message, params object[] args);
         public void LogInfo(string message, params object[] args);

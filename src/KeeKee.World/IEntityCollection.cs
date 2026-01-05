@@ -15,9 +15,9 @@ using System.Text;
 
 namespace KeeKee.World {
 
-public delegate void EntityNewCallback(IEntity ent);
-public delegate void EntityUpdateCallback(IEntity ent, UpdateCodes what);
-public delegate void EntityRemovedCallback(IEntity ent);
+    public delegate void EntityNewCallback(IEntity ent);
+    public delegate void EntityUpdateCallback(IEntity ent, UpdateCodes what);
+    public delegate void EntityRemovedCallback(IEntity ent);
 
     /// <summary>
     /// A collection of entities. Any entity that is a 'parent' of a set
@@ -28,9 +28,9 @@ public delegate void EntityRemovedCallback(IEntity ent);
     /// </summary>
     public interface IEntityCollection : IDisposable {
         // when new items are added to the world
-        event EntityNewCallback OnEntityNew;
-        event EntityUpdateCallback OnEntityUpdate;
-        event EntityRemovedCallback OnEntityRemoved;
+        event EntityNewCallback? OnEntityNew;
+        event EntityUpdateCallback? OnEntityUpdate;
+        event EntityRemovedCallback? OnEntityRemoved;
 
         int Count { get; }
 
@@ -73,7 +73,7 @@ public delegate void EntityRemovedCallback(IEntity ent);
         /// <param name="ent">found entity</param>
         /// <param name="createIt">delegate called to create the entity if it doesn't exist</param>
         /// <returns>true if we created a new entry</returns>
-        bool TryGetCreateEntity(EntityName entName, out IEntity ent, RegionCreateEntityCallback createIt);
+        bool TryGetCreateEntity(EntityName entName, out IEntity? ent, RegionCreateEntityCallback createIt);
 
         IEntity FindEntity(Predicate<IEntity> pred);
 

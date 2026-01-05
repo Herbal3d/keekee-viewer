@@ -30,5 +30,7 @@ public class KLoggerConfig {
     public bool DWORLDDETAIL { get; set; } = false;
     public bool DUPDATE { get; set; } = false;
     public bool DUPDATEDETAIL { get; set; } = false;
+    public bool DTEXTURE { get; set; } = false;
+    public bool DTEXTUREDETAIL { get; set; } = false;
 }
 
