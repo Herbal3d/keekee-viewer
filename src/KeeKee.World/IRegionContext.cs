@@ -37,9 +37,6 @@ namespace KeeKee.World {
 
         #endregion Events
 
-        // get the name of the region
-        EntityName Name { get; }
-
         // get the type of the region
         WorldGroupCode WorldGroup { get; }
 
@@ -51,6 +48,9 @@ namespace KeeKee.World {
 
         // the world coordinate of the region's {0,0,0}
         OMV.Vector3d WorldBase { get; }
+
+        // the entities in this region
+        IEntityCollection Entities { get; }
 
         // given an address relative to this region, return a global, world address
         OMV.Vector3d CalculateGlobalPosition(OMV.Vector3 pos);

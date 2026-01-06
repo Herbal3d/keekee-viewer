@@ -15,7 +15,7 @@ using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
 
-    public abstract class LLEntityBase : EntityBase {
+    public abstract class LLEntity : EntityBase {
 
         protected IKLogger m_log;
         public OMV.Primitive? Prim { get; set; }
@@ -25,20 +25,21 @@ namespace KeeKee.World.LL {
 
         public OMV.Simulator? Sim { get; set; }
 
-        public const uint NOLOCALID = 0xffffffff;
-        protected uint m_localID;
         // an LL localID is a per sim unique handle for the item
-        public uint LocalID { get { return m_localID; } set { m_localID = value; m_LGID = m_localID; } }
+        public const uint NOLOCALID = 0xffffffff;
+        public uint LocalID { get; set; }
 
-        public LLEntityBase(IKLogger pLog,
-                            RegionContextBase pRContext,
-                            AssetContextBase pAContext)
-                        : base(pRContext, pAContext) {
+        public LLEntity(IKLogger pLog,
+                            IWorld pWorld,
+                            IRegionContext pRContext,
+                            IAssetContext pAContext)
+                        : base(pLog, pWorld, pRContext, pAContext) {
             this.m_log = pLog;
+
             this.Prim = null;
             this.Sim = null;
-            this.RegionHandle = LLEntityBase.NOREGION;
-            this.LocalID = LLEntityBase.NOLOCALID;
+            this.RegionHandle = LLEntity.NOREGION;
+            this.LocalID = LLEntity.NOLOCALID;
         }
 
         public override OMV.Quaternion Heading {
@@ -79,7 +80,7 @@ namespace KeeKee.World.LL {
             get {
                 OMV.Vector3 regionRelative = this.RegionPosition;
                 if (Prim != null) {
-                    return m_regionContext.CalculateGlobalPosition(regionRelative);
+                    return RegionContext.CalculateGlobalPosition(regionRelative);
                 } else {
                     return base.GlobalPosition;
                 }
@@ -92,6 +93,8 @@ namespace KeeKee.World.LL {
         /// </summary>
         /// <param name="what"></param>
         public override void Update(UpdateCodes what) {
+            // TODO: parant management shouldn't be hidden in Update(). Where should it go?
+            /*
             // Make sure parenting is correct (we're in our parent's collection)
             try {
                 if (this.Prim != null) {    // if no prim, no parent possible
@@ -119,6 +122,7 @@ namespace KeeKee.World.LL {
             } catch (Exception e) {
                 m_log.Log(KLogLevel.DBADERROR, "FAILED ProcessEntityContainer: " + e);
             }
+            */
 
             // tell the world about our updating
             base.Update(what);

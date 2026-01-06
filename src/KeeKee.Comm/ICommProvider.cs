@@ -9,9 +9,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using KeeKee.Framework.Statistics;
-
 using Microsoft.Extensions.Options;
+
+using KeeKee.Config;
+using KeeKee.Framework.Statistics;
 
 using OMV = OpenMetaverse;
 

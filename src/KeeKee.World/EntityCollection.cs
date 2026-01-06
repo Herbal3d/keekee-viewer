@@ -18,7 +18,7 @@ using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
     public class EntityCollection : IEntityCollection {
-        protected ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
+        protected IKLogger m_log;
 
         public event EntityNewCallback? OnEntityNew;
         public event EntityUpdateCallback? OnEntityUpdate;
@@ -31,7 +31,8 @@ namespace KeeKee.World {
 
         protected string m_name;
 
-        public EntityCollection(string nam) {
+        public EntityCollection(IKLogger pLog, string nam) {
+            m_log = pLog;
             m_name = nam;
             m_entityDictionary = new OMV.DoubleDictionary<string, ulong, IEntity>();
         }
@@ -41,7 +42,7 @@ namespace KeeKee.World {
         }
 
         public void AddEntity(IEntity entity) {
-            // m_log.Log(LogLevel.DWORLDDETAIL, "AddEntity: {0}, n={1}", m_name, entity.Name.Name);
+            // m_log.Log(KLogLevel.DWORLDDETAIL, "AddEntity: {0}, n={1}", m_name, entity.Name.Name);
             if (TrackEntity(entity)) {
                 // tell the viewer about this prim and let the renderer convert it
                 //    into the format needed for display

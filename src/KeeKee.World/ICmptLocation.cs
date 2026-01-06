@@ -9,15 +9,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace KeeKee.Config {
+using OMV = OpenMetaverse;
 
-    public class KeeKeeConfig {
-        public const string subSectionName = "KeeKeeViewer";
+namespace KeeKee.World {
 
-        public string AppTitle { get; set; } = "KeeKee Viewer";
-        public string AppName { get; set; } = "KeeKeeViewer";
-        public string AppVersion { get; set; } = "0.1.0";
+    public interface ICmptLocation : IEntityComponent {
+
+        OMV.Quaternion Heading { get; set; }
+        OMV.Vector3 LocalPosition { get; set; }     // position relative to parent (if any)
+        OMV.Vector3 RegionPosition { get; }         // position relative to RegionContext
+        OMV.Vector3d GlobalPosition { get; }
 
     }
 }
-

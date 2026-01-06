@@ -9,121 +9,67 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Parameters;
+
 using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.World {
-/// <summary>
-/// Keeps a list of the possible grids and returns info as requested
-/// </summary>
-public class Grids {
+    /// <summary>
+    /// Keeps a list of the possible grids and returns info as requested
+    /// </summary>
+    public class Grids : BackgroundService {
+        private KLogger<Grids> m_log;
 
-    public readonly static string Current = "CURRENT";
+        private string m_currentGrid = "UnknownXXYYZZ";
+        private List<IRegionContext> m_regionList;
+        private IOptions<GridConfig> m_gridConfig;
 
-    private ParameterSet m_gridInfo = null;
-    private string m_currentGrid = "UnknownXXYYZZ";
+        public Grids(KLogger<Grids> pLog,
+                     IOptions<GridConfig> pGridConfig) {
+            m_log = pLog;
+            m_gridConfig = pGridConfig;
 
-    public Grids() {
-        KeeKeeBase.Instance.AppParams.AddDefaultParameter("Grids.Filename.Directory",
-            Utilities.GetDefaultApplicationStorageDir(null),
-            "Directory that should contain the grid filename");
-        KeeKeeBase.Instance.AppParams.AddDefaultParameter("Grids.Filename", "Grids.json",
-            "Filename of grid specs");
-    }
-
-    // cause the grid information to be reloaded
-    public void Reload() {
-        m_gridInfo = null;
-    }
-
-    // set the grid name so Grids.Current works
-    public void SetCurrentGrid(string currentGrid) {
-        m_currentGrid = currentGrid;
-    }
-
-    public string GridParameter(string gridName, string parm) {
-        CheckInit();
-        string ret = null;
-        string lookupGrid = gridName;
-        if (gridName == "CURRENT") lookupGrid = m_currentGrid;
-        try {
-            if (m_gridInfo.HasParameter(lookupGrid)) {
-                OMVSD.OSDMap gInfo = (OMVSD.OSDMap)m_gridInfo.ParamValue(lookupGrid);
-                ret = gInfo[parm].AsString();
-            }
+            m_regionList = new List<IRegionContext>();
         }
-        catch {
-            ret = null;
-        }
-        return ret;
-    }
 
-    public string GridLoginURI(string gridName) {
-        CheckInit();
-        string ret = null;
-        string lookupGrid = gridName;
-        if (gridName == "CURRENT") lookupGrid = m_currentGrid;
-        try {
-            if (m_gridInfo.HasParameter(lookupGrid)) {
-                OMVSD.OSDMap gInfo = (OMVSD.OSDMap)m_gridInfo.ParamValue(lookupGrid);
-                ret = gInfo["LoginURL"].AsString();
-            }
-        }
-        catch {
-            ret = null;
-        }
-        return ret;
-    }
-
-    // Performs an action on each map which describes a grid ("Name", "LoginURL", ...)
-    public void ForEach(Action<OMVSD.OSDMap> act) {
-        CheckInit();
-        try {
-            m_gridInfo.ForEach(delegate(string k, OMVSD.OSD v) {
-                act((OMVSD.OSDMap)v);
-            });
-        }
-        catch (Exception e) {
-            LogManager.Log.Log(LogLevel.DBADERROR, "GridList.ForEach: Exception: {0}", e.ToString());
-        }
-    }
-    
-    // see that the grid info is read in. Called at the beginning of every data access method
-    private void CheckInit() {
-        if (m_gridInfo == null) {
-            string gridsFilename = "";
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+            m_log.Log(KLogLevel.DINIT, "Grid ExecuteAsync started.");
+            // wait until cancelled
             try {
-                m_gridInfo = new ParameterSet();
-                gridsFilename = Path.Combine(KeeKeeBase.Instance.AppParams.ParamString("Grids.Filename.Directory"),
-                                    KeeKeeBase.Instance.AppParams.ParamString("Grids.Filename"));
-                if (!File.Exists(gridsFilename)) {
-                    // if the user copy of the config file doesn't exist, copy the default into place
-                    string gridsDefaultFilename = Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, 
-                                    KeeKeeBase.Instance.AppParams.ParamString("Grids.Filename"));
-                    if (File.Exists(gridsDefaultFilename)) {
-                        File.Copy(gridsDefaultFilename, gridsFilename);
-                    }
-                    else {
-                        LogManager.Log.Log(LogLevel.DBADERROR, "GridManager: GRIDS FILE DOES NOT EXIST: {0}", gridsFilename);
-                        gridsFilename = null;
-                    }
+                while (!cancellationToken.IsCancellationRequested) {
+                    await Task.Delay(1000, cancellationToken);
                 }
-                if (gridsFilename != null) {
-                    m_gridInfo.AddFromFile(gridsFilename);
-                }
+            } catch (TaskCanceledException) {
+                // normal exit path
             }
-            catch (Exception e) {
-                LogManager.Log.Log(LogLevel.DBADERROR, "GridManager: FAILED READING GRIDS FILE '{0}': {1}",
-                        gridsFilename, e.ToString());
+            m_log.Log(KLogLevel.DINIT, "Grid ExecuteAsync exiting.");
+        }
 
+
+        // set the grid name so Grids.Current works
+        public void SetCurrentGrid(string currentGrid) {
+            m_currentGrid = currentGrid;
+        }
+
+        public string? GridLoginURI(string gridName) {
+            string ret = m_gridConfig.Value.Grids[gridName].LoginURI;
+            return ret;
+        }
+
+        // Performs an action on each map which describes a grid ("Name", "LoginURL", ...)
+        public void ForEach(Action<GridConfig.GridDefinition> act) {
+            try {
+                foreach (var kvp in m_gridConfig.Value.Grids) {
+                    act(kvp.Value);
+                }
+                ;
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.DBADERROR, "GridList.ForEach: Exception: {0}", e.ToString());
             }
         }
     }
-
-}
 }

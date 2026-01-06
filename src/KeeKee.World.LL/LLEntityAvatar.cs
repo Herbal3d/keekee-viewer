@@ -18,7 +18,7 @@ using KeeKee.World;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public sealed class LLEntityAvatar : LLEntityBase, IEntityAvatar {
+    public sealed class LLEntityAvatar : LLEntity, IEntityAvatar {
 
         public OMV.Avatar Avatar { get; set; }
 
@@ -46,11 +46,12 @@ namespace KeeKee.World.LL {
         }
 
         public LLEntityAvatar(KLogger<LLEntityAvatar> pLog,
+                            IWorld pWorld,
                             IAssetContext pAContext,
                             LLRegionContext pRContext,
                             ulong regionHandle,
                             OMV.Avatar av)
-                        : base(pLog, pRContext, pAContext) {
+                        : base(pLog, pWorld, pRContext, pAContext) {
 
             // let people looking at IEntity's get at my avatarness
             this.Sim = pRContext.Simulator;
@@ -63,7 +64,7 @@ namespace KeeKee.World.LL {
                             av.ID.ToString(), this.LocalID);
         }
 
-        public static EntityName AvatarEntityNameFromID(AssetContextBase pAContext, OMV.UUID ID) {
+        public static EntityName AvatarEntityNameFromID(IAssetContext pAContext, OMV.UUID ID) {
             return new EntityNameLL(pAContext, "Avatar/" + ID.ToString());
         }
 
@@ -102,7 +103,7 @@ namespace KeeKee.World.LL {
                 // this works in conjunction with the base class to calculate region location
                 OMV.Vector3 regionRelative = this.RegionPosition;
                 if (Avatar != null) {
-                    return m_regionContext.CalculateGlobalPosition(regionRelative);
+                    return RegionContext.CalculateGlobalPosition(regionRelative);
                 }
                 return base.GlobalPosition;
             }
@@ -112,9 +113,9 @@ namespace KeeKee.World.LL {
         public override void Update(UpdateCodes what) {
             // if we are the agent in the world, also update the agent
             base.Update(what);
-            if (World.Instance.Agent != null && this == World.Instance.Agent.AssociatedAvatar) {
+            if (WorldContext.Agent != null && this == WorldContext.Agent.AssociatedAvatar) {
                 m_log.Log(KLogLevel.DUPDATEDETAIL, "LLEntityAvatar: calling World.UpdateAgent: what={0}", what);
-                World.Instance.UpdateAgent(what);
+                WorldContext.Agent.Update(what);
             }
             // do any rendering or whatever for this avatar
         }

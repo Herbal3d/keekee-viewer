@@ -9,8 +9,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using KeeKee.Framework.Logging;
 using Microsoft.Extensions.Hosting;
+
+using KeeKee.Framework.Logging;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
@@ -78,30 +80,28 @@ namespace KeeKee.World {
         #region Region Management
         public void AddRegion(IRegionContext rcontext) {
             m_log.Log(KLogLevel.DWORLD, "Simulator connected " + rcontext.Name);
-            IRegionContext foundRegion = null;
+            IRegionContext? foundRegion = null;
             lock (m_regionList) {
                 foundRegion = GetRegion(rcontext.Name);
                 if (foundRegion == null) {
                     // we don't know about this region. Add it and connect to events
                     m_regionList.Add(rcontext);
 
-                    IEntityCollection coll;
-                    if (rcontext.TryGet<IEntityCollection>(out coll)) {
-                        if (Region_OnNewEntityCallback == null) {
-                            Region_OnNewEntityCallback = new EntityNewCallback(Region_OnNewEntity);
-                        }
-                        coll.OnEntityNew += Region_OnNewEntityCallback;
-
-                        if (Region_OnUpdateEntityCallback == null) {
-                            Region_OnUpdateEntityCallback = new EntityUpdateCallback(Region_OnUpdateEntity);
-                        }
-                        coll.OnEntityUpdate += Region_OnUpdateEntityCallback;
-
-                        if (Region_OnRemovedEntityCallback == null) {
-                            Region_OnRemovedEntityCallback = new EntityRemovedCallback(Region_OnRemovedEntity);
-                        }
-                        coll.OnEntityRemoved += Region_OnRemovedEntityCallback;
+                    IEntityCollection coll = rcontext.Entities;
+                    if (Region_OnNewEntityCallback == null) {
+                        Region_OnNewEntityCallback = new EntityNewCallback(Region_OnNewEntity);
                     }
+                    coll.OnEntityNew += Region_OnNewEntityCallback;
+
+                    if (Region_OnUpdateEntityCallback == null) {
+                        Region_OnUpdateEntityCallback = new EntityUpdateCallback(Region_OnUpdateEntity);
+                    }
+                    coll.OnEntityUpdate += Region_OnUpdateEntityCallback;
+
+                    if (Region_OnRemovedEntityCallback == null) {
+                        Region_OnRemovedEntityCallback = new EntityRemovedCallback(Region_OnRemovedEntity);
+                    }
+                    coll.OnEntityRemoved += Region_OnRemovedEntityCallback;
 
                     if (Region_OnRegionUpdatedCallback == null) {
                         Region_OnRegionUpdatedCallback = new RegionRegionUpdatedCallback(Region_OnRegionUpdated);
@@ -119,26 +119,26 @@ namespace KeeKee.World {
         private EntityNewCallback Region_OnNewEntityCallback = null;
         private void Region_OnNewEntity(IEntity ent) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Region_OnNewEntity: {0}", ent.Name.Name);
-            if (OnWorldEntityNew != null) OnWorldEntityNew(ent);
+            OnWorldEntityNew?.Invoke(ent);
             return;
         }
 
         private EntityUpdateCallback Region_OnUpdateEntityCallback = null;
         private void Region_OnUpdateEntity(IEntity ent, UpdateCodes what) {
-            if (OnWorldEntityUpdate != null) OnWorldEntityUpdate(ent, what);
+            OnWorldEntityUpdate?.Invoke(ent, what);
             return;
         }
 
         private EntityRemovedCallback Region_OnRemovedEntityCallback = null;
         private void Region_OnRemovedEntity(IEntity ent) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Region_OnRemovedEntity: {0}", ent.Name.Name);
-            if (OnWorldEntityRemoved != null) OnWorldEntityRemoved(ent);
+            OnWorldEntityRemoved?.Invoke(ent);
             return;
         }
 
         private RegionRegionUpdatedCallback Region_OnRegionUpdatedCallback = null;
         private void Region_OnRegionUpdated(IRegionContext rcontext, UpdateCodes what) {
-            if (OnWorldRegionUpdated != null) OnWorldRegionUpdated(rcontext, what);
+            OnWorldRegionUpdated?.Invoke(rcontext, what);
             return;
         }
         #endregion REGION EVENT PROCESSING
@@ -177,8 +177,8 @@ namespace KeeKee.World {
                     // we know about this region so remove it and disconnect from events
                     m_regionList.Remove(foundRegion);
                     m_log.Log(KLogLevel.DWORLD, "Removing region " + foundRegion.Name);
-                    IEntityCollection coll;
-                    if (rcontext.TryGet<IEntityCollection>(out coll)) {
+                    IEntityCollection coll = rcontext.Entities;
+                    if (coll != null) {
                         if (Region_OnNewEntityCallback != null) {
                             coll.OnEntityNew -= Region_OnNewEntityCallback;
                         }
@@ -213,11 +213,8 @@ namespace KeeKee.World {
         public bool TryGetEntity(EntityName entName, out IEntity? ent) {
             IEntity? ret = null;
             lock (m_regionList) {
-                foreach (IRegionContext rcb in m_regionList) {
-                    IEntityCollection coll;
-                    if (rcb.TryGet<IEntityCollection>(out coll)) {
-                        coll.TryGetEntity(entName, out ret);
-                    }
+                foreach (IRegionContext rc in m_regionList) {
+                    rc.Entities.TryGetEntity(entName, out ret);
                     if (ret != null) break;
                 }
             }
@@ -226,23 +223,24 @@ namespace KeeKee.World {
         }
 
         #region AGENT MANAGEMENT
+        // the "agent" is the avatar we are controlling
         public IAgent? Agent { get { return m_agent; } }
 
         public void AddAgent(IAgent agnt) {
             m_log.Log(KLogLevel.DWORLD, "AddAgent: ");
             m_agent = agnt;
-            if (OnAgentNew != null) OnAgentNew(agnt);
+            OnAgentNew?.Invoke(agnt);
         }
 
         public void UpdateAgent(UpdateCodes what) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "UpdateAgent: ");
-            if (OnAgentUpdate != null && m_agent != null) OnAgentUpdate(m_agent, what);
+            OnAgentUpdate?.Invoke(m_agent, what);
         }
 
         public void RemoveAgent() {
             m_log.Log(KLogLevel.DWORLD, "RemoveAgent: ");
             if (m_agent != null) {
-                if (OnAgentRemoved != null) OnAgentRemoved(m_agent);
+                OnAgentRemoved?.Invoke(m_agent);
                 m_agent = null;
             }
         }
@@ -252,17 +250,6 @@ namespace KeeKee.World {
         }
         #endregion AGENT MANAGEMENT
         #endregion IWorld methods
-
-        #region GRID MANAGEMENT
-        public Grids Grids {
-            get {
-                if (m_grids == null) {
-                    m_grids = new Grids();
-                }
-                return m_grids;
-            }
-        }
-        #endregion GRID MANAGEMENT
 
 
     }

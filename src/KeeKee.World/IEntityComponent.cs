@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Robert Adams
+// Copyright 2025 Robert Adams
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,14 +9,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using KeeKee;
-using KeeKee.World;
+using KeeKee.Framework;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
-    public interface IAttachment {
+
+    public interface IEntityComponent : IDisposable {
+        string ComponentName { get; }
     }
 }

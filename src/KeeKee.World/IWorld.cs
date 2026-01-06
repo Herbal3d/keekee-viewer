@@ -120,7 +120,5 @@ namespace KeeKee.World {
         void RemoveAgent();
         IAgent? Agent { get; }
 
-        // GRID MANAGEMENT
-        Grids Grids { get; }
     }
 }

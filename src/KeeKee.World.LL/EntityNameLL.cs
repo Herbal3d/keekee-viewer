@@ -34,15 +34,15 @@ namespace KeeKee.World.LL {
                 : base(entityContext.AssetContext, name) {
         }
 
-        public EntityNameLL(AssetContextBase acontext, string name)
+        public EntityNameLL(IAssetContext acontext, string name)
                 : base(acontext, name) {
         }
 
-        public static EntityNameLL ConvertTextureWorldIDToEntityName(AssetContextBase context, OMV.UUID textureWorldID) {
+        public static EntityNameLL ConvertTextureWorldIDToEntityName(IAssetContext context, OMV.UUID textureWorldID) {
             return ConvertTextureWorldIDToEntityName(context, textureWorldID.ToString());
         }
 
-        public static EntityNameLL ConvertTextureWorldIDToEntityName(AssetContextBase context, string textureWorldID) {
+        public static EntityNameLL ConvertTextureWorldIDToEntityName(IAssetContext context, string textureWorldID) {
             return new EntityNameLL(context, textureWorldID);
         }
 

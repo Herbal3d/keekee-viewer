@@ -9,15 +9,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace KeeKee.Config {
+using OMV = OpenMetaverse;
 
-    public class KeeKeeConfig {
-        public const string subSectionName = "KeeKeeViewer";
+namespace KeeKee.World {
+    /// <summary>
+    /// Lights that fill the world. Used for sun and moon. Individual object 
+    /// lighting is done by the entities themselves.
+    /// </summary>
+    public interface ICmptLight : IEntityComponent {
+        bool Visible { get; set; }
 
-        public string AppTitle { get; set; } = "KeeKee Viewer";
-        public string AppName { get; set; } = "KeeKeeViewer";
-        public string AppVersion { get; set; } = "0.1.0";
+        OMV.Color4 Color { get; set; }
 
+        OMV.Vector3 Position { get; set; }
+
+        OMV.Vector3 Target { get; set; }
     }
 }
-

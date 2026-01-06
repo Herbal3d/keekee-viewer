@@ -14,31 +14,13 @@ using System.Collections.Generic;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-public class LLAnimation : IAnimation {
+    public class LLAnimation : IAnimation {
 
-    // for the moment, there is not much to an animation
-    private OMV.Vector3 m_angularVelocity = OMV.Vector3.Zero;
-    public OMV.Vector3 AngularVelocity {
-        get { return m_angularVelocity; }
-        set { m_angularVelocity = value; }
-    }
+        // for the moment, there is not much to an animation
+        public OMV.Vector3 AngularVelocity { get; set; } = OMV.Vector3.Zero;
 
-    private bool m_doStaticRotation = false;
-    public bool DoStaticRotation {
-        get { return m_doStaticRotation; }
-        set { m_doStaticRotation = value; }
+        public bool DoStaticRotation { get; set; } = false;
+        public OMV.Vector3 StaticRotationAxis { get; set; } = OMV.Vector3.Zero;
+        public float StaticRotationRotPerSec { get; set; } = 0f;
     }
-    private OMV.Vector3 m_staticRotationAxis = OMV.Vector3.Zero;
-    public OMV.Vector3 StaticRotationAxis {
-        get { return m_staticRotationAxis; }
-        set { m_staticRotationAxis = value; }
-    }
-    private float m_staticRotationRotPerSec = 0f;
-    public float StaticRotationRotPerSec {
-        get { return m_staticRotationRotPerSec; }
-        set { m_staticRotationRotPerSec = value; }
-    }
-
-
-}
 }

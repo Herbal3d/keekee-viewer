@@ -9,6 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
@@ -44,40 +45,9 @@ namespace KeeKee.World {
 
         public virtual IEntity? ContainingEntity { get; set; } = null;
 
-        // If associated with a parent, go to the parent and remove us from
-        // the parent's container.
-        // Call before removing/deleting/destroying an entity.
-        public virtual void DisconnectFromContainer() {
-            if (ContainingEntity != null) {
-                IEntityCollection coll;
-                if (ContainingEntity.TryGet<IEntityCollection>(out coll)) {
-                    coll.RemoveEntity(this);
-                }
-                ContainingEntity = null;
-            }
-        }
-        protected IEntityCollection? m_entityCollection = null;
-        public virtual void AddEntityToContainer(IEntity ent) {
-            if (m_entityCollection == null) {
-                m_entityCollection = new EntityCollection(this.Name.Name);
-            }
-            m_entityCollection.AddEntity(ent);
-        }
-        public virtual void RemoveEntityFromContainer(IEntity ent) {
-            if (m_entityCollection != null) {
-                m_entityCollection.RemoveEntity(ent);
-                if (m_entityCollection.Count == 0) {
-                    m_entityCollection = null;
-                }
-            }
-        }
+        public BHash LastEntityHashCode { get; set; } = new BHashULong(0);
 
-        protected int m_lastEntityHashCode = 0;
-        public int LastEntityHashCode { get { return m_lastEntityHashCode; } set { m_lastEntityHashCode = value; } }
-
-        static EntityBase() {
-            AdditionSubsystems = new Dictionary<string, int>();
-        }
+        protected Dictionary<Type, IEntityComponent> m_components = new Dictionary<Type, IEntityComponent>();
 
         public EntityBase(IKLogger pLog,
                           IWorld pWorld,
@@ -91,65 +61,39 @@ namespace KeeKee.World {
 
             m_LGID = NextLGID();
             Name = new EntityName(AssetContext, LGID.ToString());
-
-            Additions = new Object[EntityBase.ADDITIONCLASSES];
-            for (int ii = 0; ii < EntityBase.ADDITIONCLASSES; ii++) {
-                Additions[ii] = null;
-            }
         }
 
-
-        #region IRegistryCore
-        protected Dictionary<Type, object> m_moduleInterfaces = new Dictionary<Type, object>();
-
+        #region Component Management
         /// <summary>
         /// Register an Module interface.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="iface"></param>
-        public void RegisterInterface<T>(T iface) {
-            lock (m_moduleInterfaces) {
-                if (!m_moduleInterfaces.ContainsKey(typeof(T))) {
-                    m_moduleInterfaces.Add(typeof(T), iface);
+        public void AddComponent<T>(T pComponent) where T : class, IEntityComponent {
+            lock (m_components) {
+                if (!m_components.ContainsKey(typeof(T))) {
+                    m_components.Add(typeof(T), pComponent);
                 }
             }
         }
 
-        public bool TryGet<T>(out T iface) {
-            if (m_moduleInterfaces.ContainsKey(typeof(T))) {
-                iface = (T)m_moduleInterfaces[typeof(T)];
-                return true;
+        public T Cmpt<T>() where T : class, IEntityComponent {
+            if (m_components.ContainsKey(typeof(T))) {
+                IEntityComponent cmpt = m_components[typeof(T)];
+                return (T)cmpt;
             }
-            iface = default(T);
-            return false;
+            m_log.Log(KLogLevel.DBADERROR, "EntityBase.Cmpt: No component of type {0}", typeof(T).ToString());
+            throw new KeyNotFoundException("EntityBase.Cmpt: No component of type " + typeof(T).ToString());
         }
 
-        public T Get<T>() {
-            if (m_moduleInterfaces.ContainsKey(typeof(T))) {
-                return (T)m_moduleInterfaces[typeof(T)];
-            }
-            return default(T);
+        public bool HasComponent<T>() where T : class, IEntityComponent {
+            return m_components.ContainsKey(typeof(T));
         }
-
-        public void StackModuleInterface<M>(M mod) {
-        }
-
-        public T[] RequestModuleInterfaces<T>() {
-            return new T[] { default(T) };
-        }
-
-        public List<string> ModuleInterfaceTypeNames() {
-            List<string> ret = new List<string>();
-            foreach (Type k in m_moduleInterfaces.Keys) {
-                ret.Add(k.ToString());
-            }
-            return ret;
-        }
-        #endregion IRegistryCore
+        #endregion Component Management
 
         public virtual void Dispose() {
             // tell all the interfaces we're done with them
-            foreach (KeyValuePair<Type, object> kvp in m_moduleInterfaces) {
+            foreach (var kvp in m_components) {
                 try {
                     IDisposable idis = (IDisposable)kvp.Value;
                     // is this right? How to tell object it's done here but don't need to zap oneself
@@ -158,17 +102,7 @@ namespace KeeKee.World {
                     // if it won't dispose it's not our problem
                 }
             }
-            m_moduleInterfaces.Clear();
-
-            // clean out references in the additions table
-            for (int ii = 0; ii < Additions.Length; ii++) {
-                try {
-                    IDisposable idisp = (IDisposable)Additions[ii];
-                } catch {
-                } finally {
-                    Additions[ii] = null;
-                }
-            }
+            m_components.Clear();
         }
 
         #region LOCATION
@@ -222,67 +156,9 @@ namespace KeeKee.World {
         }
         #endregion LOCATION
 
-
-        #region ADDITIONS
-        const int ADDITIONCLASSES = 7;  // maximum subsystems that can be added
-        public Object[] Additions;
-        public static Dictionary<string, int> AdditionSubsystems;
-
-        public Object Addition(int ii) {
-            if (ii < Additions.Length) return Additions[ii];
-            else return null;
-        }
-
-        public Object Addition(string ss) {
-            if (AdditionSubsystems.ContainsKey(ss)) return Additions[EntityBase.AdditionSubsystems[ss]];
-            else return null;
-        }
-        public void SetAddition(int ii, Object obj) { Additions[ii] = obj; }
-
-        /// <summary>
-        /// Create a new subsystem index. If teh subsystem is already
-        /// defined, the previously allocated index is returned.
-        /// </summary>
-        /// <param name="addClass">Name of the subsystem to add</param>
-        /// <returns>The newly allocated index or the previously allocated
-        /// index for this subsystem.</returns>
-        public static int AddAdditionSubsystem(string addClass) {
-            int ret = 0;
-            if (AdditionSubsystems.ContainsKey(addClass)) {
-                // it's already in the list, just return the old number
-                ret = AdditionSubsystems[addClass];
-            } else {
-                int newIndex = 0;
-                foreach (KeyValuePair<string, int> kvp in AdditionSubsystems) {
-                    if (kvp.Value >= newIndex) newIndex = kvp.Value + 1;
-                }
-                AdditionSubsystems.Add(addClass, newIndex);
-                ret = newIndex;
-                // make sure the addition class array is big enough for the new class
-                if (ADDITIONCLASSES <= newIndex) {
-                    // We cannot add more than the max!!
-                    throw new KeeKeeException("Adding more Entity object classes than allowed. Tried to add " + addClass);
-                    // Object[] newAdditions = new Object[Additions.Length + 4];
-                    // for (int ii = 0; ii < newAdditions.Length; ii++) {
-                    //     newAdditions[ii] = ii >= Additions.Length ? null : Additions[ii];
-                    // }
-                    // Additions = newAdditions;
-                }
-            }
-            return ret;
-        }
-        #endregion ADDITIONS
-
         // Tell the entity that something about it changed
         virtual public void Update(UpdateCodes what) {
-            if (this.RegionContext != null) {
-                m_log.Log(KLogLevel.DUPDATEDETAIL, "EntityBase.Update calling RegionContext.UpdateEntity. w={0}", what);
-                IEntityCollection coll;
-                if (this.RegionContext.TryGet<IEntityCollection>(out coll)) {
-                    coll.UpdateEntity(this, what);
-                }
-            }
-            return;
+            m_log.Log(KLogLevel.DUPDATEDETAIL, "EntityBase.Update calling RegionContext.UpdateEntity. w={0}", what);
         }
     }
 }

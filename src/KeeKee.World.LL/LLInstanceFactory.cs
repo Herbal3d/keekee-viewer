@@ -30,6 +30,14 @@ namespace KeeKee.World.LL {
         public T Create<T>(params object[] parameters) where T : class {
             return ActivatorUtilities.CreateInstance<T>(_provider, parameters);
         }
+
+        public LLEntity CreateLLEntity(params object[] parameters) {
+            return ActivatorUtilities.CreateInstance<LLEntity>(_provider, parameters);
+        }
+
+        public override string ToString() {
+            return $"LLInstanceFactory";
+        }
     }
 }
 

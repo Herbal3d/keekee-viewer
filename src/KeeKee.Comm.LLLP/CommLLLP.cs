@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 
 using KeeKee.Comm;
 using KeeKee.Framework;
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
 using KeeKee.Framework.Statistics;
@@ -23,17 +24,16 @@ using KeeKee.World.OS;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
-using Microsoft.Extensions.DependencyInjection;
-using OpenMetaverse.ImportExport.Collada14;
 
 namespace KeeKee.Comm.LLLP {
     /// <summary>
     /// Communication handler for Linden Lab Legacy Protocol
     /// </summary>
     public class CommLLLP : BackgroundService, ICommProvider {
-        private IKLogger<CommLLLP> m_log;
+        private KLogger<CommLLLP> m_log;
 
         public IOptions<CommConfig> ConnectionParams { get; set; }
+        public IOptions<AssetConfig> AssetsConfig { get; set; }
 
         private CancellationToken m_cancellationToken;
 
@@ -121,11 +121,13 @@ namespace KeeKee.Comm.LLLP {
         public CommLLLP(KLogger<CommLLLP> pLog,
                         UserPersistantParams pUserParams,
                         IOptions<CommConfig> pConnectionParams,
+                        IOptions<AssetConfig> pAssetsConfig,
                         InstanceFactory pInstanceFactory,
                         IWorld pWorld) {
             m_log = pLog;
             m_userPersistantParams = pUserParams;
             ConnectionParams = pConnectionParams;
+            AssetsConfig = pAssetsConfig;
             InstanceCreator = pInstanceFactory;
             m_World = pWorld;
 
@@ -251,8 +253,8 @@ namespace KeeKee.Comm.LLLP {
                 gc.Settings.DISABLE_AGENT_UPDATE_DUPLICATE_CHECK = false;
                 gc.Settings.USE_ASSET_CACHE = false;
                 gc.Settings.PIPELINE_REQUEST_TIMEOUT = 120 * 1000;
-                gc.Settings.ASSET_CACHE_DIR = ConnectionParams.Value.Assets.CacheDir;
-                OMV.Settings.RESOURCE_DIR = ConnectionParams.Value.Assets.OMVResources;
+                gc.Settings.ASSET_CACHE_DIR = AssetsConfig.Value.CacheDir;
+                OMV.Settings.RESOURCE_DIR = AssetsConfig.Value.OMVResources;
                 // Crank up the throttle on texture downloads
                 gc.Throttle.Total = 20000000.0f;
                 gc.Throttle.Texture = 2446000.0f;
@@ -383,8 +385,8 @@ namespace KeeKee.Comm.LLLP {
                 m_loginParams.FirstName,
                 m_loginParams.LastName,
                 m_loginParams.Password,
-                ConnectionParams.Value.Connection.ApplicationName,
-                ConnectionParams.Value.Connection.Version
+                ConnectionParams.Value.ApplicationName,
+                ConnectionParams.Value.Version
             );
 
             // Select sim in the grid

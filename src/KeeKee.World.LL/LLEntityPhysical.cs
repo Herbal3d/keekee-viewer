@@ -14,15 +14,16 @@ using KeeKee.Framework.Logging;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public class LLEntityPhysical : LLEntityBase, IEntityPhysical {
+    public class LLEntityPhysical : LLEntity {
 
         public LLEntityPhysical(KLogger<LLEntityPhysical> pLog,
-                                AssetContextBase pAContext,
+                                IWorld pWorld,
+                                IAssetContext pAContext,
                                 LLRegionContext pRContext,
                                 ulong regionHandle,
                                 uint localID,
                                 OMV.Primitive prim)
-                            : base(pLog, pRContext, pAContext) {
+                            : base(pLog, pWorld, pRContext, pAContext) {
 
             this.Sim = pRContext.Simulator;
             this.RegionHandle = regionHandle;

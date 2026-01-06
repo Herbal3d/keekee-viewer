@@ -9,28 +9,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-public class KLoggerConfig {
+namespace KeeKee.Config {
+    public class KLoggerConfig {
 
-    // Configuration subsection name
-    public const string subSectionName = "KLogger";
+        // Configuration subsection name
+        public const string subSectionName = "KLogger";
 
-    public string LogLevel { get; set; } = "Information";
+        public string LogLevel { get; set; } = "Information";
 
-    // Detailed logging from the REST manager
-    public bool RestDetail { get; set; } = false;
-    // Detailed logging from the Work Queue manager
-    public bool WorkQueueDetail { get; set; } = false;
-    public bool UIDetail { get; set; } = false;
-    // Detailed initialization logging
-    public bool DINIT { get; set; } = false;
-    public bool DINITDETAIL { get; set; } = false;
-    public bool DCOMM { get; set; } = false;
-    public bool DCOMMDETAIL { get; set; } = false;
-    public bool DWORLD { get; set; } = false;
-    public bool DWORLDDETAIL { get; set; } = false;
-    public bool DUPDATE { get; set; } = false;
-    public bool DUPDATEDETAIL { get; set; } = false;
-    public bool DTEXTURE { get; set; } = false;
-    public bool DTEXTUREDETAIL { get; set; } = false;
+        // Detailed logging from the REST manager
+        public bool RestDetail { get; set; } = false;
+        // Detailed logging from the Work Queue manager
+        public bool WorkQueueDetail { get; set; } = false;
+        public bool UIDetail { get; set; } = false;
+        // Detailed initialization logging
+        public bool DINIT { get; set; } = false;
+        public bool DINITDETAIL { get; set; } = false;
+        public bool DCOMM { get; set; } = false;
+        public bool DCOMMDETAIL { get; set; } = false;
+        public bool DWORLD { get; set; } = false;
+        public bool DWORLDDETAIL { get; set; } = false;
+        public bool DUPDATE { get; set; } = false;
+        public bool DUPDATEDETAIL { get; set; } = false;
+        public bool DTEXTURE { get; set; } = false;
+        public bool DTEXTUREDETAIL { get; set; } = false;
+    }
+
 }
-

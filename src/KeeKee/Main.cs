@@ -86,6 +86,8 @@ namespace KeeKee {
                  .ConfigureServices((context, services) => {
                      services.Configure<KeeKeeConfig>(context.Configuration.GetSection(KeeKeeConfig.subSectionName));
                      services.AddTransient<IInstanceFactory, InstanceFactory>();
+                     services.Configure<GridConfig>(context.Configuration.GetSection(GridConfig.subSectionName));
+                     services.AddHostedService<Grids>();
 
                      services.AddSingleton<UserPersistantParams>();
 
@@ -100,13 +102,8 @@ namespace KeeKee {
                      services.AddTransient<RestHandlerStatic, RestHandlerStatic>();
                      services.AddHostedService<RestManager>();
 
-                     // Configuration services
-                     services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
-                     services.Configure<AssetConfig>(context.Configuration.GetSection(AssetConfig.subSectionName));
-                     services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
-                     services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
-
                      // Communication services
+                     services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
                      services.AddTransient<RestHandlerLogin, RestHandlerLogin>();
                      services.AddTransient<RestHandlerLogout, RestHandlerLogout>();
                      services.AddTransient<RestHandlerTeleport, RestHandlerTeleport>();
@@ -118,17 +115,18 @@ namespace KeeKee {
                      services.AddHostedService<CommLLLPRest>();
 
                      // World services using LL implementations
+                     services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
+                     services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
+                     services.Configure<AssetConfig>(context.Configuration.GetSection(AssetConfig.subSectionName));
                      services.AddTransient<ILLInstanceFactory, LLInstanceFactory>();
-                     services.AddTransient<EntityName, EntityNameLL>();
                      services.AddTransient<IRegionContext, LLRegionContext>();
+                     services.AddTransient<IAssetContext, LLAssetContext>();
                      services.AddTransient<ITerrainInfo, LLTerrainInfo>();
                      services.AddTransient<IEntityAvatar, LLEntityAvatar>();
                      services.AddTransient<IEntityPhysical, LLEntityPhysical>();
                      services.AddTransient<IAgent, LLAgent>();
                      services.AddTransient<IAnimation, LLAnimation>();
-                     services.AddTransient<IAssetContext, LLAssetContext>();
                      services.AddTransient<IAttachment, LLAttachment>();
-                     services.AddTransient<SpecialRenderType, LLSpecialRenderType>();
                      services.AddHostedService<World.World>();
 
                      // KeeKee.Rest, IModule

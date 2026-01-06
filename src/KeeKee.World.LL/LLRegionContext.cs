@@ -18,6 +18,8 @@ namespace KeeKee.World.LL {
         private KLogger<LLRegionContext> m_log;
         public OMV.Simulator Simulator { get; private set; }
 
+        private OMV.GridClient GridComm { get; set; }
+
         private Dictionary<uint, int> m_recentLocalIDRequests = new Dictionary<uint, int>();
         private LLInstanceFactory m_llInstanceFactory;
 
@@ -49,8 +51,6 @@ namespace KeeKee.World.LL {
 
             // a cache of requested localIDs so we don't ask too often
             m_recentLocalIDRequests = new Dictionary<uint, int>();
-
-            this.RegisterInterface<LLRegionContext>(this);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace KeeKee.World.LL {
             if (requestID != 0) {
                 // send the packet outside the lock
                 m_log.Log(KLogLevel.DCOMMDETAIL, "LLRegionContext.RequestLocalID: asking for {0}/{1}", this.Name, localID);
-                m_comm.Objects.RequestObject(this.Simulator, localID);
+                GridComm.Objects.RequestObject(this.Simulator, localID);
             }
         }
 
@@ -121,11 +121,6 @@ namespace KeeKee.World.LL {
             this.Simulator = null;
         }
 
-        private OMV.GridClient m_comm;
-        public OMV.GridClient Comm {
-            get { return m_comm; }
-            set { m_comm = value; }
-        }
 
     }
 }
