@@ -17,19 +17,15 @@ using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
 
-    public sealed class World : BackgroundService, IWorld {
+    public sealed class World : IWorld {
         private IKLogger m_log;
 
-        private IAgent? m_agent = null;
+        private IEntity? m_agent = null;
 
         // list of the region information build for the simulator
         List<IRegionContext> m_regionList;
 
-        // list of parameters and information on the grids
-        Grids m_grids;
-
         #region Events
-#pragma warning disable 0067   // disable unused event warning
         // A new region has been added to the world
         public event WorldRegionNewCallback OnWorldRegionNew;
         // A known region has changed it's state (terrain, location, ...)
@@ -50,7 +46,6 @@ namespace KeeKee.World {
         public event WorldAgentUpdateCallback OnAgentUpdate;
         // When an agent is removed from the world
         public event WorldAgentRemovedCallback OnAgentRemoved;
-#pragma warning restore 0067
         #endregion
 
         /// <summary>
@@ -61,19 +56,6 @@ namespace KeeKee.World {
             m_log = pLog;
 
             m_regionList = new List<IRegionContext>();
-        }
-
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
-            m_log.Log(KLogLevel.DINIT, "World ExecuteAsync started.");
-            // wait until cancelled
-            try {
-                while (!cancellationToken.IsCancellationRequested) {
-                    await Task.Delay(1000, cancellationToken);
-                }
-            } catch (TaskCanceledException) {
-                // normal exit path
-            }
-            m_log.Log(KLogLevel.DINIT, "World ExecuteAsync exiting.");
         }
 
         #region IWorld methods
@@ -224,9 +206,9 @@ namespace KeeKee.World {
 
         #region AGENT MANAGEMENT
         // the "agent" is the avatar we are controlling
-        public IAgent? Agent { get { return m_agent; } }
+        public IEntity? Agent { get { return m_agent; } }
 
-        public void AddAgent(IAgent agnt) {
+        public void AddAgent(IEntity agnt) {
             m_log.Log(KLogLevel.DWORLD, "AddAgent: ");
             m_agent = agnt;
             OnAgentNew?.Invoke(agnt);
@@ -245,7 +227,7 @@ namespace KeeKee.World {
             }
         }
 
-        void UpdateAgentCamera(IAgent agnt, OMV.Vector3 position, OMV.Quaternion direction) {
+        void UpdateAgentCamera(IEntity agnt, OMV.Vector3 position, OMV.Quaternion direction) {
             return;
         }
         #endregion AGENT MANAGEMENT

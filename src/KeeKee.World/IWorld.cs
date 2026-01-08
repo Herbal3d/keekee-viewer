@@ -24,9 +24,9 @@ namespace KeeKee.World {
     public delegate void WorldEntityUpdateCallback(IEntity ent, UpdateCodes what);
     public delegate void WorldEntityRemovedCallback(IEntity ent);
 
-    public delegate void WorldAgentNewCallback(IAgent agnt);
-    public delegate void WorldAgentUpdateCallback(IAgent agnt, UpdateCodes what);
-    public delegate void WorldAgentRemovedCallback(IAgent agnt);
+    public delegate void WorldAgentNewCallback(IEntity agnt);
+    public delegate void WorldAgentUpdateCallback(IEntity agnt, UpdateCodes what);
+    public delegate void WorldAgentRemovedCallback(IEntity agnt);
 
     public delegate IEntity WorldCreateEntityCallback();
     public delegate IEntityAvatar WorldCreateAvatarCallback();
@@ -116,9 +116,9 @@ namespace KeeKee.World {
         bool TryGetEntity(EntityName entName, out IEntity? ent);
 
         // AGENT MANAGEMENT
-        void AddAgent(IAgent agnt);
+        void AddAgent(IEntity agnt);
         void RemoveAgent();
-        IAgent? Agent { get; }
+        IEntity? Agent { get; }
 
     }
 }

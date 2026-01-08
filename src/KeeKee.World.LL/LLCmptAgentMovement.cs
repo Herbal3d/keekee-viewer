@@ -21,10 +21,9 @@ namespace KeeKee.World.LL {
     public class LLCmptAgentMovement : IEntityComponent, ICmptAgentMovement {
         private IKLogger m_log;
 
-        public string ComponentName { get { return "LLCmptAgentMovement"; } }
+        public IEntity ContainingEntity { get; private set; }
 
         private OMV.GridClient m_client;
-        private IEntity m_containingEntity;
         private IOptions<LLAgentConfig> m_config;
 
         // if 'true', move avatar when we get the outgoing command to move the agent
@@ -35,19 +34,26 @@ namespace KeeKee.World.LL {
         private float m_runFudge = 0.8f;      // meters moved per movement
 
         public LLCmptAgentMovement(IKLogger pLog,
-                        IOptions<LLAgentConfig> pConfig,
-                        OMV.GridClient theClient,
-                        IEntity pContainingEntity) {
+                        IEntity pContainingEntity,
+                        OMV.GridClient pClient,
+                        IOptions<LLAgentConfig> pConfig) {
             m_log = pLog;
+            ContainingEntity = pContainingEntity;
+            m_client = pClient;
             m_config = pConfig;
-            m_client = theClient;
-            m_containingEntity = pContainingEntity;
 
             m_shouldPreMoveAvatar = pConfig.Value.PreMoveAvatar;
             m_rotFudge = pConfig.Value.PreMoveRotFudge;
             m_moveFudge = pConfig.Value.PreMoveFudge;
             m_flyFudge = pConfig.Value.PreMoveFlyFudge;
             m_runFudge = pConfig.Value.PreMoveRunFudge;
+        }
+
+        // The underlying data has been updated. Forget local things.
+        public void DataUpdate(UpdateCodes what) {
+            // Local values are set for dead-reconning but once we have official values, use  them
+            // if ((what & UpdateCodes.Position) != 0) m_haveLocalPosition = false;
+            if ((what & UpdateCodes.Rotation) != 0) m_haveLocalHeading = false;
         }
 
         public void StopAllMovement() {
@@ -59,7 +65,7 @@ namespace KeeKee.World.LL {
             m_client.Self.Movement.SendUpdate();
             // TODO: test if running or flying and use other fudges
             if (startstop && m_shouldPreMoveAvatar) {
-                ICmptLocation avatarLocation = m_containingEntity.Cmpt<ICmptLocation>();
+                ICmptLocation avatarLocation = ContainingEntity.Cmpt<ICmptLocation>();
                 OMV.Vector3 newPos = avatarLocation.LocalPosition +
                                 new OMV.Vector3(CalcMoveFudge(), 0f, 0f) * avatarLocation.Heading;
                 m_log.Log(KLogLevel.DWORLDDETAIL | KLogLevel.DUPDATEDETAIL, "MoveForward: premove from {0} to {1}",
@@ -67,7 +73,7 @@ namespace KeeKee.World.LL {
                 avatarLocation.LocalPosition = newPos;
                 m_client.Self.RelativePosition = newPos;
                 avatarLocation.LocalPosition = newPos;
-                m_containingEntity.Update(UpdateCodes.Position);
+                ContainingEntity.Update(UpdateCodes.Position);
             }
         }
 
@@ -75,7 +81,7 @@ namespace KeeKee.World.LL {
             m_client.Self.Movement.AtNeg = startstop;
             m_client.Self.Movement.SendUpdate();
             if (startstop && m_shouldPreMoveAvatar) {
-                ICmptLocation avatarLocation = m_containingEntity.Cmpt<ICmptLocation>();
+                ICmptLocation avatarLocation = ContainingEntity.Cmpt<ICmptLocation>();
                 OMV.Vector3 newPos = avatarLocation.LocalPosition +
                             new OMV.Vector3(-CalcMoveFudge(), 0f, 0f) * avatarLocation.Heading;
                 m_log.Log(KLogLevel.DWORLDDETAIL | KLogLevel.DUPDATEDETAIL, "MoveBackward: premove from {0} to {1}",
@@ -83,7 +89,7 @@ namespace KeeKee.World.LL {
                 avatarLocation.LocalPosition = newPos;
                 avatarLocation.LocalPosition = newPos;
                 m_client.Self.RelativePosition = newPos;
-                m_containingEntity.Update(UpdateCodes.Position);
+                ContainingEntity.Update(UpdateCodes.Position);
             }
         }
 
@@ -91,10 +97,10 @@ namespace KeeKee.World.LL {
             m_client.Self.Movement.UpPos = startstop;
             m_client.Self.Movement.SendUpdate();
             if (startstop && m_shouldPreMoveAvatar) {
-                ICmptLocation avatarLocation = m_containingEntity.Cmpt<ICmptLocation>();
+                ICmptLocation avatarLocation = ContainingEntity.Cmpt<ICmptLocation>();
                 avatarLocation.LocalPosition = avatarLocation.LocalPosition + new OMV.Vector3(0f, 0f, CalcMoveFudge());
                 m_client.Self.RelativePosition = avatarLocation.LocalPosition;
-                m_containingEntity.Update(UpdateCodes.Position);
+                ContainingEntity.Update(UpdateCodes.Position);
             }
         }
 
@@ -102,10 +108,10 @@ namespace KeeKee.World.LL {
             m_client.Self.Movement.UpNeg = startstop;
             m_client.Self.Movement.SendUpdate();
             if (startstop && m_shouldPreMoveAvatar) {
-                ICmptLocation avatarLocation = m_containingEntity.Cmpt<ICmptLocation>();
+                ICmptLocation avatarLocation = ContainingEntity.Cmpt<ICmptLocation>();
                 avatarLocation.LocalPosition = avatarLocation.LocalPosition + new OMV.Vector3(0f, 0f, -CalcMoveFudge());
                 m_client.Self.RelativePosition = avatarLocation.LocalPosition;
-                m_containingEntity.Update(UpdateCodes.Position);
+                ContainingEntity.Update(UpdateCodes.Position);
             }
         }
 
@@ -128,10 +134,10 @@ namespace KeeKee.World.LL {
             }
             m_client.Self.Movement.SendUpdate();
             if (startstop && m_shouldPreMoveAvatar) {
-                ICmptLocation avatarLocation = m_containingEntity.Cmpt<ICmptLocation>();
+                ICmptLocation avatarLocation = ContainingEntity.Cmpt<ICmptLocation>();
                 avatarLocation.Heading = m_client.Self.Movement.BodyRotation;
                 avatarLocation.Heading = m_client.Self.Movement.BodyRotation;
-                m_containingEntity.Update(UpdateCodes.Rotation);
+                ContainingEntity.Update(UpdateCodes.Rotation);
                 m_log.Log(KLogLevel.DWORLDDETAIL | KLogLevel.DUPDATEDETAIL, "TurnLeft: premove to {0}",
                         m_client.Self.Movement.BodyRotation);
             }
@@ -150,11 +156,10 @@ namespace KeeKee.World.LL {
             m_client.Self.Movement.SendUpdate();
             // if we are to move the avatar when the user commands movement, push the avatar
             if (startstop && m_shouldPreMoveAvatar) {
-                ICmptLocation avatarLocation = m_containingEntity.Cmpt<ICmptLocation>();
+                ICmptLocation avatarLocation = ContainingEntity.Cmpt<ICmptLocation>();
                 avatarLocation.Heading = m_client.Self.Movement.BodyRotation;
                 m_log.Log(KLogLevel.DWORLDDETAIL | KLogLevel.DUPDATEDETAIL, "TurnRight: premove to {0}",
                     m_client.Self.Movement.BodyRotation);
-                m_containingEntity.Update(UpdateCodes.Rotation);
                 // This next call sets off a tricky calling sequence:
                 // LLEntityAvatar.Update
                 //    calls LLEntityBase.Update
@@ -183,7 +188,7 @@ namespace KeeKee.World.LL {
                 //                        calls Viewer.CameraControl_OnCameraUpdate
                 //                            calls LLAgent.UpdateCamera
                 //                                sends camera interest info (pos and rot) to simulator
-                m_containingEntity.Update(UpdateCodes.Rotation);
+                ContainingEntity.Update(UpdateCodes.Rotation);
             }
         }
 

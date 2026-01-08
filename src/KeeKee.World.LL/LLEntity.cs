@@ -15,13 +15,11 @@ using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
 
-    public abstract class LLEntity : EntityBase {
+    public class LLEntity : EntityBase {
 
-        protected IKLogger m_log;
         public OMV.Primitive? Prim { get; set; }
 
         public const ulong NOREGION = 0xffffffff;
-        public ulong RegionHandle { get; set; }
 
         public OMV.Simulator? Sim { get; set; }
 
@@ -29,62 +27,17 @@ namespace KeeKee.World.LL {
         public const uint NOLOCALID = 0xffffffff;
         public uint LocalID { get; set; }
 
-        public LLEntity(IKLogger pLog,
-                            IWorld pWorld,
-                            IRegionContext pRContext,
-                            IAssetContext pAContext)
-                        : base(pLog, pWorld, pRContext, pAContext) {
-            this.m_log = pLog;
-
-            this.Prim = null;
-            this.Sim = null;
-            this.RegionHandle = LLEntity.NOREGION;
-            this.LocalID = LLEntity.NOLOCALID;
-        }
-
-        public override OMV.Quaternion Heading {
-            get {
-                if (Prim != null) {
-                    return this.Prim.Rotation;
-                } else {
-                    return base.Heading;
-                }
-            }
-            set {
-                if (Prim != null) {
-                    this.Prim.Rotation = value;
-                } else {
-                    base.Heading = value;
-                }
-            }
-        }
-
-        public override OMV.Vector3 LocalPosition {
-            get {
-                if (Prim != null) {
-                    base.LocalPosition = Prim.Position;
-                    return Prim.Position;
-                } else {
-                    return base.LocalPosition;
-                }
-            }
-            set {
-                base.LocalPosition = value;
-                if (Prim != null) {
-                    Prim.Position = value;
-                }
-            }
-        }
-
-        public override OMV.Vector3d GlobalPosition {
-            get {
-                OMV.Vector3 regionRelative = this.RegionPosition;
-                if (Prim != null) {
-                    return RegionContext.CalculateGlobalPosition(regionRelative);
-                } else {
-                    return base.GlobalPosition;
-                }
-            }
+        // Created with dependency injection to get the logger and contexts
+        public LLEntity(KLogger<LLEntity> pLog,
+                        IWorld pWorld,
+                        IRegionContext pRContext,
+                        IAssetContext pAContext,
+                        OMV.Primitive? pPrim
+                        )
+                    : base(pLog, pWorld, pRContext, pAContext) {
+            this.Prim = pPrim;
+            this.Sim = RegionContext is LLRegionContext rcontext ? rcontext.Simulator : null;
+            this.LocalID = pPrim != null ? pPrim.LocalID : LLEntity.NOLOCALID;
         }
 
         /// <summary>

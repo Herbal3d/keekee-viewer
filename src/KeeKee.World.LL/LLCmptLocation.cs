@@ -14,20 +14,19 @@ using KeeKee.Framework.Logging;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public class LLCmptLocation : IEntityComponent, ICmptLocation {
+    public class LLCmptLocation : ICmptLocation {
 
         private IKLogger m_log;
-
-        public string ComponentName { get { return "LLCmptLocation"; } }
         private OMV.GridClient m_client;
-        private IEntity m_containingEntity;
+        public IEntity ContainingEntity { get { return ContainingLLEntity; } }
+        public LLEntity ContainingLLEntity { get; private set; }
 
         public LLCmptLocation(IKLogger pLog,
-                            OMV.GridClient theClient,
-                            IEntity pContainingEntity) {
+                            LLEntity pContainingLLEntity,
+                            OMV.GridClient theClient) {
             m_log = pLog;
             m_client = theClient;
-            m_containingEntity = pContainingEntity;
+            ContainingLLEntity = pContainingLLEntity;
         }
 
         private bool m_haveLocalHeading = false;
@@ -46,23 +45,23 @@ namespace KeeKee.World.LL {
             }
         }
 
-        private OMV.Vector3 m_localPosition;
         public OMV.Vector3 LocalPosition {
             get {
-                if (m_containingEntity != null) {
-                    m_localPosition = m_client.Self.SimPosition;
-                    return m_client.Self.SimPosition;
-                }
-                return m_localPosition;
+                return m_client.Self.SimPosition;
             }
             set {
-                m_localPosition = value;
+                // If an object, we can set the position directly
+                // m_client.Self.Position = value;
             }
         }
 
         public OMV.Vector3 RegionPosition {
             get {
                 return this.LocalPosition;
+            }
+            set {
+                // If an object, we can set the position directly
+                // m_client.Self.Position = value;
             }
         }
 
@@ -72,7 +71,7 @@ namespace KeeKee.World.LL {
                 // return AssociatedAvatar.RegionContext.CalculateGlobalPosition(RelativePosition);
             }
         }
-        
+
         public void Dispose() {
             // nothing to do
         }

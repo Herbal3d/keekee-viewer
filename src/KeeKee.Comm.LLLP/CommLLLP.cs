@@ -12,7 +12,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-using KeeKee.Comm;
 using KeeKee.Framework;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
@@ -20,10 +19,8 @@ using KeeKee.Framework.WorkQueue;
 using KeeKee.Framework.Statistics;
 using KeeKee.World;
 using KeeKee.World.LL;
-using KeeKee.World.OS;
 
 using OMV = OpenMetaverse;
-using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Comm.LLLP {
     /// <summary>
@@ -32,8 +29,11 @@ namespace KeeKee.Comm.LLLP {
     public class CommLLLP : BackgroundService, ICommProvider {
         private KLogger<CommLLLP> m_log;
 
-        public IOptions<CommConfig> ConnectionParams { get; set; }
+        public IOptions<CommConfig> ConnectionConfig { get; set; }
         public IOptions<AssetConfig> AssetsConfig { get; set; }
+        public IOptions<LLAgentConfig> LLAgentConfig { get; set; }
+
+        public IAssetContext GridsAssetContext { get; private set; }
 
         private CancellationToken m_cancellationToken;
 
@@ -59,8 +59,10 @@ namespace KeeKee.Comm.LLLP {
         private Stat<long> m_statRequestLocalID = new StatCounter("RequestLocalID", "Number of RequestLocalIDs made");
         // ==========================================================
 
-        public IInstanceFactory InstanceCreator { get; private set; }
-        public IWorld m_World;
+        public ILLInstanceFactory InstanceFactory { get; private set; }
+
+        private IWorld m_World;
+        public Grids GridList;
 
         // ICommProvider.GridClient
         public OMV.GridClient GridClient { get; private set; }
@@ -90,7 +92,6 @@ namespace KeeKee.Comm.LLLP {
         // The logging in and out flags are true when we're doing that. Use to make sure
         // we don't try logging in or out again.
         // The module flag 'm_connected' is set true when logged in and connected.
-        protected Task m_LoginThread = null; // Task that keeps us logged in
         protected bool m_loaded { get; set; } = false;  // if comm is loaded and should be trying to connect
         protected bool m_shouldBeLoggedIn { get; set; } = false; // true if we should be logged in
         protected LoginParams? m_loginParams { get; set; } // parameters to use when logging in
@@ -107,28 +108,27 @@ namespace KeeKee.Comm.LLLP {
 
         protected UserPersistantParams m_userPersistantParams;
 
-        protected IAgent? m_myAgent = null;
-        protected IAgent MainAgent {
-            get {
-                if (m_myAgent == null) {
-                    m_myAgent = new LLAgent(GridClient);
-                }
-                return m_myAgent;
-            }
-            set { m_myAgent = value; }
-        }
+
+        // There is one entity who is the main agent we control
+        protected LLEntity? MainAgent { get; set; } = null;
 
         public CommLLLP(KLogger<CommLLLP> pLog,
                         UserPersistantParams pUserParams,
-                        IOptions<CommConfig> pConnectionParams,
+                        IOptions<CommConfig> pConnectionConfig,
                         IOptions<AssetConfig> pAssetsConfig,
-                        InstanceFactory pInstanceFactory,
+                        IOptions<LLAgentConfig> pLLAgentConfig,
+                        Grids pGrids,
+                        IAssetContext pAssetContext,
+                        ILLInstanceFactory pInstanceFactory,
                         IWorld pWorld) {
             m_log = pLog;
             m_userPersistantParams = pUserParams;
-            ConnectionParams = pConnectionParams;
+            ConnectionConfig = pConnectionConfig;
             AssetsConfig = pAssetsConfig;
-            InstanceCreator = pInstanceFactory;
+            LLAgentConfig = pLLAgentConfig;
+            GridsAssetContext = pAssetContext;
+            GridList = pGrids;
+            InstanceFactory = pInstanceFactory;
             m_World = pWorld;
 
             CommStatistics = new StatisticCollection();
@@ -236,7 +236,7 @@ namespace KeeKee.Comm.LLLP {
                 var gc = GridClient;
                 // GridClient.Settings.ENABLE_CAPS = true;
                 gc.Settings.ENABLE_SIMSTATS = true;
-                gc.Settings.MULTIPLE_SIMS = ConnectionParams.Value.MultipleSims;
+                gc.Settings.MULTIPLE_SIMS = ConnectionConfig.Value.MultipleSims;
                 gc.Settings.ALWAYS_DECODE_OBJECTS = true;
                 gc.Settings.ALWAYS_REQUEST_OBJECTS = true;
                 gc.Settings.OBJECT_TRACKING = true; // We use our own object tracking system
@@ -249,7 +249,7 @@ namespace KeeKee.Comm.LLLP {
                 gc.Settings.USE_INTERPOLATION_TIMER = false;  // don't need the library helping
                 gc.Settings.SEND_AGENT_UPDATES = true;
                 gc.Self.Movement.AutoResetControls = false;
-                gc.Self.Movement.UpdateInterval = ConnectionParams.Value.MovementUpdateInterval;
+                gc.Self.Movement.UpdateInterval = ConnectionConfig.Value.MovementUpdateInterval;
                 gc.Settings.DISABLE_AGENT_UPDATE_DUPLICATE_CHECK = false;
                 gc.Settings.USE_ASSET_CACHE = false;
                 gc.Settings.PIPELINE_REQUEST_TIMEOUT = 120 * 1000;
@@ -314,7 +314,7 @@ namespace KeeKee.Comm.LLLP {
         /// </summary>
         /// <param name="pLoginParams"></param>
         /// <returns></returns>
-        public virtual async Task<OMV.LoginResponseData?> DoLogin(LoginParams pLoginParams) {
+        public async Task<OMV.LoginResponseData?> DoLogin(LoginParams pLoginParams) {
             // Are we already logged in?
             if (IsLoggedIn || m_isLoggingIn) {
                 return null;
@@ -381,12 +381,12 @@ namespace KeeKee.Comm.LLLP {
             }
             m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", m_loginParams.FirstName, m_loginParams.LastName);
             m_isLoggingIn = true;
-            OMV.LoginParams loginParams = this.GridClient.Network.DefaultLoginParams(
+            OMV.LoginParams loginParams = GridClient.Network.DefaultLoginParams(
                 m_loginParams.FirstName,
                 m_loginParams.LastName,
                 m_loginParams.Password,
-                ConnectionParams.Value.ApplicationName,
-                ConnectionParams.Value.Version
+                ConnectionConfig.Value.ApplicationName,
+                ConnectionConfig.Value.Version
             );
 
             // Select sim in the grid
@@ -430,8 +430,8 @@ namespace KeeKee.Comm.LLLP {
             // if we didn't get anything useful, default to last
             loginParams.Start = String.IsNullOrEmpty(loginSetting) ? "last" : loginSetting;
 
-            m_World.Grids.SetCurrentGrid(m_loginGrid);
-            loginParams.URI = m_World.Grids.GridLoginURI(World.Grids.Current);
+            GridList.SetCurrentGrid(m_loginGrid);
+            loginParams.URI = GridList.GridLoginURI(GridList.CurrentGrid);
             if (loginParams.URI == null) {
                 m_log.Log(KLogLevel.DBADERROR, "COULD NOT FIND URL OF GRID. Grid=" + m_loginGrid);
                 m_loginMsg = "Unknown Grid name";
@@ -480,26 +480,6 @@ namespace KeeKee.Comm.LLLP {
             GridClient.Parcels.RequestAllSimParcels(GridClient.Network.CurrentSim, false, 100);
         }
         */
-
-        public bool AfterAllModulesLoaded() {
-            m_shouldHoldChildren = ConnectionParams.Value.ShouldHoldChildren;
-
-            // make my connections for the communication events
-            OMV.GridClient gc = GridClient;
-
-            gc.Objects.ObjectPropertiesUpdated += Objects_ObjectPropertiesUpdated;
-            gc.Objects.ObjectUpdate += Objects_ObjectUpdate;
-            gc.Objects.ObjectDataBlockUpdate += Objects_ObjectDataBlockUpdate;
-            gc.Objects.ObjectProperties += Objects_ObjectProperties;
-            gc.Objects.TerseObjectUpdate += Objects_TerseObjectUpdate;
-            gc.Objects.AvatarUpdate += Objects_AvatarUpdate;
-            gc.Objects.KillObject += Objects_KillObject;
-            gc.Avatars.AvatarAppearance += Avatars_AvatarAppearance;
-            gc.Settings.STORE_LAND_PATCHES = true;
-            gc.Terrain.LandPatchReceived += Terrain_LandPatchReceived;
-
-            return true;
-        }
 
         public bool IsConnected { get; private set; } = false;
 
@@ -603,7 +583,7 @@ namespace KeeKee.Comm.LLLP {
                     return;
                 }
                 m_statObjObjectUpdate.Event();
-                IEntity updatedEntity = null;
+                IEntity? updatedEntity;
                 // a full update says everything changed
                 UpdateCodes updateFlags = 0;
                 updateFlags |= UpdateCodes.Position | UpdateCodes.Rotation;
@@ -614,8 +594,7 @@ namespace KeeKee.Comm.LLLP {
                         // code called to create the entry if it's not found
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return new LLEntityPhysical(rcontext.AssetContext,
-                                         rcontext, args.Simulator.Handle, args.Prim.LocalID, args.Prim);
+                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim);
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -623,11 +602,11 @@ namespace KeeKee.Comm.LLLP {
                         if (args.Prim.PrimData.PCode == OpenMetaverse.PCode.Grass
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.Tree
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.NewTree) {
-                            LLSpecialRenderType srt = new LLSpecialRenderType();
+                            LLCmptSpecialRenderType srt = new LLCmptSpecialRenderType(m_log, updatedEntity, GridClient, rcontext);
                             srt.Type = SpecialRenderTypes.Foliage;
                             srt.FoliageType = args.Prim.PrimData.PCode;
                             srt.TreeType = args.Prim.TreeSpecies;
-                            updatedEntity.RegisterInterface<ISpecialRender>(srt);
+                            updatedEntity.AddComponent<LLCmptSpecialRenderType>(srt);
                         }
                         // if there are animations for this entity
                         ProcessEntityAnimation(updatedEntity, ref updateFlags, args.Prim.AngularVelocity);
@@ -660,26 +639,23 @@ namespace KeeKee.Comm.LLLP {
                 // if  there is an angular velocity and this is not an avatar, pass the information
                 // along as an animation (llTargetOmega)
                 // we convert the information into a standard form
-                IEntityAvatar av;
                 if (angularVelocity != OMV.Vector3.Zero) {
-                    if (!ent.TryGet<IEntityAvatar>(out av)) {
-                        float rotPerSec = angularVelocity.Length() / Constants.TWOPI;
-                        OMV.Vector3 axis = angularVelocity;
-                        axis.Normalize();
-                        IAnimation anim;
-                        if (!ent.TryGet<IAnimation>(out anim)) {
-                            anim = new LLAnimation();
-                            ent.RegisterInterface<IAnimation>(anim);
-                            m_log.Log(KLogLevel.DUPDATEDETAIL, "Created prim animation on {0}", ent.Name);
-                        }
-                        if (rotPerSec != anim.StaticRotationRotPerSec || axis != anim.StaticRotationAxis) {
-                            anim.AngularVelocity = angularVelocity;   // legacy. Remove when other part plumbed
-                            anim.StaticRotationAxis = axis;
-                            anim.StaticRotationRotPerSec = rotPerSec;
-                            anim.DoStaticRotation = true;
-                            updateFlags |= UpdateCodes.Animation;
-                            m_log.Log(KLogLevel.DUPDATEDETAIL, "Updating prim animation on {0}", ent.Name);
-                        }
+                    float rotPerSec = angularVelocity.Length() / Constants.TWOPI;
+                    OMV.Vector3 axis = angularVelocity;
+                    axis.Normalize();
+                    if (!ent.HasComponent<LLCmptAnimation>()) {
+                        var newAnim = new LLCmptAnimation(m_log, ent, GridClient);
+                        ent.AddComponent<ICmptAnimation>(newAnim);
+                        m_log.Log(KLogLevel.DUPDATEDETAIL, "Created prim animation on {0}", ent.Name);
+                    }
+                    LLCmptAnimation anim = ent.Cmpt<LLCmptAnimation>();
+                    if (rotPerSec != anim.StaticRotationRotPerSec || axis != anim.StaticRotationAxis) {
+                        anim.AngularVelocity = angularVelocity;   // legacy. Remove when other part plumbed
+                        anim.StaticRotationAxis = axis;
+                        anim.StaticRotationRotPerSec = rotPerSec;
+                        anim.DoStaticRotation = true;
+                        updateFlags |= UpdateCodes.Animation;
+                        m_log.Log(KLogLevel.DUPDATEDETAIL, "Updating prim animation on {0}", ent.Name);
                     }
                 }
             } catch (Exception e) {
@@ -693,8 +669,9 @@ namespace KeeKee.Comm.LLLP {
                 if (ent != null) {
                     // special update for the agent so it knows there is new info from the network
                     // The real logic to push the update through happens in the IEntityAvatar.Update()
-                    if (ent == this.MainAgent.AssociatedAvatar) {
-                        this.MainAgent.DataUpdate(updateFlags);
+                    if (ent == this.MainAgent) {
+                        // TODO: figure out if we need to do anything special for the main agent
+                        // ent.DataUpdate(updateFlags);
                     }
                     // Tell the world the entity is updated
                     ent.Update(updateFlags);
@@ -704,29 +681,32 @@ namespace KeeKee.Comm.LLLP {
             }
         }
         // ===============================================================
+        // The packet library has updated the attachement points in the prim already
+        // This needs to get the attachment loaded into the world
         public void Objects_AttachmentUpdate(object? sender, OMV.PrimEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAttachmentUpdate, sender, args)) return;
             lock (m_opLock) {
-                LLRegionContext rcontext = FindRegion(args.Simulator);
+                LLRegionContext? rcontext = FindRegion(args.Simulator);
+                if (rcontext == null) return;
+
                 if (!ParentExists(rcontext, args.Prim.ParentID)) {
                     // if this requires a parent and the parent isn't here yet, queue this operation til later
                     rcontext.RequestLocalID(args.Prim.ParentID);
                     QueueTilLater(args.Simulator, CommActionCode.OnObjectUpdated, sender, args);
                     return;
                 }
+
                 m_statObjAttachmentUpdate.Event();
                 m_log.Log(KLogLevel.DUPDATEDETAIL, "OnNewAttachment: id={0}, lid={1}", args.Prim.ID.ToString(), args.Prim.LocalID);
+
                 try {
                     // if new or not, assume everything about this entity has changed
                     UpdateCodes updateFlags = UpdateCodes.FullUpdate;
                     IEntity ent;
-                    if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out ent, delegate () {
-                        IEntity newEnt = new LLEntityPhysical(rcontext.AssetContext,
-                                        rcontext, args.Simulator.Handle, args.Prim.LocalID, args.Prim);
+                    if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out ent, () => {
+                        LLEntity newEnt = InstanceFactory.CreateLLPhysical(GridClient, args.Prim);
                         updateFlags |= UpdateCodes.New;
-                        LLAttachment att = new LLAttachment();
-                        newEnt.RegisterInterface<LLAttachment>(att);
-                        string attachmentID = null;
+                        string? attachmentID = "1"; // default attachment ID
                         if (args.Prim.NameValues != null) {
                             foreach (OMV.NameValue nv in args.Prim.NameValues) {
                                 m_log.Log(KLogLevel.DCOMMDETAIL, "AttachmentUpdate: ent={0}, {1}->{2}", newEnt.Name, nv.Name, nv.Value);
@@ -736,7 +716,9 @@ namespace KeeKee.Comm.LLLP {
                                 }
                             }
                         }
-                        att.AttachmentID = attachmentID;
+                        LLCmptAttachment att = new LLCmptAttachment(m_log, newEnt, GridClient);
+                        newEnt.AddComponent<LLCmptAttachment>(att);
+                        att.AttachmentID = attachmentID ?? "";
                         att.AttachmentPoint = args.Prim.PrimData.AttachmentPoint;
                         return newEnt;
                     })) {
@@ -778,8 +760,7 @@ namespace KeeKee.Comm.LLLP {
                         // code called to create the entry if it's not found
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return new LLEntityPhysical(rcontext.AssetContext,
-                                         rcontext, args.Simulator.Handle, args.Prim.LocalID, args.Prim);
+                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim);
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -787,11 +768,11 @@ namespace KeeKee.Comm.LLLP {
                         if (args.Prim.PrimData.PCode == OpenMetaverse.PCode.Grass
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.Tree
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.NewTree) {
-                            LLSpecialRenderType srt = new LLSpecialRenderType();
+                            LLCmptSpecialRenderType srt = new LLCmptSpecialRenderType(m_log, updatedEntity, GridClient, rcontext);
                             srt.Type = SpecialRenderTypes.Foliage;
                             srt.FoliageType = args.Prim.PrimData.PCode;
                             srt.TreeType = args.Prim.TreeSpecies;
-                            updatedEntity.RegisterInterface<ISpecialRender>(srt);
+                            updatedEntity.AddComponent<LLCmptSpecialRenderType>(srt);
                         }
                         // if there are animations for this entity
                         ProcessEntityAnimation(updatedEntity, ref updateFlags, args.Prim.AngularVelocity);
@@ -830,38 +811,35 @@ namespace KeeKee.Comm.LLLP {
                 m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_AvatarUpdate: cntl={0}, parent={1}, p={2}, r={3}",
                             args.Avatar.ControlFlags.ToString("x"), args.Avatar.ParentID,
                             args.Avatar.Position, args.Avatar.Rotation);
-                IEntity updatedEntity = null;
                 UpdateCodes updateFlags = UpdateCodes.Acceleration | UpdateCodes.AngularVelocity
                             | UpdateCodes.Position | UpdateCodes.Rotation | UpdateCodes.Velocity;
                 // This is an avatar, assume somethings changed no matter what
                 updateFlags |= UpdateCodes.CollisionPlane;
 
-                EntityName avatarEntityName = LLEntityAvatar.AvatarEntityNameFromID(rcontext.AssetContext, args.Avatar.ID);
-                IEntityCollection coll;
-                rcontext.TryGet<IEntityCollection>(out coll);
-                // find the entity for this avatar and create if necessary
-                if (coll.TryGetCreateEntity(avatarEntityName, out updatedEntity, delegate () {
+                EntityName avatarEntityName = new EntityNameLL(rcontext.AssetContext, "/Avatar/" + args.Avatar.ID.ToString());
+
+                IEntity? updatedEntity;
+                if (!rcontext.Entities.TryGetEntity(avatarEntityName, out updatedEntity)) {
                     m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: creating avatar {0} {1} ({2})",
                         args.Avatar.FirstName, args.Avatar.LastName, args.Avatar.ID);
-                    IEntityAvatar newEnt = new LLEntityAvatar(rcontext.AssetContext,
-                                    rcontext, args.Simulator.Handle, args.Avatar);
+                    updatedEntity = InstanceFactory.CreateLLAvatar(GridClient, LLAgentConfig);
                     updateFlags |= UpdateCodes.New;
-                    return (IEntity)newEnt;
-                })) {
+                }
+                if (updatedEntity != null) {
                     // created new entity. 
-                    updatedEntity.LocalPosition = args.Avatar.Position;
-                    updatedEntity.Heading = args.Avatar.Rotation;
+                    updatedEntity.Cmpt<ICmptLocation>().LocalPosition = args.Avatar.Position;
+                    updatedEntity.Cmpt<ICmptLocation>().Heading = args.Avatar.Rotation;
                     // We check here if this avatar goes with the agent in the world
                     // If this av is with the agent, make the connection
                     m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: Alid={0}, Clid={1}",
                                             args.Avatar.LocalID, GridClient.Self.LocalID);
                     if (args.Avatar.LocalID == GridClient.Self.LocalID) {
                         m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: associating agent with new avatar");
-                        this.MainAgent.AssociatedAvatar = (IEntityAvatar)updatedEntity;
+                        this.MainAgent = updatedEntity as LLEntity;
                     }
+                    // send updates for the updated entity
+                    ProcessEntityUpdates(updatedEntity, updateFlags);
                 }
-                // send updates for the updated entity
-                ProcessEntityUpdates(updatedEntity, updateFlags);
             }
             return;
         }
@@ -870,6 +848,7 @@ namespace KeeKee.Comm.LLLP {
         public virtual void Objects_KillObject(object? sender, OMV.KillObjectEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.KillObject, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
+            if (rcontext == null) return;
             m_statObjKillObject.Event();
             m_log.Log(KLogLevel.DWORLDDETAIL, "Object killed:");
             try {
@@ -877,9 +856,7 @@ namespace KeeKee.Comm.LLLP {
                 if (rcontext.TryGetEntityLocalID(args.ObjectLocalID, out removedEntity)) {
                     // we need a handle to the objectID
                     IEntityCollection coll;
-                    if (rcontext.TryGet<IEntityCollection>(out coll)) {
-                        coll.RemoveEntity(removedEntity);
-                    }
+                    rcontext.Entities.RemoveEntity(removedEntity);
                 }
             } catch (Exception e) {
                 m_log.Log(KLogLevel.DBADERROR, "FAILED DELETION OF OBJECT: " + e.ToString());
@@ -890,15 +867,16 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         public virtual void Avatars_AvatarAppearance(object? sender, OMV.AvatarAppearanceEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAvatarAppearance, sender, args)) return;
-            LLRegionContext rcontext = FindRegion(args.Simulator);
+            LLRegionContext? rcontext = FindRegion(args.Simulator);
+            if (rcontext == null) return;
             m_log.Log(KLogLevel.DCOMMDETAIL, "AvatarAppearance: id={0}", args.AvatarID.ToString());
             // the appearance information is stored in the avatar info in libomv
             // We just kick the system to look at it
             lock (m_opLock) {
-                EntityName avatarEntityName = LLEntityAvatar.AvatarEntityNameFromID(rcontext.AssetContext, args.AvatarID);
-                IEntity ent;
+                EntityName avatarEntityName = new EntityNameLL(rcontext.AssetContext, "/Avatar/" + args.AvatarID.ToString());
+                IEntity? ent;
                 if (rcontext.TryGetEntity(avatarEntityName, out ent)) {
-                    ent.Update(UpdateCodes.Appearance);
+                    ent?.Update(UpdateCodes.Appearance);
                 }
             }
             return;
@@ -913,7 +891,7 @@ namespace KeeKee.Comm.LLLP {
             // I work by taking LLLP messages and updating the agent
             // The agent will be updated in the world (usually by the viewer)
             // Create the two way communication linkage
-            this.MainAgent.OnAgentUpdated += new AgentUpdatedCallback(Comm_OnAgentUpdated);
+            // this.MainAgent.OnUpdated += new AgentUpdatedCallback(Comm_OnAgentUpdated);
         }
 
         // ===============================================================
@@ -922,7 +900,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         // ===============================================================
-        public virtual void Comm_OnAgentUpdated(IAgent agnt, UpdateCodes what) {
+        public virtual void Comm_OnAgentUpdated(IEntity agnt, UpdateCodes what) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Comm_OnAgentUpdated:");
 
         }
@@ -936,17 +914,16 @@ namespace KeeKee.Comm.LLLP {
                 lock (m_regionList) {
                     if (!m_regionList.TryGetValue(sim.ID, out foundRegion)) {
                         // we are connected but doen't have a regionContext for this simulator. Build one.
-                        AssetContextBase assetContext = SelectAssetContextForGrid(sim);
 
-                        foundRegion = InstanceCreator.Create<LLRegionContext>(null, assetContext, llterr, sim);
+                        foundRegion = InstanceFactory.CreateLLRegionContext(GridClient, GridsAssetContext, sim);
                         // foundRegion.Name = new EntityNameLL(LoggedInGridName + "/Region/" + sim.Name.Trim());
                         foundRegion.Name = new EntityNameLL(LoggedInGridName + "/" + sim.Name.Trim());
-                        foundRegion.RegionContext = foundRegion;    // since we don't know ourself before
-                        foundRegion.Comm = GridClient;
 
-                        LLTerrainInfo llterr = InstanceCreator.Create<LLTerrainInfo>(foundRegion, assetContext);
-                        llterr.WaterHeight = sim.WaterHeight;
-                        // TODO: copy terrain texture IDs
+                        var terrain = foundRegion.TerrainInfo;
+                        if (terrain != null) {
+                            terrain.WaterHeight = sim.WaterHeight;
+                            // TODO: copy terrain texture IDs
+                        }
 
                         m_regionList.Add(sim.ID, foundRegion);
                         m_log.Log(KLogLevel.DWORLD, "Creating region context for " + foundRegion.Name);
@@ -970,56 +947,6 @@ namespace KeeKee.Comm.LLLP {
             return ret;
         }
 
-        /// <summary>
-        /// Given a simulator, figure out the asset context for same. This very LL operation
-        /// checks the parameters to see if a uniqe context was specified. If not, just use
-        /// the connection to the simulator.
-        /// </summary>
-        /// <param name="sim"></param>
-        /// <returns>the AssetContextBase for this simulator</returns>
-        private Dictionary<OMV.Simulator, AssetContextBase> m_assetContexts = new Dictionary<OpenMetaverse.Simulator, AssetContextBase>();
-        private AssetContextBase SelectAssetContextForGrid(OMV.Simulator sim) {
-            AssetContextBase? ret = null;
-            lock (m_assetContexts) {
-                if (m_assetContexts.ContainsKey(sim)) {
-                    return m_assetContexts[sim];
-                }
-                // If user specifies an URL to get textures from, get that asset fetcher
-                string otherAssets = m_World.Grids.GridParameter(World.Grids.Current, "OS.AssetServer.V1");
-                if (otherAssets != null && otherAssets.Length != 0) {
-                    m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating OSAssetContextV1 for {0}/{1}", m_loginGrid, sim.Name);
-                    ret = new OSAssetContextV1(LoggedInGridName);
-                }
-
-                // If the simulator has the texture capability, use that
-                Uri textureUri = sim.Caps.CapabilityURI("GetTexture");
-                m_log.Log(KLogLevel.DCOMM, "CommLLLP: OSAssetContextCap: fetched 'GetTexture' = {0}",
-                                textureUri == null ? "NULL" : textureUri.ToString());
-                if (ret == null && textureUri != null && ConnectionParams.Value.Assets.EnableCaps) {
-                    m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating OSAssetContextCap for {0}/{1}", m_loginGrid, sim.Name);
-                    ret = new OSAssetContextCap(LoggedInGridName, textureUri);
-                }
-
-                // default to legacy UDP texture fetch
-                if (ret == null) {
-                    // Create the asset contect for this communication instance
-                    // this should happen after connected. reconnection is a problem.
-                    m_log.Log(KLogLevel.DCOMM, "CommLLLP: creating default asset context for {0}/{1}", m_loginGrid, sim.Name);
-                    ret = new LLAssetContext(LoggedInGridName);
-                }
-
-                if (ret != null) {
-                    m_assetContexts.Add(sim, ret);
-                    ret.InitializeContext(this,
-                        ConnectionParams.Value.Assets.CacheDir,
-                        ConnectionParams.Value.Assets.MaxTextureRequests
-                    );
-                }
-            }
-
-            return ret;
-        }
-
         #region DELAYED REGION MANAGEMENT
         // We get events before the sim comes online. This is a way to queue up those
         // events until we're online.
@@ -1037,21 +964,21 @@ namespace KeeKee.Comm.LLLP {
         protected struct ParamBlock {
             public OMV.Simulator sim;
             public CommActionCode cac;
-            public Object p1; public Object p2; public Object p3; public Object p4;
-            public ParamBlock(OMV.Simulator psim, CommActionCode pcac, Object pp1, Object pp2, Object pp3, Object pp4) {
+            public object? p1; public object? p2; public object? p3; public object? p4;
+            public ParamBlock(OMV.Simulator psim, CommActionCode pcac, object? pp1, object? pp2, object? pp3, object? pp4) {
                 sim = psim; cac = pcac; p1 = pp1; p2 = pp2; p3 = pp3; p4 = pp4;
             }
         }
         // ======================================================================
-        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, Object p1) {
+        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, object? p1) {
             QueueTilLater(sim, cac, p1, null, null, null);
         }
 
-        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, Object p1, Object p2) {
+        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, object? p1, object? p2) {
             QueueTilLater(sim, cac, p1, p2, null, null);
         }
 
-        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, Object p1, Object p2, Object p3) {
+        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, object? p1, object? p2, object? p3) {
             QueueTilLater(sim, cac, p1, p2, p3, null);
         }
 
@@ -1066,7 +993,7 @@ namespace KeeKee.Comm.LLLP {
         /// <param name="p2"></param>
         /// <param name="p3"></param>
         /// <param name="p4"></param>
-        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, Object p1, Object p2, Object p3, Object p4) {
+        private void QueueTilLater(OMV.Simulator sim, CommActionCode cac, object? p1, object? p2, object? p3, object? p4) {
             // m_log.Log(KLogLevel.DCOMMDETAIL, "QueueTilLater: c={0}", cac);
             Object[] parms = { sim, cac, p1, p2, p3, p4 };
             m_waitTilLater.DoLaterInitialDelay(QueueTilLaterDoIt, parms);
@@ -1082,15 +1009,15 @@ namespace KeeKee.Comm.LLLP {
         }
 
         // ======================================================================
-        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, Object p1) {
+        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, object? p1) {
             return QueueTilOnline(sim, cac, p1, null, null, null);
         }
 
-        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, Object p1, Object p2) {
+        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, object? p1, object? p2) {
             return QueueTilOnline(sim, cac, p1, p2, null, null);
         }
 
-        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, Object p1, Object p2, Object p3) {
+        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, object? p1, object? p2, object? p3) {
             return QueueTilOnline(sim, cac, p1, p2, p3, null);
         }
 
@@ -1104,10 +1031,10 @@ namespace KeeKee.Comm.LLLP {
         /// <param name="p3"></param>
         /// <param name="p4"></param>
         /// <returns>true if the action was queued, false if the action should be done</returns>
-        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, Object p1, Object p2, Object p3, Object p4) {
+        private bool QueueTilOnline(OMV.Simulator sim, CommActionCode cac, object? p1, object? p2, object? p3, object? p4) {
             bool ret = false;
             lock (m_waitTilOnline) {
-                RegionContextBase rcontext = FindRegion(sim);
+                IRegionContext? rcontext = FindRegion(sim);
                 if (rcontext != null && rcontext.State.isOnline) {
                     // not queuing until later
                     ret = false;

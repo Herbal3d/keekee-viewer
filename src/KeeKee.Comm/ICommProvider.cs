@@ -33,9 +33,6 @@ namespace KeeKee.Comm {
 
         bool StartTeleport(string destination);
 
-        // initiate a connection
-        IOptions<CommConfig> ConnectionParams { get; }
-
         // kludge to get underlying LL Comm (circular ref Comm.LLLP <=> World.LL)
         OMV.GridClient GridClient { get; }
 

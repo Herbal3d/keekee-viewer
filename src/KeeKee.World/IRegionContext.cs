@@ -57,7 +57,7 @@ namespace KeeKee.World {
         OMV.Vector3d CalculateGlobalPosition(float x, float y, float z);
 
         // information on terrain for this region
-        TerrainInfoBase? TerrainInfo { get; }
+        ITerrainInfo? TerrainInfo { get; }
 
         /*
         // In  transition requests for getting region entities based on implementation

@@ -85,9 +85,9 @@ namespace KeeKee {
                  })
                  .ConfigureServices((context, services) => {
                      services.Configure<KeeKeeConfig>(context.Configuration.GetSection(KeeKeeConfig.subSectionName));
-                     services.AddTransient<IInstanceFactory, InstanceFactory>();
+                     services.AddSingleton<IInstanceFactory, InstanceFactory>();
                      services.Configure<GridConfig>(context.Configuration.GetSection(GridConfig.subSectionName));
-                     services.AddHostedService<Grids>();
+                     services.AddSingleton<Grids>();
 
                      services.AddSingleton<UserPersistantParams>();
 
@@ -119,15 +119,13 @@ namespace KeeKee {
                      services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
                      services.Configure<AssetConfig>(context.Configuration.GetSection(AssetConfig.subSectionName));
                      services.AddTransient<ILLInstanceFactory, LLInstanceFactory>();
+                     services.AddTransient<IEntity, LLEntity>();
                      services.AddTransient<IRegionContext, LLRegionContext>();
                      services.AddTransient<IAssetContext, LLAssetContext>();
                      services.AddTransient<ITerrainInfo, LLTerrainInfo>();
-                     services.AddTransient<IEntityAvatar, LLEntityAvatar>();
-                     services.AddTransient<IEntityPhysical, LLEntityPhysical>();
-                     services.AddTransient<IAgent, LLAgent>();
-                     services.AddTransient<IAnimation, LLAnimation>();
-                     services.AddTransient<IAttachment, LLAttachment>();
-                     services.AddHostedService<World.World>();
+
+                     // services.AddTransient<IAnimation, LLAnimation>();
+                     services.AddSingleton<IWorld, World.World>();
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider

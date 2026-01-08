@@ -17,7 +17,7 @@ namespace KeeKee.World {
 
         OMV.Quaternion Heading { get; set; }
         OMV.Vector3 LocalPosition { get; set; }     // position relative to parent (if any)
-        OMV.Vector3 RegionPosition { get; }         // position relative to RegionContext
+        OMV.Vector3 RegionPosition { get; set; }         // position relative to RegionContext
         OMV.Vector3d GlobalPosition { get; }
 
     }

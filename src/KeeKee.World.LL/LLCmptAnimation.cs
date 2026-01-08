@@ -9,12 +9,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using KeeKee.Framework.Logging;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public class LLAnimation : IAnimation {
+    public class LLCmptAnimation : ICmptAnimation, IEntityComponent {
+
+        public IEntity ContainingEntity { get; private set; }
+        private IKLogger m_log;
+        private OMV.GridClient m_client;
 
         // for the moment, there is not much to an animation
         public OMV.Vector3 AngularVelocity { get; set; } = OMV.Vector3.Zero;
@@ -22,5 +26,18 @@ namespace KeeKee.World.LL {
         public bool DoStaticRotation { get; set; } = false;
         public OMV.Vector3 StaticRotationAxis { get; set; } = OMV.Vector3.Zero;
         public float StaticRotationRotPerSec { get; set; } = 0f;
+
+        public LLCmptAnimation(IKLogger pLog,
+                                IEntity pContainingEntity,
+                                OMV.GridClient pClient
+                                ) {
+            m_log = pLog;
+            m_client = pClient;
+            ContainingEntity = pContainingEntity;
+        }
+
+        public void Dispose() {
+            return;
+        }
     }
 }

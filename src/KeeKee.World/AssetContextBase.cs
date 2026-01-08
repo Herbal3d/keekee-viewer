@@ -81,6 +81,9 @@ namespace KeeKee.World {
             m_comm = pCommProvider;
             m_assetConfig = pAssetConfig;
 
+            CacheDirBase = pAssetConfig.Value.CacheDir ?? "./Cache";
+            m_maxRequests = pAssetConfig.Value.MaxTextureRequests;
+
             m_numAssetContextBase++;
             Name = name;
             // remember all the contexts
@@ -92,16 +95,6 @@ namespace KeeKee.World {
             m_waiting = new Dictionary<OMV.UUID, WaitingInfo>();
             m_completionWork = new BasicWorkQueue("AssetCompletion" + m_numAssetContextBase.ToString());
         }
-
-
-        public void InitializeContext(ICommProvider comm, string cacheDir, int maxrequests) {
-            m_comm = comm;
-            CacheDirBase = cacheDir;
-            m_maxRequests = maxrequests;
-            InitializeContextFinish();
-        }
-
-        public virtual void InitializeContextFinish() { }
 
         /// <summary>
         /// Given a context and a world specific identifier, return the filename

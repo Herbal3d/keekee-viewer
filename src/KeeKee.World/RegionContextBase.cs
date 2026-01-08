@@ -38,6 +38,8 @@ namespace KeeKee.World {
             get { return m_regionState; }
         }
 
+        public IEntityCollection Entities { get; private set; }
+
         public RegionContextBase(IKLogger pLog,
                                 IWorld pWorld,
                                 IRegionContext pRContext,
@@ -45,13 +47,11 @@ namespace KeeKee.World {
                     : base(pLog, pWorld, pRContext, pAcontext) {
 
             m_regionState = new RegionState();
-            m_entityCollection = new EntityCollection(this.Name.Name);
+            Entities = new EntityCollection(pLog, this.Name.Name);
 
             // What state changes, pass it on
             m_regionStateChangedCallback = new RegionStateChangedCallback(State_OnChange);
             State.OnStateChanged += m_regionStateChangedCallback;
-
-            this.RegisterInterface<IEntityCollection>(m_entityCollection);
         }
 
         private void State_OnChange(RegionStateCode newState) {
@@ -74,22 +74,11 @@ namespace KeeKee.World {
         }
 
         // information on terrain for this region
-        protected TerrainInfoBase? m_terrainInfo = null;
-        public TerrainInfoBase? TerrainInfo { get { return m_terrainInfo; } }
+        public ITerrainInfo TerrainInfo { get; protected set; }
 
         // try and get an entity from the entity collection in this region
         public virtual bool TryGetEntity(EntityName entName, out IEntity? foundEnt) {
-            bool ret = false;
-            foundEnt = null;
-            IEntityCollection coll;
-            if (this.TryGet<IEntityCollection>(out coll)) {
-                IEntity ent;
-                if (coll.TryGetEntity(entName, out ent)) {
-                    foundEnt = ent;
-                    ret = true;
-                }
-            }
-            return ret;
+            return Entities.TryGetEntity(entName, out foundEnt);
         }
 
         public override void Update(UpdateCodes what) {
@@ -98,7 +87,7 @@ namespace KeeKee.World {
         }
 
         public override void Dispose() {
-            m_terrainInfo = null; // let the garbage collector work
+            TerrainInfo = null; // let the garbage collector work
             if (m_regionState != null && m_regionStateChangedCallback != null) {
                 State.OnStateChanged -= m_regionStateChangedCallback;
             }

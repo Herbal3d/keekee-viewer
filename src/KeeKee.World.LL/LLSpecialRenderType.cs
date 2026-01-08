@@ -14,15 +14,15 @@ using System.Collections.Generic;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-public class LLSpecialRenderType : ISpecialRender {
-    private SpecialRenderTypes m_type;
-    public SpecialRenderTypes Type { get { return m_type; } set { m_type = value; } }
+    public class LLSpecialRenderType : ISpecialRender {
+        private SpecialRenderTypes m_type;
+        public SpecialRenderTypes Type { get { return m_type; } set { m_type = value; } }
 
-    private OMV.PCode m_foliageType;
-    public OMV.PCode FoliageType { get { return m_foliageType; } set { m_foliageType = value; } }
-    private OMV.Tree m_treeType;
-    public OMV.Tree TreeType { get { return m_treeType; } set { m_treeType = value; } }
-    private OMV.Grass m_grassType;
-    public OMV.Grass GrassType { get { return m_grassType; } set { m_grassType = value; } }
-}
+        private OMV.PCode m_foliageType;
+        public OMV.PCode FoliageType { get { return m_foliageType; } set { m_foliageType = value; } }
+        private OMV.Tree m_treeType;
+        public OMV.Tree TreeType { get { return m_treeType; } set { m_treeType = value; } }
+        private OMV.Grass m_grassType;
+        public OMV.Grass GrassType { get { return m_grassType; } set { m_grassType = value; } }
+    }
 }

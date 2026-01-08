@@ -10,7 +10,7 @@
 // limitations under the License.
 
 using KeeKee.Framework.Logging;
-
+using OpenMetaverse;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
@@ -26,15 +26,17 @@ namespace KeeKee.World.LL {
         public LLRegionContext(KLogger<LLRegionContext> pLog,
                                 LLInstanceFactory pFactory,
                                 IWorld pWorld,
-                                IRegionContext pRContext,
                                 IAssetContext pAContext,
-                                LLTerrainInfo pTerrainInfo,
+                                OMV.GridClient pGridComm,
                                 OMV.Simulator pSim)
-                            : base(pLog, pWorld, pRContext, pAContext) {
+                            : base(pLog, pWorld, null, pAContext) {
             m_log = pLog;
             m_llInstanceFactory = pFactory;
+            GridComm = pGridComm;
 
-            m_terrainInfo = pTerrainInfo;
+            RegionContext = this;
+
+            TerrainInfo = m_llInstanceFactory.Create<LLTerrainInfo>(this, pAContext);
 
             // until we have a better protocol, we know the sims are a fixed size
             m_size = new OMV.Vector3(256f, 256f, 8000f);
@@ -88,7 +90,7 @@ namespace KeeKee.World.LL {
             // TODO: add some checking for rcontext since the localIDs are scoped by 'simulator'
             // we are relying on a low collision rate for localIDs
             // A linear search of the list takes way too long for the number of objects arriving
-            return m_entityCollection.TryGetEntity((ulong)localID, out ent);
+            return Entities.TryGetEntity((ulong)localID, out ent);
         }
 
         /// <summary>
@@ -100,10 +102,10 @@ namespace KeeKee.World.LL {
         public bool TryGetCreateEntityLocalID(uint localID, out IEntity? ent, RegionCreateEntityCallback createIt) {
             try {
                 IEntity newEntity = null;
-                lock (m_entityCollection) {
+                lock (Entities) {
                     if (!TryGetEntityLocalID(localID, out ent)) {
                         newEntity = createIt();
-                        m_entityCollection.AddEntity(newEntity);
+                        Entities.AddEntity(newEntity);
                         ent = newEntity;
                     }
                 }

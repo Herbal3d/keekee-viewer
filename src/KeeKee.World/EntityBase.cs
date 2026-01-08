@@ -22,7 +22,7 @@ namespace KeeKee.World {
     /// </summary>
     public abstract class EntityBase : IEntity {
 
-        private IKLogger m_log;
+        public IKLogger EntityLogger { get; protected set; }
 
         // Every entity has a local, session scoped ID
         protected ulong m_LGID = 0;
@@ -36,9 +36,9 @@ namespace KeeKee.World {
         public static ulong NextLGID() { return m_LGIDIndex++; }
 
         // Contexts for this entity
-        public IWorld WorldContext { get; private set; }
-        public IRegionContext RegionContext { get; private set; }
-        public IAssetContext AssetContext { get; private set; }
+        public IWorld WorldContext { get; protected set; }
+        public IRegionContext RegionContext { get; protected set; }
+        public IAssetContext AssetContext { get; protected set; }
 
         // Every entity has a name
         public virtual EntityName Name { get; set; }
@@ -54,7 +54,7 @@ namespace KeeKee.World {
                           IRegionContext pRContext,
                           IAssetContext pAContext) {
 
-            m_log = pLog;
+            EntityLogger = pLog;
             WorldContext = pWorld;
             RegionContext = pRContext;
             AssetContext = pAContext;
@@ -82,12 +82,22 @@ namespace KeeKee.World {
                 IEntityComponent cmpt = m_components[typeof(T)];
                 return (T)cmpt;
             }
-            m_log.Log(KLogLevel.DBADERROR, "EntityBase.Cmpt: No component of type {0}", typeof(T).ToString());
+            EntityLogger.Log(KLogLevel.DBADERROR, "EntityBase.Cmpt: No component of type {0}", typeof(T).ToString());
             throw new KeyNotFoundException("EntityBase.Cmpt: No component of type " + typeof(T).ToString());
         }
 
         public bool HasComponent<T>() where T : class, IEntityComponent {
             return m_components.ContainsKey(typeof(T));
+        }
+        public bool HasComponent<T>(out T? component) where T : class, IEntityComponent {
+            bool ret = m_components.ContainsKey(typeof(T));
+            if (ret) {
+                IEntityComponent cmpt = m_components[typeof(T)];
+                component = (T)cmpt;
+            } else {
+                component = null;
+            }
+            return ret;
         }
         #endregion Component Management
 
@@ -158,7 +168,7 @@ namespace KeeKee.World {
 
         // Tell the entity that something about it changed
         virtual public void Update(UpdateCodes what) {
-            m_log.Log(KLogLevel.DUPDATEDETAIL, "EntityBase.Update calling RegionContext.UpdateEntity. w={0}", what);
+            EntityLogger.Log(KLogLevel.DUPDATEDETAIL, "EntityBase.Update calling RegionContext.UpdateEntity. w={0}", what);
         }
     }
 }

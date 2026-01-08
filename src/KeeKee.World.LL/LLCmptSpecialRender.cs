@@ -14,37 +14,32 @@ using KeeKee.Framework.Logging;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    /// <summary>
-    /// Lights that fill the world. Used for sun and moon. Individual object 
-    /// lighting is done by the entities themselves.
-    /// </summary>
-    public class LLCmptLight : ICmptLight {
-        protected IKLogger m_log;
-        private OMV.GridClient m_client;
+    public class LLCmptSpecialRenderType : IEntityComponent, ISpecialRender {
         public IEntity ContainingEntity { get; private set; }
-        public bool Visible { get; set; }
 
-        public OMV.Color4 Color { get; set; }
+        private IKLogger m_log;
 
-        public OMV.Vector3 Position { get; set; }
-        public OMV.Vector3 Target { get; set; }
+        private OMV.GridClient m_client;
+        private IRegionContext m_regionContext;
 
-        public LLCmptLight(IKLogger pLog,
-                            IEntity pContainingEntity,
-                            OMV.GridClient pClient
-                            ) {
+        public LLCmptSpecialRenderType(IKLogger pLog,
+                                IEntity pContainingEntity,
+                                OMV.GridClient pClient,
+                                IRegionContext pRegionContext) {
             m_log = pLog;
             ContainingEntity = pContainingEntity;
             m_client = pClient;
-
-            Visible = false;
-            Color = new OMV.Color4(1.0f, 1.0f, 1.0f, 1.0f);
-            Position = new OMV.Vector3(0, 0, 0);
-            Target = new OMV.Vector3(0, 0, 0);
+            m_regionContext = pRegionContext;
         }
+        public SpecialRenderTypes Type { get; set; }
 
+        public OMV.PCode FoliageType { get; set; }
+        public OMV.Tree TreeType { get; set; }
+        public OMV.Grass GrassType { get; set; }
         public void Dispose() {
             return;
         }
+
     }
 }
+

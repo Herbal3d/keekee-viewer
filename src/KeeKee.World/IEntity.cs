@@ -10,12 +10,16 @@
 // limitations under the License.
 
 using KeeKee.Framework;
-
+using KeeKee.Framework.Logging;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
 
     public interface IEntity : IDisposable {
+        // The logger for this entity
+        IKLogger EntityLogger { get; }
+
+        // The local unique ID for this entity
         ulong LGID { get; }
         EntityName Name { get; set; }
 
@@ -37,5 +41,6 @@ namespace KeeKee.World {
         T Cmpt<T>() where T : class, IEntityComponent;
         void AddComponent<T>(T component) where T : class, IEntityComponent;
         bool HasComponent<T>() where T : class, IEntityComponent;
+        bool HasComponent<T>(out T? component) where T : class, IEntityComponent;
     }
 }

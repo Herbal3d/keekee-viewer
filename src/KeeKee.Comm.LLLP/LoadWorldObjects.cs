@@ -68,7 +68,7 @@ namespace KeeKee.Comm.LLLP {
                 OMV.GridClient netComm = (OMV.GridClient)loadParams[1];
                 CommLLLP worldComm = (CommLLLP)loadParams[2];
 
-                OMV.Simulator simm = null;
+                OMV.Simulator? simm = null;
                 try {
                     foreach (OMV.Simulator sim in simsToLoad) {
                         simm = sim;
@@ -76,7 +76,7 @@ namespace KeeKee.Comm.LLLP {
                     }
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.DBADERROR, "LoadWorldObjects: exception loading {0}: {1}",
-                        (simm == null ? "NULL" : simm.Name), e.ToString());
+                        simm == null ? "NULL" : simm.Name, e.ToString());
                 }
             } catch (Exception e) {
                 m_log.Log(KLogLevel.DBADERROR, "LoadWorldObjects: exception: {0}", e.ToString());

@@ -21,34 +21,18 @@ namespace KeeKee.World {
     /// <summary>
     /// Keeps a list of the possible grids and returns info as requested
     /// </summary>
-    public class Grids : BackgroundService {
+    public class Grids {
         private KLogger<Grids> m_log;
 
+        public string CurrentGrid { get { return m_currentGrid; } }
         private string m_currentGrid = "UnknownXXYYZZ";
-        private List<IRegionContext> m_regionList;
         private IOptions<GridConfig> m_gridConfig;
 
         public Grids(KLogger<Grids> pLog,
-                     IOptions<GridConfig> pGridConfig) {
+                    IOptions<GridConfig> pGridConfig) {
             m_log = pLog;
             m_gridConfig = pGridConfig;
-
-            m_regionList = new List<IRegionContext>();
         }
-
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
-            m_log.Log(KLogLevel.DINIT, "Grid ExecuteAsync started.");
-            // wait until cancelled
-            try {
-                while (!cancellationToken.IsCancellationRequested) {
-                    await Task.Delay(1000, cancellationToken);
-                }
-            } catch (TaskCanceledException) {
-                // normal exit path
-            }
-            m_log.Log(KLogLevel.DINIT, "Grid ExecuteAsync exiting.");
-        }
-
 
         // set the grid name so Grids.Current works
         public void SetCurrentGrid(string currentGrid) {
@@ -57,6 +41,27 @@ namespace KeeKee.World {
 
         public string? GridLoginURI(string gridName) {
             string ret = m_gridConfig.Value.Grids[gridName].LoginURI;
+            return ret;
+        }
+
+        /// <summary>
+        /// Fetch the grid definition for the named grid.
+        /// Case insensitive..
+        /// </summary>
+        /// <param name="gridName"></param>
+        /// <returns></returns>
+        public GridConfig.GridDefinition? GetGridDefinition(string gridName) {
+            GridConfig.GridDefinition? ret = null;
+            try {
+                ForEach((gd) => {
+                    if (gd.GridNick.ToLower() == gridName.ToLower())
+                        ret = gd;
+                    else if (gd.GridName.ToLower() == gridName.ToLower())
+                        ret = gd;
+                });
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.DBADERROR, "GridList.GetGridDefinition: Exception: {0}", e.ToString());
+            }
             return ret;
         }
 

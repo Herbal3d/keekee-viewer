@@ -9,24 +9,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-
 using Microsoft.Extensions.Options;
 
 using KeeKee.Comm;
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
-using KeeKee.World;
 
 using OMV = OpenMetaverse;
-using OMVSD = OpenMetaverse.StructuredData;
-using OMVI = OpenMetaverse.Imaging;
 
 namespace KeeKee.World.LL {
     /// <summary>
@@ -40,16 +30,7 @@ namespace KeeKee.World.LL {
                             ICommProvider pCommProvider,
                             IOptions<AssetConfig> pAssetConfig)
                         : base(pLog, pCommProvider, pAssetConfig, "Unknown") {
-        }
 
-        /// <summary>
-        /// Initializing the asset context is a two step process: create it and
-        /// then initialize it. This is because we don't have everything we need
-        /// when it is first created.
-        /// </summary>
-        /// <param name="gclient"></param>
-        /// <param name="maxrequests"></param>
-        public override void InitializeContextFinish() {
             m_comm.GridClient.Settings.MAX_CONCURRENT_TEXTURE_DOWNLOADS = m_maxRequests;
             m_maxOutstandingTextureRequests = m_maxRequests;
             // m_client.Assets.OnImageReceived += new OMV.AssetManager.ImageReceivedCallback(OnImageReceived);

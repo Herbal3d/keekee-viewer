@@ -16,6 +16,7 @@ using OMV = OpenMetaverse;
 namespace KeeKee.World {
 
     public interface IEntityComponent : IDisposable {
-        string ComponentName { get; }
+        // The entity that contains this component
+        IEntity ContainingEntity { get; }
     }
 }
