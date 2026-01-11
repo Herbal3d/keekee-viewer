@@ -11,12 +11,14 @@
 
 using System.Net;
 using System.Text;
+
 using KeeKee.Comm;
+using KeeKee.Config;
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+
 using OpenMetaverse;
 using OpenMetaverse.StructuredData;
 
@@ -28,7 +30,6 @@ namespace KeeKee.Rest {
     public class RestHandlerChat : IRestHandler {
 
         private readonly KLogger<RestHandlerChat> m_log;
-        private readonly IOptions<RestManagerConfig> m_restConfig;
         private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
@@ -66,18 +67,16 @@ namespace KeeKee.Rest {
         public string Prefix { get; set; }
 
         public RestHandlerChat(KLogger<RestHandlerChat> pLogger,
-                                IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider
                                 ) {
             m_log = pLogger;
-            m_restConfig = pRestConfig;
             m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
 
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/chat");
+            Prefix = Utilities.JoinFilePieces(m_RestManager.APIBase, "LLLP/chat");
 
             m_RestManager.RegisterListener(this);
 
@@ -205,9 +204,14 @@ namespace KeeKee.Rest {
             }
         }
 
-        // Optional displayable interface to get parameters from. Not used here.
-        public IDisplayable? Displayable { get; } = null;
-    }
+        public void Dispose() {
+            // m_RestManager.UnregisterListener(this);
+        }
 
+        // Optional displayable interface to get parameters from. Not used here.
+        public OMVSD.OSDMap? GetDisplayable() {
+            return null;
+        }
+    }
 }
 

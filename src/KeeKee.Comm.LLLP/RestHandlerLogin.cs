@@ -11,12 +11,13 @@
 
 using System.Net;
 using System.Text;
+
 using KeeKee.Comm;
+using KeeKee.Config;
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using OMV = OpenMetaverse;
@@ -96,8 +97,13 @@ namespace KeeKee.Rest {
             }
         }
 
-        // Optional displayable interface to get parameters from. Not used here.
-        public IDisplayable? Displayable { get; } = null;
-    }
+        public void Dispose() {
+            // m_RestManager.UnregisterListener(this);
+        }
 
+        // Optional displayable interface to get parameters from. Not used here.
+        public OMVSD.OSDMap? GetDisplayable() {
+            return null;
+        }
+    }
 }

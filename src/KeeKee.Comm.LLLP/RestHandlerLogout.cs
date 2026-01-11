@@ -10,8 +10,9 @@
 // limitations under the License.
 
 using System.Net;
+
 using KeeKee.Comm;
-using KeeKee.Framework;
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
 
@@ -72,8 +73,14 @@ namespace KeeKee.Rest {
             }
         }
 
+        public void Dispose() {
+            // m_RestManager.UnregisterListener(this);
+        }
+
         // Optional displayable interface to get parameters from. Not used here.
-        public IDisplayable? Displayable { get; } = null;
+        public OMVSD.OSDMap? GetDisplayable() {
+            return null;
+        }
     }
 
 }

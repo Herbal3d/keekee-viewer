@@ -87,8 +87,9 @@ namespace KeeKee {
                      services.Configure<KeeKeeConfig>(context.Configuration.GetSection(KeeKeeConfig.subSectionName));
                      services.AddSingleton<IInstanceFactory, InstanceFactory>();
                      services.Configure<GridConfig>(context.Configuration.GetSection(GridConfig.subSectionName));
-                     services.AddSingleton<Grids>();
 
+                     // Collections and collection managers available for services
+                     services.AddSingleton<Grids>();
                      services.AddSingleton<UserPersistantParams>();
 
                      // Logger and KLogger wrapper for base logger

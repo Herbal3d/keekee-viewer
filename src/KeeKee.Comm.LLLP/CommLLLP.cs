@@ -800,7 +800,11 @@ namespace KeeKee.Comm.LLLP {
         public void Objects_AvatarUpdate(object? sender, OMV.AvatarUpdateEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAvatarUpdate, sender, args)) return;
             lock (m_opLock) {
-                LLRegionContext rcontext = FindRegion(args.Simulator);
+                LLRegionContext? rcontext = FindRegion(args.Simulator);
+                if (rcontext == null) {
+                    m_log.Log(KLogLevel.DBADERROR, "AvatarUpdate: no region context for simulator {0}", args.Simulator.Name);
+                    return;
+                }
                 if (!ParentExists(rcontext, args.Avatar.ParentID)) {
                     // if this requires a parent and the parent isn't here yet, queue this operation til later
                     rcontext.RequestLocalID(args.Avatar.ParentID);

@@ -19,7 +19,7 @@ using OMVSD = OpenMetaverse.StructuredData;
 namespace KeeKee.Framework.WorkQueue {
     // A static class which keeps a list of all the allocated work queues
     // and can serve up statistics about them.
-    public class WorkQueueManager : IDisplayable , IInstance<WorkQueueManager> {
+    public class WorkQueueManager : IDisplayable {
 
         private List<IWorkQueue> m_queues;
 
@@ -30,7 +30,7 @@ namespace KeeKee.Framework.WorkQueue {
                 return m_instance;
             }
         }
-        
+
         public WorkQueueManager() {
             m_queues = new List<IWorkQueue>();
         }
@@ -58,8 +58,7 @@ namespace KeeKee.Framework.WorkQueue {
                 foreach (IWorkQueue wq in m_queues) {
                     try {
                         aMap.Add(wq.Name, wq.GetDisplayable());
-                    }
-                    catch {
+                    } catch {
                         LogManager.Log.Log(LogLevel.DBADERROR, "WorkQueueManager.GetDisplayable: duplicate symbol: {0}", wq.Name);
                     }
                 }

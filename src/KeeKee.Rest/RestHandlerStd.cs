@@ -10,15 +10,13 @@
 // limitations under the License.
 
 using System.Net;
-using System.Text;
 
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Pfim;
+
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
@@ -98,8 +96,14 @@ namespace KeeKee.Rest {
             }
         }
 
+        public void Dispose() {
+            // _RestManager.UnregisterListener(this);
+        }
+
         // Optional displayable interface to get parameters from. Not used here.
-        public IDisplayable? Displayable { get; } = null;
+        public OMVSD.OSDMap? GetDisplayable() {
+            return null;
+        }
     }
 
 }

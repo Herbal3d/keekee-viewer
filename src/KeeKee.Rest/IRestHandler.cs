@@ -10,16 +10,16 @@
 // limitations under the License.
 
 using System.Net;
-
 using KeeKee.Framework;
-
-using Microsoft.Extensions.DependencyInjection;
+using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
 
-    public interface IRestHandler {
+    public interface IRestHandler : IDisposable, IDisplayable {
 
         // The prefix string for this handler. The stuff after the 'api/' in the URL
+        // Usually constructed with:
+        //    Prefix = Utilities.JoinFilePieces(m_RestManager.APIBase, "/subpath/");
         string Prefix { get; protected set; }
 
         // Process a GET or POST request
@@ -28,7 +28,5 @@ namespace KeeKee.Rest {
                                     HttpListenerResponse pResponse,
                                     CancellationToken pCancelToken);
 
-        // Optional displayable interface to get parameters from
-        IDisplayable? Displayable { get; }
     }
 }

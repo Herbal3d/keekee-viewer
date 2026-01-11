@@ -19,6 +19,7 @@ using KeeKee.Config;
 using KeeKee.Framework.Logging;
 
 using OMVSD = OpenMetaverse.StructuredData;
+using KeeKee.Framework.Utilities;
 
 namespace KeeKee.Rest {
 
@@ -54,6 +55,13 @@ namespace KeeKee.Rest {
         List<IRestHandler> m_handlers = new List<IRestHandler>();
 
         private readonly RestHandlerFactory m_RestHandlerFactory;
+
+        // General reference to the base API URL prefix
+        public string APIBase {
+            get {
+                return m_config.Value.APIBase;
+            }
+        }
 
         private IRestHandler? m_staticHandler;
         private IRestHandler? m_stdHandler;

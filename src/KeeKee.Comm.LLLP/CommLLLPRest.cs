@@ -12,7 +12,7 @@
 using System.Net;
 using System.Text.Json;
 
-using KeeKee.Comm;
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 
