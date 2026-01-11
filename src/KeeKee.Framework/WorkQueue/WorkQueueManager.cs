@@ -12,31 +12,27 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Statistics;
+
 using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Framework.WorkQueue {
     // A static class which keeps a list of all the allocated work queues
     // and can serve up statistics about them.
     public class WorkQueueManager : IDisplayable {
+        private readonly KLogger<WorkQueueManager> m_log;
 
         private List<IWorkQueue> m_queues;
 
-        private static WorkQueueManager m_instance = null;
-        public static WorkQueueManager Instance {
-            get {
-                if (m_instance == null) m_instance = new WorkQueueManager();
-                return m_instance;
-            }
-        }
-
-        public WorkQueueManager() {
+        public WorkQueueManager(KLogger<WorkQueueManager> pLog) {
+            m_log = pLog;
             m_queues = new List<IWorkQueue>();
         }
 
         public void Register(IWorkQueue wq) {
-            Logging.LogManager.Log.Log(LogLevel.DINITDETAIL, "WorkQueueManager: registering queue {0}", wq.Name);
+            m_log.Log(KLogLevel.DINITDETAIL, "WorkQueueManager: registering queue {0}", wq.Name);
             lock (m_queues) m_queues.Add(wq);
         }
 
@@ -59,7 +55,7 @@ namespace KeeKee.Framework.WorkQueue {
                     try {
                         aMap.Add(wq.Name, wq.GetDisplayable());
                     } catch {
-                        LogManager.Log.Log(LogLevel.DBADERROR, "WorkQueueManager.GetDisplayable: duplicate symbol: {0}", wq.Name);
+                        m_log.Log(KLogLevel.DBADERROR, "WorkQueueManager.GetDisplayable: duplicate symbol: {0}", wq.Name);
                     }
                 }
             }

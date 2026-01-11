@@ -9,7 +9,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO;
 using System.Reflection;
 
 using OMV = OpenMetaverse;
@@ -20,7 +19,7 @@ namespace KeeKee.Framework.Utilities {
     /// <summary>
     /// Every program has a place to put general, useful, tool routines.
     /// </summary>
-    public class Utilities {
+    public static class Utilities {
         /// <summary>
         /// Combine two strings into one longer url. We made sure there is only one
         /// slash between the two joined halves. This means we check for and remove

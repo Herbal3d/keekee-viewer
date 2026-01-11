@@ -39,7 +39,7 @@ namespace KeeKee.Framework.WorkQueue {
         public int requeueWait;
         public int remainingWait;
         public int timesRequeued;
-        public object containingClass;
+        public object? containingClass;
         public int cost;
         public long sequence;
     }

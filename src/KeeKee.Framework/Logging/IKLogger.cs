@@ -35,7 +35,9 @@ namespace KeeKee.Framework.Logging {
         DUPDATE,
         DUPDATEDETAIL,
         DTEXTURE,
-        DTEXTUREDETAIL
+        DTEXTUREDETAIL,
+        DRENDER,
+        DRENDERDETAIL
     }
     public interface IKLogger : ILogger {
         // Log with our KLogLevel

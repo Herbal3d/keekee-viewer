@@ -9,6 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Config;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -69,6 +71,9 @@ namespace KeeKee.Framework.Logging {
                 case KLogLevel.Critical:
                     _innerLogger.Log(LogLevel.Critical, message, args);
                     break;
+                case KLogLevel.None:
+                    // Do nothing
+                    break;
                 case KLogLevel.UIDetail:
                     if (_options.Value.UIDetail)
                         _innerLogger.Log(LLDetail, message, args);
@@ -85,11 +90,8 @@ namespace KeeKee.Framework.Logging {
                     if (_options.Value.DINITDETAIL)
                         _innerLogger.Log(LLDetail, message, args);
                     break;
-                case KLogLevel.None:
-                // Do nothing
                 case KLogLevel.DBADERROR:
                     _innerLogger.Log(LogLevel.Error, message, args);
-                    break;
                     break;
                 case KLogLevel.DCOMM:
                     if (_options.Value.DCOMM)
@@ -121,6 +123,14 @@ namespace KeeKee.Framework.Logging {
                     break;
                 case KLogLevel.DTEXTUREDETAIL:
                     if (_options.Value.DTEXTUREDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DRENDER:
+                    if (_options.Value.DRENDER)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DRENDERDETAIL:
+                    if (_options.Value.DRENDERDETAIL)
                         _innerLogger.Log(LLDetail, message, args);
                     break;
                 default:

@@ -23,6 +23,7 @@ using KeeKee.Rest;
 using KeeKee.Framework;
 using KeeKee.World;
 using KeeKee.World.LL;
+using KeeKee.Framework.WorkQueue;
 
 namespace KeeKee {
 
@@ -91,10 +92,15 @@ namespace KeeKee {
                      // Collections and collection managers available for services
                      services.AddSingleton<Grids>();
                      services.AddSingleton<UserPersistantParams>();
+                     services.AddSingleton<WorkQueueManager>();
+                     services.AddTransient<BasicWorkQueue>();
+
 
                      // Logger and KLogger wrapper for base logger
                      services.Configure<KLoggerConfig>(context.Configuration.GetSection(KLoggerConfig.subSectionName));
                      services.AddTransient(typeof(ILogger<>), typeof(KLogger<>));
+
+
 
                      // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
                      services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subSectionName));

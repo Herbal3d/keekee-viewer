@@ -29,7 +29,7 @@ namespace KeeKee.World {
     public delegate void WorldAgentRemovedCallback(IEntity agnt);
 
     public delegate IEntity WorldCreateEntityCallback();
-    public delegate IEntityAvatar WorldCreateAvatarCallback();
+    public delegate IEntity WorldCreateAvatarCallback();
 
     public enum WorldGroupCode {
         LLWorld,

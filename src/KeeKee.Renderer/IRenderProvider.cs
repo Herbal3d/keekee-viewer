@@ -76,7 +76,7 @@ namespace KeeKee.Renderer {
 
         // tell the renderer about the camera position
         void UpdateCamera(CameraControl cam);
-        void UpdateEnvironmentalLights(EntityLight sun, EntityLight moon);
+        void UpdateEnvironmentalLights(IEntity pSun, IEntity pMoon);
         // TODO: ambient setting
 
         // Given the current mouse position, return a point in the world
@@ -84,11 +84,11 @@ namespace KeeKee.Renderer {
 
         // called when a new region is found, decorates the region context with
         // rendering specific information for placing in  the view
-        void MapRegionIntoView(RegionContextBase rcontext);
+        void MapRegionIntoView(IRegionContext rcontext);
         // Set a region as the high resolution focus region
-        void SetFocusRegion(RegionContextBase rcontext);
+        void SetFocusRegion(IRegionContext rcontext);
 
         // something about the terrain has changed, do some updating
-        void UpdateTerrain(RegionContextBase wcontext);
+        void UpdateTerrain(IRegionContext wcontext);
     }
 }

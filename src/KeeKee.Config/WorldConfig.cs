@@ -9,12 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using LibreMetaverse;
-
-namespace KeeKee.Config
-{
-    public class WorldConfig
-    {
+namespace KeeKee.Config {
+    public class WorldConfig {
         public static string subSectionName { get; set; } = "World";
 
         // Maximum number of objects to request in a single GetObjects call
@@ -24,7 +20,8 @@ namespace KeeKee.Config
         // Milliseconds to wait before retrying object request
         public int ObjectRequestRetryDelayMS { get; set; } = 500;
 
-        public LLAgentConfig LLAgent { get; set; } = new LLAgentConfig();
+        // Max number of parallel work items in the work queues
+        public int MaxWorkQueueItems { get; set; } = 10;
 
     }
 }
