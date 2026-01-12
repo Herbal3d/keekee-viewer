@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using KeeKee.Framework.Logging;
 
 namespace KeeKee.World {
     public class TerrainInfoBase : EntityBase, ITerrainInfo {
@@ -37,12 +38,12 @@ namespace KeeKee.World {
         public float WaterHeight { get; set; } = NOWATER;
 
         // the patch is presumed to be Stride width and length
-        public virtual void UpdatePatch(RegionContextBase reg, int x, int y, float[] data) {
+        public virtual void UpdatePatch(IRegionContext reg, int x, int y, float[] data) {
             return;
         }
 
-        public TerrainInfoBase(RegionContextBase rcontext, AssetContextBase acontext)
-                        : base(rcontext, acontext) {
+        public TerrainInfoBase(IKLogger pLog, IWorld pWorld, IRegionContext pRContext, IAssetContext pAContext)
+                        : base(pLog, pWorld, pRContext, pAContext) {
         }
 
         public override void Dispose() {

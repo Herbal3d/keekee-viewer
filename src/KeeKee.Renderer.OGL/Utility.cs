@@ -17,8 +17,7 @@ using OMVR = OpenMetaverse.Rendering;
 
 namespace KeeKee.Renderer.OGL {
 
-    public struct FaceData
-    {
+    public struct FaceData {
         public float[] Vertices;
         public ushort[] Indices;
         public float[] Normals;
@@ -28,22 +27,19 @@ namespace KeeKee.Renderer.OGL {
         // TODO: Normals
     }
 
-    public sealed class TextureInfo
-    {
+    public sealed class TextureInfo {
         /// <summary>OpenGL Texture ID</summary>
         public int ID;
         /// <summary>True if this texture has an alpha component</summary>
         public bool Alpha;
 
-        public TextureInfo(int id, bool alpha)
-        {
+        public TextureInfo(int id, bool alpha) {
             ID = id;
             Alpha = alpha;
         }
     }
 
-    public struct HeightmapLookupValue : IComparable<HeightmapLookupValue>
-    {
+    public struct HeightmapLookupValue : IComparable<HeightmapLookupValue> {
         public ushort Index;
         public float Value;
 
@@ -93,11 +89,11 @@ namespace KeeKee.Renderer.OGL {
     /// Kept in a list in the RegionRenderInfo for the region.
     /// </summary>
     public sealed class RenderablePrim {
-        public OMV.Primitive Prim;          // the prim underlying this
-        public OMVR.FacetedMesh Mesh;       // meshed prim
-        public RegionContextBase rcontext;  // used for positioning in displayed world
-        public AssetContextBase acontext;   // used for finding textures for Prim
-        public bool isVisible;              // prim is visible from the current camera location
+        public OMV.Primitive Prim { get; set; }     // the prim underlying this
+        public OMVR.FacetedMesh Mesh { get; set; }  // meshed prim
+        public IRegionContext RContext { get; set; } // used for positioning in displayed world
+        public IAssetContext AContext { get; set; }  // used for finding textures for Prim
+        public bool IsVisible { get; set; }         // prim is visible from the current camera location
 
         private OMV.Vector3 localPosition;
         public OMV.Vector3 Position {
@@ -114,19 +110,17 @@ namespace KeeKee.Renderer.OGL {
     }
 
     public sealed class RenderableAvatar {
-        public IEntityAvatar avatar;
+        public IEntity Avatar { get; set; }
     }
 
-    public static class Math3D
-    {
+    public static class Math3D {
         // Column-major:
         // |  0  4  8 12 |
         // |  1  5  9 13 |
         // |  2  6 10 14 |
         // |  3  7 11 15 |
 
-        public static float[] CreateTranslationMatrix(OMV.Vector3 v)
-        {
+        public static float[] CreateTranslationMatrix(OMV.Vector3 v) {
             float[] mat = new float[16];
 
             mat[12] = v.X;
@@ -137,8 +131,7 @@ namespace KeeKee.Renderer.OGL {
             return mat;
         }
 
-        public static float[] CreateRotationMatrix(OMV.Quaternion q)
-        {
+        public static float[] CreateRotationMatrix(OMV.Quaternion q) {
             float[] mat = new float[16];
 
             // Transpose the quaternion (don't ask me why)
@@ -182,8 +175,7 @@ namespace KeeKee.Renderer.OGL {
             return mat;
         }
 
-        public static float[] CreateScaleMatrix(OMV.Vector3 v)
-        {
+        public static float[] CreateScaleMatrix(OMV.Vector3 v) {
             float[] mat = new float[16];
 
             mat[0] = v.X;

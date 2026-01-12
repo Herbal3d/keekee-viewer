@@ -14,24 +14,24 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace KeeKee.World {
-public interface ITerrainInfo {
-    // generic terrain description
-    float[,] HeightMap { get; }
-    int HeightMapWidth { get; }  // X dimension
-    int HeightMapLength { get; } // Y dimension
-    float MaximumHeight { get; }
-    float MinimumHeight { get; }
-    float WaterHeight { get; set; }
+    public interface ITerrainInfo {
+        // generic terrain description
+        float[,] HeightMap { get; }
+        int HeightMapWidth { get; }  // X dimension
+        int HeightMapLength { get; } // Y dimension
+        float MaximumHeight { get; }
+        float MinimumHeight { get; }
+        float WaterHeight { get; set; }
 
-    // update the height info for a patch cornered at x, y
-    void UpdatePatch(RegionContextBase reg, int x, int y, float[] data);
+        // update the height info for a patch cornered at x, y
+        void UpdatePatch(IRegionContext reg, int x, int y, float[] data);
 
-    // terrain is a problem. Here are several constants used in its represtantation
-    // TODO: better definition of terrain types and characteristics
-    // make a general terrain heightmap that is presented by the world
-    int TerrainPatchStride { get; }
-    int TerrainPatchWidth { get; }      // X dimension (E/W)
-    int TerrainPatchLength { get; }     // Y dimension (N/S)
+        // terrain is a problem. Here are several constants used in its represtantation
+        // TODO: better definition of terrain types and characteristics
+        // make a general terrain heightmap that is presented by the world
+        int TerrainPatchStride { get; }
+        int TerrainPatchWidth { get; }      // X dimension (E/W)
+        int TerrainPatchLength { get; }     // Y dimension (N/S)
 
-}
+    }
 }

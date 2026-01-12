@@ -53,7 +53,7 @@ namespace KeeKee.World.LL {
         public void DataUpdate(UpdateCodes what) {
             // Local values are set for dead-reconning but once we have official values, use  them
             // if ((what & UpdateCodes.Position) != 0) m_haveLocalPosition = false;
-            if ((what & UpdateCodes.Rotation) != 0) m_haveLocalHeading = false;
+            // if ((what & UpdateCodes.Rotation) != 0) m_haveLocalHeading = false;
         }
 
         public void StopAllMovement() {

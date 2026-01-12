@@ -14,9 +14,12 @@ using Microsoft.Extensions.Options;
 using KeeKee.Comm;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.WorkQueue;
+using KeeKee.Framework.Statistics;
 
 using OMV = OpenMetaverse;
+using OMVSD = OpenMetaverse.StructuredData;
+using KeeKee.Framework;
+
 
 namespace KeeKee.World.LL {
     /// <summary>
@@ -24,28 +27,36 @@ namespace KeeKee.World.LL {
     /// This uses the OpenMetaverse connection to the server to load the
     /// asset (texture) into the filesystem.
     /// </summary>
-    public sealed class LLAssetContext : AssetContextBase {
+    public sealed class LLAssetContext : AssetContextBase, IDisplayable {
+
+        private SemaphoreSlim m_textureThrottle;
+        private StatNumber m_queuedTextureRequests = new StatNumber("QueuedTextureRequests", "Number of texture requests waiting to be sent");
+        private StatNumber m_activeTextureRequests = new StatNumber("ActiveTextureRequests", "Number of active texture requests");
+
+        private StatisticCollection m_stats;
 
         public LLAssetContext(KLogger<LLAssetContext> pLog,
                             ICommProvider pCommProvider,
                             IOptions<AssetConfig> pAssetConfig)
                         : base(pLog, pCommProvider, pAssetConfig, "Unknown") {
 
+            // This MAX is only used for the UDP texture requests (not HTTP)
             m_comm.GridClient.Settings.MAX_CONCURRENT_TEXTURE_DOWNLOADS = m_maxRequests;
-            m_maxOutstandingTextureRequests = m_maxRequests;
-            // m_client.Assets.OnImageReceived += new OMV.AssetManager.ImageReceivedCallback(OnImageReceived);
+            m_comm.GridClient.Settings.USE_ASSET_CACHE = true;
+            m_comm.GridClient.Settings.ASSET_CACHE_DIR = CacheDirBase;
             m_comm.GridClient.Assets.Cache.ComputeAssetCacheFilename = ComputeTextureFilename;
 
-            /* Need our own parameters since there can be more than one AssetContext
-            m_comm.CommStatistics().Add("TexturesWaitingFor",
-                delegate(string xx) { return new OMVSD.OSDString(m_waiting.Count.ToString()); },
-                "Number of unique textures requests outstanding");
-            m_comm.CommStatistics().Add("CurrentOutstandingTextureRequests",
-                delegate(string xx) { return new OMVSD.OSDString(m_currentOutstandingTextureRequests.ToString()); },
-                "Number of texture requests that have been passed to libomv");
-             */
+            m_maxRequests = pAssetConfig.Value.MaxTextureRequests;
+
+            m_textureThrottle = new(m_maxRequests, m_maxRequests);
+
+            m_stats = new StatisticCollection("LLAssetContext"); ;
+            m_stats.AddStat(m_activeTextureRequests);
+            m_stats.AddStat(m_queuedTextureRequests);
         }
 
+        // Return the cache filename for the given texture ID
+        // Called from inside the libomv asset cache system
         public string ComputeTextureFilename(string cacheDir, OMV.UUID textureID) {
             EntityNameLL entName = EntityNameLL.ConvertTextureWorldIDToEntityName(this, textureID);
             string textureFilename = Path.Combine(CacheDirBase, entName.CacheFilename);
@@ -78,7 +89,8 @@ namespace KeeKee.World.LL {
         // TODO: if we get a request for the same texture by two different routines
         // at the same time, this doesn't do all the callbacks
         // To enable this feature, remove the dictionary and checks for already fetching
-        public override void DoTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finishCall) {
+        public override async Task<IAssetContext.AssetLoadInfo> DoTextureLoad(EntityName textureEntityName, AssetType typ) {
+
             EntityNameLL textureEnt = new EntityNameLL(textureEntityName);
             string worldID = textureEnt.EntityPart;
             OMV.UUID binID = new OMV.UUID(worldID);
@@ -87,100 +99,89 @@ namespace KeeKee.World.LL {
             string textureFilename = Path.Combine(CacheDirBase, textureEnt.CacheFilename);
             lock (FileSystemAccessLock) {
                 if (File.Exists(textureFilename)) {
-                    m_log.Log(KLogLevel.DTEXTUREDETAIL, "DoTextureLoad: Texture file alreayd exists for " + worldID);
-                    bool hasTransparancy = CheckTextureFileForTransparancy(textureFilename);
-                    // make the callback happen on a new thread so things don't get tangled (caller getting the callback)
-                    Object[] finishCallParams = { finishCall, textureEntityName.Name, hasTransparancy };
-                    m_completionWork.DoLater(FinishCallDoLater, finishCallParams);
-                    // m_completionWork.DoLater(new FinishCallDoLater(finishCall, textureEntityName.Name, hasTransparancy));
-                } else {
-                    bool sendRequest = false;
-                    lock (m_waiting) {
-                        // if this is already being requested, don't waste our time
-                        if (m_waiting.ContainsKey(binID)) {
-                            m_log.Log(KLogLevel.DTEXTUREDETAIL, "DoTextureLoad: Already waiting for " + worldID);
-                        } else {
-                            WaitingInfo wi = new WaitingInfo(binID, finishCall);
-                            wi.filename = textureFilename;
-                            wi.type = typ;
-                            m_waiting.Add(binID, wi);
-                            sendRequest = true;
-                        }
-                    }
-                    if (sendRequest) {
-                        // this is here because RequestTexture might immediately call the callback
-                        //   and we should be outside the lock
-                        m_log.Log(KLogLevel.DTEXTUREDETAIL, "DoTextureLoad: Requesting: " + textureEntityName);
-                        // m_texturePipe.RequestTexture(binID, OMV.ImageType.Normal, 50f, 0, 0, OnACDownloadFinished, false);
-                        // m_comm.GridClient.Assets.RequestImage(binID, OMV.ImageType.Normal, 101300f, 0, 0, OnACDownloadFinished, false);
-                        // m_comm.GridClient.Assets.RequestImage(binID, OMV.ImageType.Normal, 50f, 0, 0, OnACDownloadFinished, false);
-                        ThrottleTextureRequests(binID);
-                    }
+                    m_log.Log(KLogLevel.DTEXTUREDETAIL, "DoTextureLoad: Texture file already exists for " + worldID);
+                    byte[] data = File.ReadAllBytes(textureFilename);
+                    OMV.Assets.AssetTexture assetTexture = new OMV.Assets.AssetTexture(OMV.UUID.Zero, data);
+                    bool hasTransparancy = AssetContextBase.CheckAssetTextureForTransparancy(assetTexture);
+
+                    return new IAssetContext.AssetLoadInfo(textureEntityName, typ,
+                                                            OMV.TextureRequestState.Finished,
+                                                            assetTexture) {
+                        HasTransparancy = hasTransparancy
+                    };
                 }
             }
-            return;
+
+            return await DoTextureLoadInternal(binID, textureEntityName, typ, textureFilename);
         }
 
-        #region THROTTLE TEXTURES
-        // some routines to throttle the number of outstand textures requetst to see if 
-        //  libomv is getting overwhelmed by thousands of requests
-        Queue<OMV.UUID> m_textureQueue = new Queue<OpenMetaverse.UUID>();
-        int m_maxOutstandingTextureRequests = 32;
-        int m_currentOutstandingTextureRequests = 0;
-        BasicWorkQueue m_doThrottledTextureRequest = null;
-        private void ThrottleTextureRequests(OMV.UUID binID) {
-            lock (m_textureQueue) {
-                m_textureQueue.Enqueue(binID);
-            }
-            ThrottleTextureRequestsCheck();
-        }
-        private void ThrottleTextureRequestsCheck() {
-            OMV.UUID binID = OMV.UUID.Zero;
-            lock (m_textureQueue) {
-                if (m_textureQueue.Count > 0 && m_currentOutstandingTextureRequests < m_maxOutstandingTextureRequests) {
-                    m_currentOutstandingTextureRequests++;
-                    binID = m_textureQueue.Dequeue();
-                }
-            }
-            if (binID != OMV.UUID.Zero) {
-                if (m_doThrottledTextureRequest == null) {
-                    m_doThrottledTextureRequest = new BasicWorkQueue("LLThrottledTexture" + (++m_numAssetContextBase).ToString());
-                }
-                m_doThrottledTextureRequest.DoLater(ThrottleTextureMakeRequest, binID);
-            }
-        }
-        private bool ThrottleTextureMakeRequest(DoLaterBase qInstance, Object obinID) {
-            OMV.UUID binID = (OMV.UUID)obinID;
-            m_comm.GridClient.Assets.RequestImage(binID, OMV.ImageType.Normal, 1013000f, 0, 0, OnACDownloadFinished, false);
-            return true;
-        }
-        private void ThrottleTextureRequestsComplete() {
-            m_currentOutstandingTextureRequests--;
-            ThrottleTextureRequestsCheck();
-        }
+        // NEW ======================================
+        private async Task<IAssetContext.AssetLoadInfo> DoTextureLoadInternal(OMV.UUID binID,
+                            EntityName pTextureEntityName,
+                            AssetType typ,
+                            string pTextureFilename) {
 
-        #endregion THROTTLE TEXTURES
+            m_queuedTextureRequests.Increment();
+            await m_textureThrottle.WaitAsync();
+            m_queuedTextureRequests.Decrement();
+            m_activeTextureRequests.Increment();
+
+            try {
+                var tcs = new TaskCompletionSource<IAssetContext.AssetLoadInfo>();
+
+                // Store callback target for OnACDownloadFinished
+                IAssetContext.WaitingInfo? existingWi = null;
+                lock (m_waiting) {
+                    if (!m_waiting.ContainsKey(binID)) {
+                        IAssetContext.WaitingInfo wi = new IAssetContext.WaitingInfo(binID) {
+                            type = typ,
+                            filename = pTextureFilename,
+                            tcs = tcs
+                        };
+                        m_waiting.Add(binID, wi);
+                    } else {
+                        // Already being fetched, wait on same TaskCompletionSource
+                        existingWi = m_waiting[binID];
+                    }
+                }
+                // If already being fetched, wait for completion outside lock
+                if (existingWi != null && existingWi.tcs != null) {
+                    return await existingWi.tcs.Task;
+                }
+
+                m_comm.GridClient.Assets.RequestImage(binID, OMV.ImageType.Normal, OnACDownloadFinished, false);
+                return await tcs.Task;
+            } finally {
+                m_activeTextureRequests.Decrement();
+                m_textureThrottle.Release();
+            }
+        }
 
         // Used for texture pipeline
         // returns flag = true if texture was sucessfully downloaded
         private void OnACDownloadFinished(OMV.TextureRequestState state, OMV.Assets.AssetTexture assetTexture) {
-            ProcessDownloadFinished(state, assetTexture);
+            OMV.UUID binID = assetTexture.AssetID;
+
+            lock (m_waiting) {
+                if (m_waiting.TryGetValue(binID, out IAssetContext.WaitingInfo? wi)) {
+                    m_log.Log(KLogLevel.DTEXTUREDETAIL, "OnACDownloadFinished: Unknown texture download finished: " + binID.ToString());
+                    // TODO: should this text for transparancy be in the caller?
+                    bool hasTransparancy = AssetContextBase.CheckAssetTextureForTransparancy(assetTexture);
+                    var result = new IAssetContext.AssetLoadInfo(
+                                        ConvertToEntityName(this, binID.ToString()),
+                                        wi.type,
+                                        state,
+                                        assetTexture) {
+                        HasTransparancy = hasTransparancy
+                    };
+                    wi.tcs?.SetResult(result);
+                    m_waiting.Remove(binID);
+                }
+            }
         }
 
-        /// <summary>
-        /// Implementation routine that the parent class uses to create communication specific entity
-        /// names.
-        /// </summary>
-        /// <param name="acb"></param>
-        /// <param name="at"></param>
-        protected override EntityName ConvertToEntityName(AssetContextBase acb, string worldID) {
-            return EntityNameLL.ConvertTextureWorldIDToEntityName(acb, worldID);
-        }
-        protected override void CompletionWorkComplete() {
-            ThrottleTextureRequestsComplete();
-        }
-
-        private void OnImageReceived(OMV.ImageDownload cntl, OMV.Assets.AssetTexture textureID) {
+        public OMVSD.OSDMap GetDisplayable() {
+            return m_stats.GetDisplayable();
         }
 
         public override void Dispose() {

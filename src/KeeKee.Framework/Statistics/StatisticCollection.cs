@@ -19,7 +19,10 @@ namespace KeeKee.Framework.Statistics {
 
         private readonly List<IStat> Stats = new List<IStat>();
 
-        public StatisticCollection() {
+        public string CollectionName { get; private set; }
+
+        public StatisticCollection(string pCollectionName = "") {
+            CollectionName = pCollectionName;
         }
 
         public void AddStat(IStat pStat) {
@@ -29,9 +32,11 @@ namespace KeeKee.Framework.Statistics {
         public OMVSD.OSDMap GetDisplayable() {
             OMVSD.OSDMap map = new OMVSD.OSDMap();
             foreach (IDisplayable stat in Stats) {
-                OMVSD.OSDMap statMap = stat.GetDisplayable();
-                string name = statMap["Name"].AsString();
-                map[name] = statMap;
+                OMVSD.OSDMap? statMap = stat.GetDisplayable();
+                if (statMap != null) {
+                    string name = statMap["Name"].AsString();
+                    map[name] = statMap;
+                }
             }
             return map;
         }

@@ -88,7 +88,7 @@ namespace KeeKee.World {
                 m_entity = name;
             } else {
                 m_header = "";
-                m_host = "LOOKINGGLASS";
+                m_host = "KEEKEE";
                 m_entity = name;
             }
             // m_fullName is created when it is asked for
@@ -132,14 +132,14 @@ namespace KeeKee.World {
         // Can be overridden for context specific changes
         public virtual string CombineEntityName(string header, string host, string ent) {
             string ret = "";
-            if (header != null && header.Length != 0) {
+            if (String.IsNullOrEmpty(header) == false) {
                 if (header.EndsWith(HeaderSeparator)) {
                     ret = header;
                 } else {
                     ret = header + HeaderSeparator;
                 }
             }
-            if (host.EndsWith(PartSeparator)) {
+            if (String.IsNullOrEmpty(host) == false) {
                 ret += host + ent;
             } else {
                 ret += host + PartSeparator + ent;

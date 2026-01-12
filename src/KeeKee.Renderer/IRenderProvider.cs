@@ -61,7 +61,7 @@ namespace KeeKee.Renderer {
     public delegate void RendererBeforeFrameCallback();
 
     public interface IRenderProvider {
-        IUserInterfaceProvider UserInterface { get; }
+        IUserInterfaceProvider UserInterface { get; protected set; }
 
         // entry for main thread for rendering. Return false if you don't need it.
         bool RendererThread();

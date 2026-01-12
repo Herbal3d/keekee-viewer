@@ -17,6 +17,7 @@ using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
 
 using OMV = OpenMetaverse;
+using System.Threading.Tasks;
 
 namespace KeeKee.World {
     /// <summary>
@@ -31,31 +32,6 @@ namespace KeeKee.World {
 
         protected IKLogger m_log;
 
-        // When a requested download is finished, you can be called with the ID of the
-        // completed asset and the entityName of ??
-        // public delegate void DownloadFinishedCallback(string entName, bool hasTransparancy);
-        // public delegate void DownloadProgressCallback(string entName);
-
-#pragma warning disable 0067   // disable unused event warning
-        public event DownloadFinishedCallback? OnDownloadFinished;
-        public event DownloadProgressCallback? OnDownloadProgress;
-#pragma warning restore 0067
-
-        // =========================================================
-        protected class WaitingInfo : IComparable<WaitingInfo> {
-            public OMV.UUID worldID;
-            public DownloadFinishedCallback callback;
-            public string? filename;
-            public AssetType type;
-            public WaitingInfo(OMV.UUID wid, DownloadFinishedCallback cback) {
-                worldID = wid;
-                callback = cback;
-            }
-            public int CompareTo(WaitingInfo other) {
-                return (worldID.CompareTo(other.worldID));
-            }
-        }
-
         public string Name { get; set; } = "UNKNOWN";
 
         public string CacheDirBase { get; set; } = "";
@@ -67,7 +43,7 @@ namespace KeeKee.World {
 
         protected int m_maxRequests;
         protected BasicWorkQueue m_completionWork;
-        protected Dictionary<OMV.UUID, WaitingInfo> m_waiting;
+        protected Dictionary<OMV.UUID, IAssetContext.WaitingInfo> m_waiting;
         protected static int m_numAssetContextBase = 0;
 
         protected ICommProvider m_comm;       // handle to the underlying comm provider
@@ -92,8 +68,7 @@ namespace KeeKee.World {
                     AssetContexts.Add(this);
                 }
             }
-            m_waiting = new Dictionary<OMV.UUID, WaitingInfo>();
-            m_completionWork = new BasicWorkQueue("AssetCompletion" + m_numAssetContextBase.ToString());
+            m_waiting = new Dictionary<OMV.UUID, IAssetContext.WaitingInfo>();
         }
 
         /// <summary>
@@ -103,7 +78,7 @@ namespace KeeKee.World {
         /// call to the OnDownload* events will show it's progress.
         /// </summary>
         /// <param name="textureEntityName">the entity name of this texture</param>
-        public abstract void DoTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finished);
+        public abstract Task<IAssetContext.AssetLoadInfo> DoTextureLoad(EntityName textureEntityName, AssetType typ);
 
         /*
         /// <summary>
@@ -146,7 +121,7 @@ namespace KeeKee.World {
         /// <param name="textureEntityName"></param>
         /// <param name="finished"></param>
         /// <returns></returns>
-        public void RequestTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finished) {
+        public async Task<IAssetContext.AssetLoadInfo> RequestTextureLoad(EntityName textureEntityName, AssetType typ) {
             IAssetContext? textureOwner = null;
             lock (AssetContexts) {
                 foreach (IAssetContext acb in AssetContexts) {
@@ -157,10 +132,13 @@ namespace KeeKee.World {
                 }
             }
             if (textureOwner != null) {
-                textureOwner.DoTextureLoad(textureEntityName, typ, finished);
-            } else {
-                m_log.Log(KLogLevel.DBADERROR, "RequestTextureLoad: found not asset context for texture " + textureEntityName);
+                var ali = await textureOwner.DoTextureLoad(textureEntityName, typ);
+                return ali;
             }
+            m_log.Log(KLogLevel.DBADERROR, "RequestTextureLoad: found not asset context for texture " + textureEntityName);
+            return new IAssetContext.AssetLoadInfo(textureEntityName, typ,
+                                                OMV.TextureRequestState.NotFound,
+                                                new OMV.Assets.AssetTexture(OMV.UUID.Zero, new byte[0]));
         }
 
         /// <summary>
@@ -257,7 +235,14 @@ namespace KeeKee.World {
             return hasTransparancy;
         }
 
+        // implementation function to get comm specific entity names from received texture information
+        protected virtual EntityName ConvertToEntityName(AssetContextBase acb, string id) {
+            return new EntityName(acb, id);
+        }
+
+
         // Call the callback on a separate thread to keep from getting tangled
+        /*
         protected bool FinishCallDoLater(DoLaterBase qInstance, Object parm) {
             Object[] lParams = (Object[])parm;
             DownloadFinishedCallback m_callback = (DownloadFinishedCallback)lParams[0];
@@ -267,26 +252,23 @@ namespace KeeKee.World {
             m_callback(m_textureEntityName, m_hasTransparancy);
             return true;
         }
-
-        // implementation function to get comm specific entity names from received texture information
-        protected virtual EntityName ConvertToEntityName(AssetContextBase acb, string id) {
-            return new EntityName(acb, id);
-        }
+        */
 
         // implementation function so underlying class knows when processing is complete
         protected virtual void CompletionWorkComplete() {
             return;
         }
 
+        /*
         // Used for texture pipeline
         // returns flag = true if texture was sucessfully downloaded
         protected void ProcessDownloadFinished(OMV.TextureRequestState state, OMV.Assets.AssetTexture assetTexture) {
             // if texture could not be downloaded, create a fake texture
             OMV.UUID assetWorldID = assetTexture.AssetID;
-            List<WaitingInfo> toCall = new List<WaitingInfo>();
+            List<IAssetContext.WaitingInfo> toCall = new List<IAssetContext.WaitingInfo>();
             m_log.Log(KLogLevel.DTEXTUREDETAIL, "ProcessDownloadFinished: Completion for " + assetWorldID.ToString());
             lock (m_waiting) {
-                foreach (KeyValuePair<OMV.UUID, WaitingInfo> kvp in m_waiting) {
+                foreach (KeyValuePair<OMV.UUID, IAssetContext.WaitingInfo> kvp in m_waiting) {
                     if (kvp.Value.worldID == assetWorldID) {
                         // sneak new values into the queued items 
                         toCall.Add(kvp.Value);
@@ -295,7 +277,7 @@ namespace KeeKee.World {
                 // now remove the ones from the list (we cannot remove while transversing the list)
                 // only remove them if the code is not for just a progress update
                 if (state != OMV.TextureRequestState.Progress) {
-                    foreach (WaitingInfo wx in toCall) {
+                    foreach (IAssetContext.WaitingInfo wx in toCall) {
                         m_waiting.Remove(wx.worldID);
                     }
                 }
@@ -303,7 +285,7 @@ namespace KeeKee.World {
 
             // if the texture fetch failed, create the not-found file
             if ((state == OMV.TextureRequestState.NotFound) || (state == OMV.TextureRequestState.Timeout)) {
-                foreach (WaitingInfo wi in toCall) {
+                foreach (IAssetContext.WaitingInfo wi in toCall) {
                     try {
                         WriteOutNotFoundTexture(wi);
                         m_log.Log(KLogLevel.DTEXTURE,
@@ -322,17 +304,17 @@ namespace KeeKee.World {
         }
 
         // For some reason this work item failed. Put the not found texture in it's place
-        private void WriteOutNotFoundSculpty(WaitingInfo wi) {
+        private void WriteOutNotFoundSculpty(IAssetContext.WaitingInfo wi) {
             string noSculptyFilename = m_assetConfig.Value.NoSculptyFilename;
             WriteOutNotFoundFile(wi, noSculptyFilename);
         }
 
-        private void WriteOutNotFoundTexture(WaitingInfo wi) {
+        private void WriteOutNotFoundTexture(IAssetContext.WaitingInfo wi) {
             string noTextureFilename = m_assetConfig.Value.NoTextureFilename;
             WriteOutNotFoundFile(wi, noTextureFilename);
         }
 
-        private void WriteOutNotFoundFile(WaitingInfo wi, string filename) {
+        private void WriteOutNotFoundFile(IAssetContext.WaitingInfo wi, string filename) {
             try {
                 lock (FileSystemAccessLock) {
                     MakeParentDirectoriesExist(wi.filename);
@@ -351,11 +333,10 @@ namespace KeeKee.World {
         private bool CompleteDownloadLater(DoLaterBase qInstance, Object parms) {
             Object[] lParams = (Object[])parms;
             OMV.Assets.AssetTexture m_assetTexture = (OMV.Assets.AssetTexture)lParams[0];
-            List<WaitingInfo> m_completeWork = (List<WaitingInfo>)lParams[1];
+            List<IAssetContext.WaitingInfo> m_completeWork = (List<IAssetContext.WaitingInfo>)lParams[1];
             string m_commName = (string)lParams[2];
             bool hasTransparancy;
 
-            /*
             foreach (WaitingInfo wii in m_completeWork) {
                 EntityName textureEntityName = ConvertToEntityName(this, wii.worldID.ToString());
                 bool m_convertToPng = m_assetConfig.Value.ConvertPNG;
@@ -457,11 +438,11 @@ namespace KeeKee.World {
                     }
                 }
             }
-            */
             m_completeWork.Clear();
             CompletionWorkComplete();
             return true;
         }
+        */
 
 
         virtual public void Dispose() {

@@ -32,26 +32,35 @@ namespace KeeKee.World {
     /// 
     // When a requested download is finished, you can be called with the ID of the
     // completed asset and the entityName of ??
-    public delegate void DownloadFinishedCallback(string entName, bool hasTransparancy);
-    public delegate void DownloadProgressCallback(string entName);
 
     public interface IAssetContext {
 
-        public event DownloadFinishedCallback? OnDownloadFinished;
-        public event DownloadProgressCallback? OnDownloadProgress;
-
-        // =========================================================
         public class WaitingInfo : IComparable<WaitingInfo> {
             public OMV.UUID worldID;
-            public DownloadFinishedCallback callback;
             public string filename;
             public AssetType type;
-            public WaitingInfo(OMV.UUID wid, DownloadFinishedCallback cback) {
+            public TaskCompletionSource<AssetLoadInfo>? tcs;
+            public WaitingInfo(OMV.UUID wid) {
                 worldID = wid;
-                callback = cback;
             }
-            public int CompareTo(WaitingInfo other) {
-                return (worldID.CompareTo(other.worldID));
+            public int CompareTo(WaitingInfo? other) {
+                return other == null ? 1 : worldID.CompareTo(other.worldID);
+            }
+        }
+
+        public class AssetLoadInfo {
+            public OMV.TextureRequestState DownloadState;
+            public OMV.Assets.AssetTexture AssetData;
+            public EntityName entityName;
+            public AssetType type = AssetType.Texture;
+            public bool HasTransparancy = false;
+            public AssetLoadInfo(EntityName ename, AssetType typ,
+                                    OMV.TextureRequestState state,
+                                    OMV.Assets.AssetTexture assetData) {
+                entityName = ename;
+                type = typ;
+                DownloadState = state;
+                AssetData = assetData;
             }
         }
 
@@ -69,7 +78,7 @@ namespace KeeKee.World {
         /// call to the OnDownload* events will show it's progress.
         /// </summary>
         /// <param name="textureEntityName">the entity name of this texture</param>
-        public abstract void DoTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finished);
+        public Task<AssetLoadInfo> DoTextureLoad(EntityName pTextureEntityName, AssetType pType);
 
         /// <summary>
         /// the caller didn't know who the owner of the texture was. We take apart the entity
@@ -80,7 +89,7 @@ namespace KeeKee.World {
         /// <param name="textureEntityName"></param>
         /// <param name="finished"></param>
         /// <returns></returns>
-        public void RequestTextureLoad(EntityName textureEntityName, AssetType typ, DownloadFinishedCallback finished);
+        public Task<AssetLoadInfo> RequestTextureLoad(EntityName pTextureEntityName, AssetType pType);
 
         /// <summary>
         /// based only on the name of the texture entity, have te asset context decide if it
