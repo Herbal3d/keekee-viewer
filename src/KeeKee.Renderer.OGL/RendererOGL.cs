@@ -9,9 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Options;
 
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
@@ -19,11 +17,11 @@ using KeeKee.Renderer;
 using KeeKee.World;
 using KeeKee.World.LL;
 
+using LibreMetaverse;
+
 using OMV = OpenMetaverse;
 using OMVR = OpenMetaverse.Rendering;
 using OMVI = OpenMetaverse.Imaging;
-using System.Runtime.CompilerServices;
-using Microsoft.Extensions.Options;
 
 namespace KeeKee.Renderer.OGL {
     /// <summary>
@@ -36,7 +34,8 @@ namespace KeeKee.Renderer.OGL {
 
         public CameraOGL Camera;
 
-        private Mesher.MeshmerizerR m_meshMaker = null;
+        // private Mesher.MeshmerizerR m_meshMaker = null;
+        private OMVR.IRendering m_meshMaker;
 
         // Textures
         public Dictionary<OMV.UUID, TextureInfo> Textures = new Dictionary<OMV.UUID, TextureInfo>();
@@ -49,11 +48,13 @@ namespace KeeKee.Renderer.OGL {
 
         public RendererOGL(KLogger<RendererOGL> pLog,
                             IOptions<RendererOGLConfig> pOptions,
-                            IUserInterfaceProvider pUserInterface
+                            IUserInterfaceProvider pUserInterface,
+                            OMVR.IRendering pMeshMaker
                             ) {
             m_log = pLog;
             m_options = pOptions;
             UserInterface = pUserInterface;
+            m_meshMaker = pMeshMaker;
 
             m_log.Log(KLogLevel.DINIT, "RendererOGL starting");
 
@@ -93,13 +94,18 @@ namespace KeeKee.Renderer.OGL {
                 lock (rri.renderAvatarList) {
                     if (!rri.renderAvatarList.ContainsKey(ent.LGID)) {
                         RenderableAvatar ravv = new RenderableAvatar();
-                        ravv.avatar = ent;
+                        ravv.Avatar = ent;
                         rri.renderAvatarList.Add(ent.LGID, ravv);
                     }
                 }
                 return null;
             }
+            if (ent.Prim == null) {
+                m_log.Log(KLogLevel.DBADERROR, "CreateNewPrim: no prim data for {0}", ent.Name.Name);
+                return null;
+            }
             OMV.Primitive prim = ent.Prim;
+
             /* don't do foliage yet
             if (prim.PrimData.PCode == OMV.PCode.Grass 
                         || prim.PrimData.PCode == OMV.PCode.Tree 
@@ -118,25 +124,13 @@ namespace KeeKee.Renderer.OGL {
             render.Rotation = prim.Rotation;
             render.IsVisible = true;    // initially assume visible
 
-            if (m_meshMaker == null) {
-                m_meshMaker = new Renderer.Mesher.MeshmerizerR();
-                m_meshMaker.ShouldScaleMesh = false;
-            }
 
             if (prim.Sculpt != null) {
                 EntityNameLL textureEnt = EntityNameLL.ConvertTextureWorldIDToEntityName(ent.AssetContext, prim.Sculpt.SculptTexture);
-                System.Drawing.Bitmap textureBitmap = ent.AssetContext.GetTexture(textureEnt);
-                if (textureBitmap == null) {
-                    // the texture is not available. Request it.
-                    // Note that we just call this routine again when it is available. Hope it's not recursive
-                    await ent.AssetContext.DoTextureLoad(textureEnt, AssetContextBase.AssetType.SculptieTexture,
-                                delegate (string name, bool trans) {
-                                    CreateNewPrim(ent);
-                                    return;
-                                }
-                    );
-                }
-                render.Mesh = m_meshMaker.GenerateSculptMesh(textureBitmap, prim, OMVR.DetailLevel.Medium);
+                var textureInfo = await ent.AssetContext.DoTextureLoad(textureEnt, AssetType.SculptieTexture);
+                textureInfo.AssetData.Decode();
+                var textureBitmap = textureInfo.AssetData.Image.ExportBitmap();
+                render.Mesh = m_meshMaker.GenerateFacetedSculptMesh(prim, textureBitmap, OMVR.DetailLevel.Medium);
                 textureBitmap.Dispose();
             } else {
                 render.Mesh = m_meshMaker.GenerateFacetedMesh(prim, OMVR.DetailLevel.High);
@@ -167,7 +161,7 @@ namespace KeeKee.Renderer.OGL {
 
                 // Texture transform for this face
                 OMV.Primitive.TextureEntryFace teFace = prim.Textures.GetFace((uint)j);
-                m_meshMaker.TransformTexCoords(face.Vertices, face.Center, teFace);
+                m_meshMaker.TransformTexCoords(face.Vertices, face.Center, teFace, OMV.Vector3.One);
 
                 // Texcoords for this face
                 data.TexCoords = new float[face.Vertices.Count * 2];
@@ -197,7 +191,7 @@ namespace KeeKee.Renderer.OGL {
                             // We haven't constructed this image in OpenGL yet, get ahold of it
                             IAssetContext.RequestTextureLoad(
                                 EntityNameLL.ConvertTextureWorldIDToEntityName(ent.AssetContext, teFace.TextureID),
-                                IAssetContext.AssetType.Texture,
+                                AssetType.Texture,
                                 OnTextureDownloadFinished);
                         }
                     }
@@ -240,11 +234,11 @@ namespace KeeKee.Renderer.OGL {
                     // the prim has changed its rotation animation
                     IAnimation anim;
                     if (ent.TryGet<IAnimation>(out anim)) {
-                        m_log.Log(LogLevel.DRENDERDETAIL, "RenderUpdate: animation ");
+                        m_log.Log(KLogLevel.DRENDERDETAIL, "RenderUpdate: animation ");
                         RegionRenderInfo rri;
                         if (ent.RegionContext.TryGet<RegionRenderInfo>(out rri)) {
                             lock (rri) {
-                                rri.animations.Add(AnimatBase.CreateAnimation(anim, ((LLEntityBase)ent).Prim.LocalID));
+                                rri.animations.Add(AnimatBase.CreateAnimation(anim, ((LLEntity)ent).Prim.LocalID));
                             }
                         }
                     }
@@ -265,8 +259,8 @@ namespace KeeKee.Renderer.OGL {
                         if (ent.RegionContext.TryGet<RegionRenderInfo>(out rri)) {
                             lock (rri.renderPrimList) {
                                 // exception if the casting does not work
-                                if (((LLEntityBase)ent).Prim != null) {
-                                    uint localID = ((LLEntityBase)ent).Prim.LocalID;
+                                if (((LLEntity)ent).Prim != null) {
+                                    uint localID = ((LLEntity)ent).Prim.LocalID;
                                     if (rri.renderPrimList.ContainsKey(localID)) {
                                         RenderablePrim rp = rri.renderPrimList[localID];
                                         rp.Position = new OMV.Vector3(ent.RegionPosition.X, ent.RegionPosition.Y, ent.RegionPosition.Z);

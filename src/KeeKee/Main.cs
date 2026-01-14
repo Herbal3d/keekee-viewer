@@ -20,10 +20,18 @@ using KeeKee.Config;
 using KeeKee.Comm.LLLP;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
+using KeeKee.Renderer;
+using KeeKee.Renderer.OGL;
+using KeeKee.Renderer.Map;
 using KeeKee.Framework;
 using KeeKee.World;
 using KeeKee.World.LL;
 using KeeKee.Framework.WorkQueue;
+
+using OMV = OpenMetaverse;
+using OMVSD = OpenMetaverse.StructuredData;
+using OMVR = OpenMetaverse.Rendering;
+using OpenTK.Graphics.ES11;
 
 namespace KeeKee {
 
@@ -133,6 +141,21 @@ namespace KeeKee {
 
                      // services.AddTransient<IAnimation, LLAnimation>();
                      services.AddSingleton<IWorld, World.World>();
+
+                     // Renderer services
+                     services.Configure<RendererConfig>(context.Configuration.GetSection(RendererConfig.subSectionName));
+                     services.Configure<RendererOGLConfig>(context.Configuration.GetSection(RendererOGLConfig.subSectionName));
+                     services.AddSingleton<RendererOGL>();
+                     services.AddSingleton<RendererMap>();
+                     // Select the render provider based on configuration
+                     services.AddSingleton<IRenderProvider>(sp => {
+                         var provider = context.Configuration.GetValue<string>("Renderer:RenderProvider") ?? "OGL";
+                         return provider.ToLowerInvariant() switch {
+                             "ogl" => sp.GetRequiredService<RendererOGL>(),
+                             _ => throw new ApplicationException($"Unknown RenderProvider provider '{provider}'.")
+                         };
+                     });
+                     services.AddTransient<OMVR.IRendering, MeshmerizerR>();
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider

@@ -31,7 +31,7 @@ namespace KeeKee.Renderer.Map {
         }
 
         #region IRenderProvider
-        public IUserInterfaceProvider UserInterface { get; private set; }
+        public IUserInterfaceProvider UserInterface { get; set; }
 
         // entry for main thread for rendering. Return false if you don't need it.
         public bool RendererThread() {

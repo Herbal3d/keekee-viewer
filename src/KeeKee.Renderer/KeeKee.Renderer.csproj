@@ -11,7 +11,9 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1" />
-    <PackageReference Include="LibreMetaverse" Version="2.5.8.102" />
+    <PackageReference Include="LibreMetaverse" Version="*" />
+    <PackageReference Include="LibreMetaverse.PrimMesher" Version="*" />
+    <PackageReference Include="SkiaSharp" Version="*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,7 +21,6 @@
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
     <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" />
     <ProjectReference Include="..\KeeKee.World.LL\KeeKee.World.LL.csproj" />
-    <ProjectReference Include="..\KeeKee.World.OS\KeeKee.World.OS.csproj" />
   </ItemGroup>
 
 </Project>

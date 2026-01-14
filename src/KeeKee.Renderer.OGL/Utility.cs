@@ -9,9 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using KeeKee.World;
+
 using OMV = OpenMetaverse;
 using OMVR = OpenMetaverse.Rendering;
 
