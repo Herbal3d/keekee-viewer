@@ -33,8 +33,6 @@ namespace KeeKee.Comm.LLLP {
         public IOptions<AssetConfig> AssetsConfig { get; set; }
         public IOptions<LLAgentConfig> LLAgentConfig { get; set; }
 
-        public IAssetContext GridsAssetContext { get; private set; }
-
         private CancellationToken m_cancellationToken;
 
         // ICommProvider.Name
@@ -72,7 +70,7 @@ namespace KeeKee.Comm.LLLP {
 
         // while we wait for a region to be online, we queue requests here
         protected List<ParamBlock> m_waitTilOnline = new List<ParamBlock>();
-        protected BasicWorkQueue m_waitTilLater = new BasicWorkQueue("CommDoTilLater");
+        protected BasicWorkQueue m_waitTilLater;
 
         // There are some messages that come in that are rare but could use some locking.
         // The main paths of prims and updates is pretty solid and multi-threaded but
@@ -118,17 +116,17 @@ namespace KeeKee.Comm.LLLP {
                         IOptions<AssetConfig> pAssetsConfig,
                         IOptions<LLAgentConfig> pLLAgentConfig,
                         Grids pGrids,
-                        IAssetContext pAssetContext,
                         ILLInstanceFactory pInstanceFactory,
+                        BasicWorkQueue pWaitTilLater,
                         IWorld pWorld) {
             m_log = pLog;
             m_userPersistantParams = pUserParams;
             ConnectionConfig = pConnectionConfig;
             AssetsConfig = pAssetsConfig;
             LLAgentConfig = pLLAgentConfig;
-            GridsAssetContext = pAssetContext;
             GridList = pGrids;
             InstanceFactory = pInstanceFactory;
+            m_waitTilLater = pWaitTilLater;
             m_World = pWorld;
 
             CommStatistics = new StatisticCollection();
@@ -858,8 +856,6 @@ namespace KeeKee.Comm.LLLP {
             try {
                 IEntity removedEntity;
                 if (rcontext.TryGetEntityLocalID(args.ObjectLocalID, out removedEntity)) {
-                    // we need a handle to the objectID
-                    IEntityCollection coll;
                     rcontext.Entities.RemoveEntity(removedEntity);
                 }
             } catch (Exception e) {
@@ -919,7 +915,7 @@ namespace KeeKee.Comm.LLLP {
                     if (!m_regionList.TryGetValue(sim.ID, out foundRegion)) {
                         // we are connected but doen't have a regionContext for this simulator. Build one.
 
-                        foundRegion = InstanceFactory.CreateLLRegionContext(GridClient, GridsAssetContext, sim);
+                        foundRegion = InstanceFactory.CreateLLRegionContext(GridClient, sim);
                         // foundRegion.Name = new EntityNameLL(LoggedInGridName + "/Region/" + sim.Name.Trim());
                         foundRegion.Name = new EntityNameLL(LoggedInGridName + "/" + sim.Name.Trim());
 
@@ -1004,7 +1000,7 @@ namespace KeeKee.Comm.LLLP {
             return;
         }
 
-        private bool QueueTilLaterDoIt(DoLaterBase dlb, Object p) {
+        private bool QueueTilLaterDoIt(DoLaterJob dlb, Object p) {
             Object[] parms = (Object[])p;
             CommActionCode cac = (CommActionCode)parms[1];
             // m_log.Log(KLogLevel.DCOMMDETAIL, "QueueTilLaterDoIt: c={0}", cac);
@@ -1080,7 +1076,7 @@ namespace KeeKee.Comm.LLLP {
                     case CommActionCode.RegionStateChange:
                         // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: RegionStateChange");
                         // NOTE that this goes straight to the status update routine
-                        ((RegionContextBase)p1).Update((World.UpdateCodes)p2);
+                        ((IRegionContext)p1).Update((World.UpdateCodes)p2);
                         break;
                     case CommActionCode.OnObjectDataBlockUpdated:
                         // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: OnObjectDataBlockUpdated");

@@ -21,7 +21,7 @@ using KeeKee.Comm.LLLP;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 using KeeKee.Renderer;
-using KeeKee.Renderer.OGL;
+// using KeeKee.Renderer.OGL;
 using KeeKee.Renderer.Map;
 using KeeKee.Framework;
 using KeeKee.World;
@@ -31,7 +31,7 @@ using KeeKee.Framework.WorkQueue;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 using OMVR = OpenMetaverse.Rendering;
-using OpenTK.Graphics.ES11;
+using KeeKee.Comm;
 
 namespace KeeKee {
 
@@ -102,13 +102,13 @@ namespace KeeKee {
                      services.AddSingleton<UserPersistantParams>();
                      services.AddSingleton<WorkQueueManager>();
                      services.AddTransient<BasicWorkQueue>();
-
+                     services.AddTransient<OnDemandWorkQueue>();
+                     services.AddTransient<IEntityCollection, EntityCollection>();
+                     services.AddTransient<RegionState>();
 
                      // Logger and KLogger wrapper for base logger
                      services.Configure<KLoggerConfig>(context.Configuration.GetSection(KLoggerConfig.subSectionName));
-                     services.AddTransient(typeof(ILogger<>), typeof(KLogger<>));
-
-
+                     services.AddTransient(typeof(KLogger<>));
 
                      // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
                      services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subSectionName));
@@ -126,8 +126,11 @@ namespace KeeKee {
                      services.AddTransient<RestHandlerChat, RestHandlerChat>();
                      services.AddSingleton<LoadWorldObjects, LoadWorldObjects>();
                      services.AddSingleton<AssetFetcher, AssetFetcher>();
-                     services.AddHostedService<CommLLLP>();
-                     services.AddHostedService<CommLLLPRest>();
+                     services.AddSingleton<ICommProvider, CommLLLP>();
+                     services.AddSingleton<CommLLLP>();
+                     services.AddSingleton<CommLLLPRest>();
+                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLP>());
+                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
 
                      // World services using LL implementations
                      services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
@@ -145,17 +148,21 @@ namespace KeeKee {
                      // Renderer services
                      services.Configure<RendererConfig>(context.Configuration.GetSection(RendererConfig.subSectionName));
                      services.Configure<RendererOGLConfig>(context.Configuration.GetSection(RendererOGLConfig.subSectionName));
-                     services.AddSingleton<RendererOGL>();
+                     // services.AddSingleton<RendererOGL>();
                      services.AddSingleton<RendererMap>();
                      // Select the render provider based on configuration
                      services.AddSingleton<IRenderProvider>(sp => {
                          var provider = context.Configuration.GetValue<string>("Renderer:RenderProvider") ?? "OGL";
                          return provider.ToLowerInvariant() switch {
-                             "ogl" => sp.GetRequiredService<RendererOGL>(),
+                             // "ogl" => sp.GetRequiredService<RendererOGL>(),
+                             "map" => sp.GetRequiredService<RendererMap>(),
                              _ => throw new ApplicationException($"Unknown RenderProvider provider '{provider}'.")
                          };
                      });
                      services.AddTransient<OMVR.IRendering, MeshmerizerR>();
+
+                     // The user interface
+                     services.AddSingleton<IUserInterfaceProvider, UserInterfaceCommon>();
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider

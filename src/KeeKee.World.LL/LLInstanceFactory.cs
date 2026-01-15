@@ -27,7 +27,7 @@ namespace KeeKee.World.LL {
         LLEntity CreateLLEntity(params object[] parameters);
         LLEntity CreateLLAvatar(OMV.GridClient pClient, IOptions<LLAgentConfig> pConfig);
         LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim);
-        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, IAssetContext pAssetContext, OMV.Simulator pSim);
+        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim);
     }
     public class LLInstanceFactory : ILLInstanceFactory {
 
@@ -66,8 +66,8 @@ namespace KeeKee.World.LL {
             return phy;
         }
 
-        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, IAssetContext pAssetContext, OMV.Simulator pSim) {
-            return ActivatorUtilities.CreateInstance<LLRegionContext>(_provider, pGridClient, pAssetContext, pSim);
+        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim) {
+            return ActivatorUtilities.CreateInstance<LLRegionContext>(_provider, pGridClient);
         }
 
         public override string ToString() {

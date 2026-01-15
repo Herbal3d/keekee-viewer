@@ -16,11 +16,11 @@ using KeeKee;
 
 namespace KeeKee.Framework.WorkQueue {
     public delegate bool DoLaterCall(Object ob);
-    
+
     public interface IWorkQueue : IDisplayable {
 
         // queue work to do later
-        void DoLater(DoLaterBase x);
+        void DoLater(DoLaterJob x);
 
         // return the total number amount of work ever queued
         long TotalQueued { get; }

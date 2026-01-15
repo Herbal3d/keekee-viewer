@@ -21,14 +21,14 @@ namespace KeeKee.Framework.WorkQueue {
     /// sometime later -- probably when a thread is available.
     /// </summary>
 
-    public delegate bool DoLaterCallback(DoLaterBase q, Object p);
+    public delegate bool DoLaterCallback(DoLaterJob q, Object p);
 
-    public abstract class DoLaterBase {
+    public abstract class DoLaterJob {
         static long baseSequence = 0;
 
         abstract public bool DoIt();
 
-        public DoLaterBase() {
+        public DoLaterJob() {
             requeueWait = 500;
             cost = 10;
             priority = 100;

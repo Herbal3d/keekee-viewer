@@ -10,7 +10,6 @@
 // limitations under the License.
 
 using KeeKee.Config;
-using KeeKee.Framework.Utilities;
 using KeeKee.Framework.Logging;
 
 using OMVSD = OpenMetaverse.StructuredData;
@@ -31,7 +30,7 @@ namespace KeeKee.Framework.WorkQueue {
         // IWorkQueue.Name()
         public string Name { get; private set; } = "";
 
-        private Queue<DoLaterBase> m_workItems;
+        private Queue<DoLaterJob> m_workItems;
 
         public int ActiveWorkProcessors { get; set; }
         public int MaxWorkProcessors { get; set; } = 4;
@@ -48,7 +47,7 @@ namespace KeeKee.Framework.WorkQueue {
             m_manager = pManager;
             m_cancelToken = pCancelToken;
 
-            m_workItems = new Queue<DoLaterBase>();
+            m_workItems = new Queue<DoLaterJob>();
             Name = nam ?? "UNKNOWN";
             m_totalRequests = 0;
             m_manager.Register(this);
@@ -67,7 +66,7 @@ namespace KeeKee.Framework.WorkQueue {
         }
 
         // IWorkQueue.DoLater()
-        public void DoLater(DoLaterBase w) {
+        public void DoLater(DoLaterJob w) {
             w.containingClass = this;
             w.remainingWait = 0;    // the first time through, do it now
             w.timesRequeued = 0;
@@ -75,13 +74,13 @@ namespace KeeKee.Framework.WorkQueue {
         }
 
         // Doing the work didn't work the first time so we again add it to the queue
-        public void DoLaterRequeue(DoLaterBase w) {
+        public void DoLaterRequeue(DoLaterJob w) {
             AddWorkItemToQueue(w);
         }
 
         /// <summary>
         /// Entry which doesn't force the caller to create an
-        /// instance of a DoLaterBase class but to use a delegate. The calling sequence
+        /// instance of a DoLaterJob class but to use a delegate. The calling sequence
         /// would be something like:
         /// <pre>
         ///     Object[] parms = { localParam1, localParam2, ...};
@@ -96,7 +95,7 @@ namespace KeeKee.Framework.WorkQueue {
         // do the item but do  the delay first. This puts it in the wait queue and it will
         // get done after the work item delay.
         public void DoLaterInitialDelay(DoLaterCallback dlcb, Object parms) {
-            DoLaterBase w = new DoLaterDelegateCaller(dlcb, parms);
+            DoLaterJob w = new DoLaterDelegateCaller(dlcb, parms);
             w.containingClass = this;
             w.remainingWait = 0;    // the first time through, do it now
             w.timesRequeued = 0;
@@ -105,12 +104,12 @@ namespace KeeKee.Framework.WorkQueue {
         }
 
         public void DoLater(float priority, DoLaterCallback dlcb, Object parms) {
-            DoLaterBase newDoer = new DoLaterDelegateCaller(dlcb, parms);
+            DoLaterJob newDoer = new DoLaterDelegateCaller(dlcb, parms);
             newDoer.priority = priority;
             this.DoLater(newDoer);
         }
 
-        private class DoLaterDelegateCaller : DoLaterBase {
+        private class DoLaterDelegateCaller : DoLaterJob {
             DoLaterCallback m_dlcb;
             Object m_parameters;
             public DoLaterDelegateCaller(DoLaterCallback dlcb, Object parms) : base() {
@@ -125,7 +124,7 @@ namespace KeeKee.Framework.WorkQueue {
         // Add a new work item to the work queue. If we don't have the maximum number
         // of worker threads already working on the queue, start a new thread from
         // the pool to empty the queue.
-        private void AddWorkItemToQueue(DoLaterBase w) {
+        private void AddWorkItemToQueue(DoLaterJob w) {
             if ((m_totalRequests++ % 100) == 0) {
                 m_log.Log(KLogLevel.DRENDERDETAIL, "{0}.AddWorkItemToQueue: Queuing, c={1}, l={2}",
                                 Name, m_totalRequests, m_workItems.Count);
@@ -146,7 +145,7 @@ namespace KeeKee.Framework.WorkQueue {
         //   return which puts them back in the thread pool.
         private void DoWork(object? x) {
             while (m_workItems.Count > 0) {
-                DoLaterBase? w = null;
+                DoLaterJob? w = null;
                 lock (m_workItems) {
                     if (m_workItems.Count > 0) {
                         w = m_workItems.Dequeue();
@@ -174,9 +173,9 @@ namespace KeeKee.Framework.WorkQueue {
         /// Queue the operation to happen later. There is a thread who's job
         /// is waiting to run these work items.
         /// </summary>
-        private List<DoLaterBase> m_doEvenLater = new List<DoLaterBase>();
+        private List<DoLaterJob> m_doEvenLater = new List<DoLaterJob>();
         private Task? m_doEvenLaterTask = null;
-        private void DoItEvenLater(DoLaterBase w) {
+        private void DoItEvenLater(DoLaterJob w) {
             w.timesRequeued++;
             lock (m_doEvenLater) {
                 int nextTime = Math.Min(w.requeueWait * w.timesRequeued, 2000);
@@ -189,21 +188,21 @@ namespace KeeKee.Framework.WorkQueue {
         // Thread that keeps going around and processing the thing queued from long ago
         private void DoItEventLaterProcessing() {
             while (m_cancelToken.IsCancellationRequested == false) {
-                List<DoLaterBase> doneWaiting = new List<DoLaterBase>();
+                List<DoLaterJob> doneWaiting = new List<DoLaterJob>();
                 int sleepTime = 200;
                 int now = Utilities.Utilities.TickCount();
                 lock (m_doEvenLater) {
                     if (m_doEvenLater.Count > 0) {
                         // remove the last waiting time from each waiter
                         // if waiting is up, remember which ones to remove
-                        foreach (DoLaterBase ii in m_doEvenLater) {
+                        foreach (DoLaterJob ii in m_doEvenLater) {
                             if (ii.remainingWait < now) {
                                 doneWaiting.Add(ii);
                             }
                         }
                         // remove and requeue the ones done waiting
                         if (doneWaiting.Count > 0) {
-                            foreach (DoLaterBase jj in doneWaiting) {
+                            foreach (DoLaterJob jj in doneWaiting) {
                                 m_doEvenLater.Remove(jj);
                             }
                         }
@@ -213,7 +212,7 @@ namespace KeeKee.Framework.WorkQueue {
                     if (m_doEvenLater.Count > 0) {
                         // find how much time to wait for the remaining
                         sleepTime = int.MaxValue;
-                        foreach (DoLaterBase jj in m_doEvenLater) {
+                        foreach (DoLaterJob jj in m_doEvenLater) {
                             sleepTime = Math.Min(sleepTime, jj.remainingWait);
                         }
                         sleepTime -= now;
@@ -223,7 +222,7 @@ namespace KeeKee.Framework.WorkQueue {
                 }
                 // if there are some things done waiting, let them free outside the lock
                 if (doneWaiting.Count > 0) {
-                    foreach (DoLaterBase ll in doneWaiting) {
+                    foreach (DoLaterJob ll in doneWaiting) {
                         if (ll.containingClass == null) {
                             m_log.Log(KLogLevel.DBADERROR, "BasicWorkQueue.DoItEventLaterProcessing: null containingClass");
                             continue;

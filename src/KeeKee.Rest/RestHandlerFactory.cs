@@ -18,9 +18,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace KeeKee.Rest {
 
     public class RestHandlerFactory {
-        private readonly ServiceProvider m_serviceProvider;
+        private readonly IServiceProvider m_serviceProvider;
 
-        public RestHandlerFactory(ServiceProvider pServiceProvider) {
+        public RestHandlerFactory(IServiceProvider pServiceProvider) {
             m_serviceProvider = pServiceProvider;
         }
 

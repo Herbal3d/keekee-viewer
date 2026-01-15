@@ -19,6 +19,8 @@ using KeeKee.Framework.Statistics;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 using KeeKee.Framework;
+using KeeKee.Framework.WorkQueue;
+using OpenMetaverse;
 
 
 namespace KeeKee.World.LL {
@@ -33,18 +35,23 @@ namespace KeeKee.World.LL {
         private StatNumber m_queuedTextureRequests = new StatNumber("QueuedTextureRequests", "Number of texture requests waiting to be sent");
         private StatNumber m_activeTextureRequests = new StatNumber("ActiveTextureRequests", "Number of active texture requests");
 
+        private GridClient m_gridClient;
+
         private StatisticCollection m_stats;
 
         public LLAssetContext(KLogger<LLAssetContext> pLog,
-                            ICommProvider pCommProvider,
+                            GridClient pGridClient,
+                            BasicWorkQueue pWorkQueue,
                             IOptions<AssetConfig> pAssetConfig)
-                        : base(pLog, pCommProvider, pAssetConfig, "Unknown") {
+                        : base(pLog, pWorkQueue, pAssetConfig, "Unknown") {
 
             // This MAX is only used for the UDP texture requests (not HTTP)
-            m_comm.GridClient.Settings.MAX_CONCURRENT_TEXTURE_DOWNLOADS = m_maxRequests;
-            m_comm.GridClient.Settings.USE_ASSET_CACHE = true;
-            m_comm.GridClient.Settings.ASSET_CACHE_DIR = CacheDirBase;
-            m_comm.GridClient.Assets.Cache.ComputeAssetCacheFilename = ComputeTextureFilename;
+            m_gridClient = pGridClient;
+
+            m_gridClient.Settings.MAX_CONCURRENT_TEXTURE_DOWNLOADS = m_maxRequests;
+            m_gridClient.Settings.USE_ASSET_CACHE = true;
+            m_gridClient.Settings.ASSET_CACHE_DIR = CacheDirBase;
+            m_gridClient.Assets.Cache.ComputeAssetCacheFilename = ComputeTextureFilename;
 
             m_maxRequests = pAssetConfig.Value.MaxTextureRequests;
 
@@ -149,7 +156,7 @@ namespace KeeKee.World.LL {
                     return await existingWi.tcs.Task;
                 }
 
-                m_comm.GridClient.Assets.RequestImage(binID, OMV.ImageType.Normal, OnACDownloadFinished, false);
+                m_gridClient.Assets.RequestImage(binID, OMV.ImageType.Normal, OnACDownloadFinished, false);
                 return await tcs.Task;
             } finally {
                 m_activeTextureRequests.Decrement();

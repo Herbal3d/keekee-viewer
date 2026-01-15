@@ -27,9 +27,11 @@ namespace KeeKee.World.LL {
                                 LLInstanceFactory pFactory,
                                 IWorld pWorld,
                                 IAssetContext pAContext,
+                                IEntityCollection pEntityCollection,
+                                RegionState pState,
                                 OMV.GridClient pGridComm,
                                 OMV.Simulator pSim)
-                            : base(pLog, pWorld, null, pAContext) {
+                            : base(pLog, pWorld, pEntityCollection, pState, null, pAContext) {
             m_log = pLog;
             m_llInstanceFactory = pFactory;
             GridComm = pGridComm;

@@ -33,21 +33,20 @@ namespace KeeKee.World {
         public WorldGroupCode WorldGroup { get { return m_worldGroup; } }
 
         private RegionStateChangedCallback m_regionStateChangedCallback;
-        protected RegionState m_regionState;
-        public RegionState State {
-            get { return m_regionState; }
-        }
+        public RegionState State { get; private set; }
 
         public IEntityCollection Entities { get; private set; }
 
         public RegionContextBase(IKLogger pLog,
                                 IWorld pWorld,
-                                IRegionContext pRContext,
+                                IEntityCollection pEntityCollection,
+                                RegionState pRegionState,
+                                IRegionContext? pRContext,  // null only for creating the region context itself
                                 IAssetContext pAcontext)
                     : base(pLog, pWorld, pRContext, pAcontext) {
 
-            m_regionState = new RegionState();
-            Entities = new EntityCollection(pLog, this.Name.Name);
+            State = pRegionState;
+            Entities = pEntityCollection;
 
             // What state changes, pass it on
             m_regionStateChangedCallback = new RegionStateChangedCallback(State_OnChange);
@@ -88,7 +87,7 @@ namespace KeeKee.World {
 
         public override void Dispose() {
             TerrainInfo = null; // let the garbage collector work
-            if (m_regionState != null && m_regionStateChangedCallback != null) {
+            if (State != null && m_regionStateChangedCallback != null) {
                 State.OnStateChanged -= m_regionStateChangedCallback;
             }
             return;

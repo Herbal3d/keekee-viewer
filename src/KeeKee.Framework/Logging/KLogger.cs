@@ -133,6 +133,14 @@ namespace KeeKee.Framework.Logging {
                     if (_options.Value.DRENDERDETAIL)
                         _innerLogger.Log(LLDetail, message, args);
                     break;
+                case KLogLevel.DVIEW:
+                    if (_options.Value.DVIEW)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DVIEWDETAIL:
+                    if (_options.Value.DVIEWDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
                 default:
                     // Unknown level, log as Information
                     _innerLogger.Log(LogLevel.Information, message, args);

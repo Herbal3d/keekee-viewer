@@ -15,6 +15,6 @@ using System.Text;
 using KeeKee.Framework;
 
 namespace KeeKee.Comm {
-    public interface IChatProvider : IProvider {
+    public interface IChatProvider {
     }
 }

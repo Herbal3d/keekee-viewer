@@ -14,26 +14,30 @@ using System.Collections.Generic;
 using System.Text;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
+using Microsoft.Extensions.DependencyInjection;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
     public class EntityCollection : IEntityCollection {
-        protected IKLogger m_log;
+        protected KLogger<EntityCollection> m_log;
 
         public event EntityNewCallback? OnEntityNew;
         public event EntityUpdateCallback? OnEntityUpdate;
         public event EntityRemovedCallback? OnEntityRemoved;
 
         static bool m_shouldQueueEvent = true;
-        static BasicWorkQueue m_workQueueEvent = new BasicWorkQueue("EntityCollectionEvent");
+        static BasicWorkQueue m_workQueueEvent;
 
         protected OMV.DoubleDictionary<string, ulong, IEntity> m_entityDictionary;
 
         protected string m_name;
 
-        public EntityCollection(IKLogger pLog, string nam) {
+        public EntityCollection(KLogger<EntityCollection> pLog,
+                                BasicWorkQueue pWorkQueue,
+                                string nam) {
             m_log = pLog;
             m_name = nam;
+            m_workQueueEvent = pWorkQueue;
             m_entityDictionary = new OMV.DoubleDictionary<string, ulong, IEntity>();
         }
 
@@ -55,7 +59,7 @@ namespace KeeKee.World {
             }
         }
 
-        private bool DoEventLater(DoLaterBase qInstance, object parm) {
+        private bool DoEventLater(DoLaterJob qInstance, object parm) {
             EntityNewCallback? enc = OnEntityNew;
             if (enc != null) {
                 enc.Invoke((IEntity)parm);
@@ -73,7 +77,7 @@ namespace KeeKee.World {
             }
         }
 
-        private bool DoUpdateLater(DoLaterBase qInstance, object parm) {
+        private bool DoUpdateLater(DoLaterJob qInstance, object parm) {
             object[] parms = (object[])parm;
             IEntity ent = (IEntity)parms[0];
             UpdateCodes detail = (UpdateCodes)parms[1];

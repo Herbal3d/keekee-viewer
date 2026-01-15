@@ -100,7 +100,7 @@ namespace KeeKee.Renderer {
         /// <param name="prim">Primitive to generate the mesh from</param>
         /// <param name="lod">Level of detail to generate the mesh at</param>
         /// <returns>The generated mesh or null on failure</returns>
-        public OMVR.SimpleMesh GenerateSimpleMeshWithNormals(OMV.Primitive prim, OMVR.DetailLevel lod) {
+        public OMVR.SimpleMesh? GenerateSimpleMeshWithNormals(OMV.Primitive prim, OMVR.DetailLevel lod) {
             LPM.PrimMesh newPrim = GeneratePrimMesh(prim, lod, true);
             if (newPrim == null)
                 return null;
@@ -135,7 +135,7 @@ namespace KeeKee.Renderer {
         /// <param name="prim">Primitive to generate the mesh from</param>
         /// <param name="lod">Level of detail to generate the mesh at</param>
         /// <returns>The generated mesh</returns>
-        public OMVR.SimpleMesh GenerateSimpleSculptMesh(OMV.Primitive prim, SKBitmap bits, OMVR.DetailLevel lod) {
+        public OMVR.SimpleMesh? GenerateSimpleSculptMesh(OMV.Primitive prim, SKBitmap bits, OMVR.DetailLevel lod) {
             OMVR.FacetedMesh faceted = GenerateFacetedSculptMesh(prim, bits, lod);
 
             if (faceted != null && faceted.Faces.Count == 1) {
@@ -261,7 +261,7 @@ namespace KeeKee.Renderer {
         /// <param name="prim">Primitive to generate the mesh from</param>
         /// <param name="lod">Level of detail to generate the mesh at</param>
         /// <returns>The generated mesh</returns// >
-        public OMVR.FacetedMesh GenerateFacetedMesh(OMV.Primitive prim, OMVR.DetailLevel lod) {
+        public OMVR.FacetedMesh? GenerateFacetedMesh(OMV.Primitive prim, OMVR.DetailLevel lod) {
             bool isSphere = ((OMV.ProfileCurve)(prim.PrimData.profileCurve & 0x07) == OMV.ProfileCurve.HalfCircle);
             LPM.PrimMesh newPrim = GeneratePrimMesh(prim, lod, true);
             if (newPrim == null)
@@ -557,11 +557,11 @@ namespace KeeKee.Renderer {
         /// routine since all the context for finding the data is elsewhere.
         /// </summary>
         /// <returns>The faceted mesh or null if can't do it</returns>
-        public OMVR.FacetedMesh GenerateFacetedMeshMesh(OMV.Primitive prim, byte[] meshData) {
-            OMVR.FacetedMesh ret = null;
-            OMVSD.OSDMap meshParts = UnpackMesh(meshData);
+        public OMVR.FacetedMesh? GenerateFacetedMeshMesh(OMV.Primitive prim, byte[] meshData) {
+            OMVR.FacetedMesh? ret = null;
+            OMVSD.OSDMap? meshParts = UnpackMesh(meshData);
             if (meshParts != null) {
-                byte[] meshBytes = null;
+                byte[]? meshBytes = null;
                 string[] decreasingLOD = { "high_lod", "medium_lod", "low_lod", "lowest_lod" };
                 foreach (string partName in decreasingLOD) {
                     if (meshParts.TryGetValue(partName, out var part)) {
@@ -593,7 +593,7 @@ namespace KeeKee.Renderer {
                     partName = "lowest_lod"; break;
             }
             if (partName != null) {
-                OMVSD.OSDMap meshParts = UnpackMesh(meshData);
+                OMVSD.OSDMap? meshParts = UnpackMesh(meshData);
                 if (meshParts != null) {
                     if (meshParts.TryGetValue(partName, out var meshBytes)) {
                         if (meshBytes != null) {
@@ -621,14 +621,14 @@ namespace KeeKee.Renderer {
 
 
         // Convert a compressed submesh buffer into a SimpleMesh.
-        public OMVR.SimpleMesh MeshSubMeshAsSimpleMesh(OMV.Primitive prim, byte[] compressedMeshData) {
-            OMVR.SimpleMesh ret = null;
+        public OMVR.SimpleMesh? MeshSubMeshAsSimpleMesh(OMV.Primitive prim, byte[] compressedMeshData) {
+            OMVR.SimpleMesh? ret = null;
             OMVSD.OSD meshOSD = OMV.Helpers.DecompressOSD(compressedMeshData);
 
-            OMVSD.OSDArray meshFaces = meshOSD as OMVSD.OSDArray;
             if (meshOSD != null) {
-                ret = new OMVR.SimpleMesh();
+                OMVSD.OSDArray? meshFaces = meshOSD as OMVSD.OSDArray;
                 if (meshFaces != null) {
+                    ret = new OMVR.SimpleMesh();
                     foreach (OMVSD.OSD subMesh in meshFaces) {
                         AddSubMesh(subMesh, ref ret);
                     }
@@ -761,7 +761,7 @@ namespace KeeKee.Renderer {
             byte[] posBytes = subMeshMap["Position"];
 
             // Normals
-            byte[] norBytes = null;
+            byte[]? norBytes = null;
             if (subMeshMap.TryGetValue("Normal", out var normal)) {
                 norBytes = normal;
             }
@@ -769,7 +769,7 @@ namespace KeeKee.Renderer {
             // UV texture map
             OMV.Vector2 texPosMax = OMV.Vector2.Zero;
             OMV.Vector2 texPosMin = OMV.Vector2.Zero;
-            byte[] texBytes = null;
+            byte[]? texBytes = null;
             if (subMeshMap.TryGetValue("TexCoord0", out var texCoord0)) {
                 texBytes = texCoord0;
                 texPosMax = ((OMVSD.OSDMap)subMeshMap["TexCoord0Domain"])["Max"];
@@ -960,13 +960,13 @@ namespace KeeKee.Renderer {
                 newPrim.taperY = 1.0f - primData.PathScaleY;
                 newPrim.twistBegin = (int)(180 * primData.PathTwistBegin);
                 newPrim.twistEnd = (int)(180 * primData.PathTwist);
-                newPrim.ExtrudeLinear();
+                newPrim.Extrude(LPM.PathType.Linear);
             } else {
                 newPrim.taperX = primData.PathTaperX;
                 newPrim.taperY = primData.PathTaperY;
                 newPrim.twistBegin = (int)(360 * primData.PathTwistBegin);
                 newPrim.twistEnd = (int)(360 * primData.PathTwist);
-                newPrim.ExtrudeCircular();
+                newPrim.Extrude(LPM.PathType.Linear);
             }
 
             return newPrim;

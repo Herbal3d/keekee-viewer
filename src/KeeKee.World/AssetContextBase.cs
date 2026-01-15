@@ -46,16 +46,15 @@ namespace KeeKee.World {
         protected Dictionary<OMV.UUID, IAssetContext.WaitingInfo> m_waiting;
         protected static int m_numAssetContextBase = 0;
 
-        protected ICommProvider m_comm;       // handle to the underlying comm provider
         protected IOptions<AssetConfig> m_assetConfig;
 
         public AssetContextBase(IKLogger pLog,
-                                ICommProvider pCommProvider,
+                                BasicWorkQueue pWorkQueue,
                                 IOptions<AssetConfig> pAssetConfig,
                                 string name) {
             m_log = pLog;
-            m_comm = pCommProvider;
             m_assetConfig = pAssetConfig;
+            m_completionWork = pWorkQueue;
 
             CacheDirBase = pAssetConfig.Value.CacheDir ?? "./Cache";
             m_maxRequests = pAssetConfig.Value.MaxTextureRequests;
@@ -243,7 +242,7 @@ namespace KeeKee.World {
 
         // Call the callback on a separate thread to keep from getting tangled
         /*
-        protected bool FinishCallDoLater(DoLaterBase qInstance, Object parm) {
+        protected bool FinishCallDoLater(DoLaterJob qInstance, Object parm) {
             Object[] lParams = (Object[])parm;
             DownloadFinishedCallback m_callback = (DownloadFinishedCallback)lParams[0];
             string m_textureEntityName = (string)lParams[1];
@@ -330,7 +329,7 @@ namespace KeeKee.World {
             }
         }
 
-        private bool CompleteDownloadLater(DoLaterBase qInstance, Object parms) {
+        private bool CompleteDownloadLater(DoLaterJob qInstance, Object parms) {
             Object[] lParams = (Object[])parms;
             OMV.Assets.AssetTexture m_assetTexture = (OMV.Assets.AssetTexture)lParams[0];
             List<IAssetContext.WaitingInfo> m_completeWork = (List<IAssetContext.WaitingInfo>)lParams[1];

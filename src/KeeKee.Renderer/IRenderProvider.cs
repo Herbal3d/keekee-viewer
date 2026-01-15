@@ -9,11 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-// using System.Drawing;
-using System.Text;
 using KeeKee.World;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.Renderer {
@@ -31,17 +28,18 @@ namespace KeeKee.Renderer {
     /// is not used or is just passed for compatability.
     /// </summary>
     public class RenderableInfo {
-        public Object basicObject;
+        public Object? basicObject;
         // public uint parentID;
-        public IEntity parentEntity;
+        public IEntity? parentEntity;
         public const ulong NO_HASH_SHARE = 0;
         public ulong shapeHash;
         public OMV.Vector3 position;
         public OMV.Quaternion rotation;
         public OMV.Vector3 scale;
-        public Object RegionRoot;
+        public Object? RegionRoot;
         public RenderableInfo() {
-            basicObject = null; RegionRoot = null;
+            basicObject = null;
+            RegionRoot = null;
             // parentID = 0;
             parentEntity = null;
             position = OMV.Vector3.Zero;

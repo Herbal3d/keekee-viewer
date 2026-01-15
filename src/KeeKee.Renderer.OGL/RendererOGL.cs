@@ -307,7 +307,7 @@ namespace KeeKee.Renderer.OGL {
         }
 
         // rendering specific information for placing in  the view
-        public void MapRegionIntoView(RegionContextBase rcontext) {
+        public void MapRegionIntoView(IRegionContext rcontext) {
             if (!m_trackedRegions.Contains(rcontext)) {
                 m_trackedRegions.Add(rcontext);
             }
@@ -328,13 +328,13 @@ namespace KeeKee.Renderer.OGL {
         }
 
         // Set one region as the focus of display
-        public void SetFocusRegion(RegionContextBase rcontext) {
+        public void SetFocusRegion(IRegionContext rcontext) {
             m_focusRegion = rcontext;
             return;
         }
 
         // something about the terrain has changed, do some updating
-        public void UpdateTerrain(RegionContextBase rcontext) {
+        public void UpdateTerrain(IRegionContext rcontext) {
             RegionRenderInfo rri = GetRegionRenderInfo(rcontext);
             // making this true will case the low level renderer to rebuild the terrain
             rri.refreshTerrain = true;

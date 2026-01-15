@@ -35,6 +35,8 @@ namespace KeeKee.Config {
         public bool DTEXTUREDETAIL { get; set; } = false;
         public bool DRENDER { get; set; } = false;
         public bool DRENDERDETAIL { get; set; } = false;
+        public bool DVIEW { get; set; } = false;
+        public bool DVIEWDETAIL { get; set; } = false;
     }
 
 }

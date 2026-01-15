@@ -20,8 +20,8 @@ namespace KeeKee.World {
     /// </summary>
 
 
-    public delegate void RegionRegionStateChangeCallback(RegionContextBase rcontext, RegionStateCode code);
-    public delegate void RegionRegionUpdatedCallback(RegionContextBase rcontext, UpdateCodes what);
+    public delegate void RegionRegionStateChangeCallback(IRegionContext rcontext, RegionStateCode code);
+    public delegate void RegionRegionUpdatedCallback(IRegionContext rcontext, UpdateCodes what);
 
     // used in TryGetCreateentity calls to create the entity if needed
     public delegate IEntity RegionCreateEntityCallback();

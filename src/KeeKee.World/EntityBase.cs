@@ -51,12 +51,15 @@ namespace KeeKee.World {
 
         public EntityBase(IKLogger pLog,
                           IWorld pWorld,
-                          IRegionContext pRContext,
+                          IRegionContext? pRContext,
                           IAssetContext pAContext) {
 
             EntityLogger = pLog;
             WorldContext = pWorld;
-            RegionContext = pRContext;
+            // The odd case of creating a region context requires passing in null
+            //     for the region context and having the created entity knowing it is the context
+            RegionContext = pRContext ?? this as IRegionContext
+                ?? throw new ArgumentNullException("EntityBase: No RegionContext supplied and entity is not a region context");
             AssetContext = pAContext;
 
             m_LGID = NextLGID();

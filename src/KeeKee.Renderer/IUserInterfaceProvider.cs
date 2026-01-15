@@ -9,20 +9,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using KeeKee.World;
-using System.Windows.Forms;
 
 namespace KeeKee.Renderer {
+
+    public enum Keys : uint {
+        None = 0,
+        KeyCode = 0xFFFF,
+        Modifiers = 0xFFFF0000,
+        Shift = 0x00010000,
+        Control = 0x00020000,
+        Alt = 0x00040000,
+        // ... specific keys
+        A = 65, B = 66, // etc
+        // TODO: fill in rest of keys as needed
+    }
+
+    public enum MouseButtons {
+        None = 0,
+        Left = 1,
+        Right = 2,
+        Middle = 4
+    }
 
     /// <summary>
     /// Key changed state. Fired on state change
     /// </summary>
     /// <param name="key">key code</param>
     /// <param name="updown">true if key down, false if key up</param>
-    public delegate void UserInterfaceKeypressCallback(System.Windows.Forms.Keys key, bool updown);
+    public delegate void UserInterfaceKeypressCallback(Keys key, bool updown);
     /// <summary>
     /// Mouse moved
     /// </summary>
@@ -36,11 +51,11 @@ namespace KeeKee.Renderer {
     /// </summary>
     /// <param name="param">button codes OR'ed together</param>
     /// <param name="updown">true means down, false means went off</param>
-    public delegate void UserInterfaceMouseButtonCallback(System.Windows.Forms.MouseButtons param, bool updown);
+    public delegate void UserInterfaceMouseButtonCallback(MouseButtons param, bool updown);
     public delegate void UserInterfaceEntitySelectedCallback(IEntity ent);
 
     public enum ReceiveUserIOInputEventTypeCode {
-        KeyPress=1,     // p1=keycode
+        KeyPress = 1,     // p1=keycode
         KeyRelease,     // p1=keycode
         MouseMove,      // p2=x move sin last, p3=y move since last
         MouseButtonDown,// p1=button number

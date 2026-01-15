@@ -32,7 +32,7 @@ namespace KeeKee.World {
         public event RegionStateChangedCallback? OnStateChanged;
 
         // one work queue for all the state update work
-        private static BasicWorkQueue m_stateWork = new BasicWorkQueue("OnStateChanged");
+        private static BasicWorkQueue m_stateWork;
 
         private RegionStateCode m_regionState = RegionStateCode.Uninitialized;
         private Object m_regionStateLock = new Object();
@@ -54,7 +54,7 @@ namespace KeeKee.World {
             }
         }
 
-        private class OnStateChangedLater : DoLaterBase {
+        private class OnStateChangedLater : DoLaterJob {
             RegionStateChangedCallback m_callback;
             RegionStateCode m_code;
             public OnStateChangedLater(RegionStateChangedCallback c, RegionStateCode r) {
@@ -67,7 +67,8 @@ namespace KeeKee.World {
             }
         }
 
-        public RegionState() {
+        public RegionState(BasicWorkQueue pWorkQueue) {
+            m_stateWork = pWorkQueue;
             m_regionState = RegionStateCode.Uninitialized;
         }
 

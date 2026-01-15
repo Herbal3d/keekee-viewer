@@ -9,11 +9,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows.Forms;
-
 namespace KeeKee.Renderer {
 
     /// <summary>
@@ -21,63 +16,41 @@ namespace KeeKee.Renderer {
     /// happy while not really doing any user IO. Used when in Radegast mode
     /// when all the UI is provided by Radegast.
     /// </summary>
-public class UserInterfaceNull : IUserInterfaceProvider {
+    public class UserInterfaceNull : IUserInterfaceProvider {
 
-# pragma warning disable 0067   // disable unused event warning
-    public event UserInterfaceKeypressCallback OnUserInterfaceKeypress;
-    public event UserInterfaceMouseMoveCallback OnUserInterfaceMouseMove;
-    public event UserInterfaceMouseButtonCallback OnUserInterfaceMouseButton;
-    public event UserInterfaceEntitySelectedCallback OnUserInterfaceEntitySelected;
-# pragma warning restore 0067
+        public event UserInterfaceKeypressCallback? OnUserInterfaceKeypress;
+        public event UserInterfaceMouseMoveCallback? OnUserInterfaceMouseMove;
+        public event UserInterfaceMouseButtonCallback? OnUserInterfaceMouseButton;
+        public event UserInterfaceEntitySelectedCallback? OnUserInterfaceEntitySelected;
 
-    // IUserInterfaceProvider.InputModeCode
-    private InputModeCode m_inputMode;
-    public InputModeCode InputMode { 
-        get { return m_inputMode; }
-        set { m_inputMode = value; }
+        // IUserInterfaceProvider.InputModeCode
+        public InputModeCode InputMode { get; set; }
+
+        // IUserInterfaceProvider.LastKeyCode
+        public Keys LastKeyCode { get; set; }
+
+        // IUserInterfaceProvider.KeyPressed
+        public bool KeyPressed { get; set; } = false;
+
+        // IUserInterfaceProvider.LastMouseButtons
+        public MouseButtons LastMouseButtons { get; set; } = 0;
+
+        // IUserInterfaceProvider.KeyRepeatRate
+        public float KeyRepeatRate { get; set; } = 3f;
+
+        // IUserInterfaceProvider.ReceiveUserIO
+        public void ReceiveUserIO(ReceiveUserIOInputEventTypeCode type, int param1, float param2, float param3) {
+            return;
+        }
+
+        // IUserInterfaceProvider.NeedsRendererLinkage
+        public bool NeedsRendererLinkage() {
+            // don't hook me up with the low level stuff
+            return false;
+        }
+
+        public void Dispose() {
+            return;
+        }
     }
-
-    // IUserInterfaceProvider.LastKeyCode
-    private Keys m_lastKeycode = 0;
-    public Keys LastKeyCode {
-        get { return m_lastKeycode; }
-        set { m_lastKeycode = value; }
-    }
-
-    // IUserInterfaceProvider.KeyPressed
-    private bool m_keyPressed = false;
-    public bool KeyPressed {
-        get { return m_keyPressed; }
-        set { m_keyPressed = value; }
-    }
-
-    // IUserInterfaceProvider.LastMouseButtons
-    private MouseButtons m_lastButtons = 0;
-    public MouseButtons LastMouseButtons {
-        get { return m_lastButtons; }
-        set { m_lastButtons = value; }
-    }
-
-    // IUserInterfaceProvider.KeyRepeatRate
-    private float m_repeatRate = 3f;
-    public float KeyRepeatRate {
-        get { return m_repeatRate; }
-        set { m_repeatRate = value; }
-    }
-
-    // IUserInterfaceProvider.ReceiveUserIO
-    public void ReceiveUserIO(ReceiveUserIOInputEventTypeCode type, int param1, float param2, float param3) {
-        return;
-    }
-
-    // IUserInterfaceProvider.NeedsRendererLinkage
-    public bool NeedsRendererLinkage() {
-        // don't hook me up with the low level stuff
-        return false;
-    }
-
-    public void Dispose() {
-        return;
-    }
-}
 }
