@@ -101,6 +101,7 @@ namespace KeeKee {
                      services.AddSingleton<Grids>();
                      services.AddSingleton<UserPersistantParams>();
                      services.AddSingleton<WorkQueueManager>();
+                     services.AddHostedService<WorkQueueManager>(); // WorkQueueManager must be started before any WorkQueues
                      services.AddTransient<BasicWorkQueue>();
                      services.AddTransient<OnDemandWorkQueue>();
                      services.AddTransient<IEntityCollection, EntityCollection>();
@@ -115,17 +116,19 @@ namespace KeeKee {
                      services.AddTransient<RestHandlerFactory, RestHandlerFactory>();
                      services.AddTransient<RestHandlerStd, RestHandlerStd>();
                      services.AddTransient<RestHandlerStatic, RestHandlerStatic>();
+                     services.AddSingleton<RestManager>();
                      services.AddHostedService<RestManager>();
 
                      // Communication services
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
-                     services.AddTransient<RestHandlerLogin, RestHandlerLogin>();
-                     services.AddTransient<RestHandlerLogout, RestHandlerLogout>();
-                     services.AddTransient<RestHandlerTeleport, RestHandlerTeleport>();
-                     services.AddTransient<RestHandlerExit, RestHandlerExit>();
-                     services.AddTransient<RestHandlerChat, RestHandlerChat>();
-                     services.AddSingleton<LoadWorldObjects, LoadWorldObjects>();
-                     services.AddSingleton<AssetFetcher, AssetFetcher>();
+                     services.AddTransient<RestHandlerLogin>();
+                     services.AddTransient<RestHandlerLogout>();
+                     services.AddTransient<RestHandlerTeleport>();
+                     services.AddTransient<RestHandlerExit>();
+                     services.AddTransient<RestHandlerChat>();
+                     services.AddSingleton<LoadWorldObjects>();
+                     services.AddSingleton<AssetFetcher>();
+                     services.AddSingleton<LLGridClient>();
                      services.AddSingleton<ICommProvider, CommLLLP>();
                      services.AddSingleton<CommLLLP>();
                      services.AddSingleton<CommLLLPRest>();

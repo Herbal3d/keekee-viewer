@@ -28,27 +28,24 @@ namespace KeeKee.Framework.WorkQueue {
         public long TotalQueued { get { return m_totalRequests; } }
 
         // IWorkQueue.Name()
-        public string Name { get; private set; } = "";
+        public string Name { get; set; } = "UNKNOWN";
 
         private Queue<DoLaterJob> m_workItems;
 
         public int ActiveWorkProcessors { get; set; }
         public int MaxWorkProcessors { get; set; } = 4;
-
         // IWorkQueue.CurrentQueued()
         public long CurrentQueued { get { return (long)m_workItems.Count; } }
 
         public BasicWorkQueue(KLogger<BasicWorkQueue> log,
                                 WorkQueueManager pManager,
-                                CancellationToken pCancelToken,
-                                IOptions<WorldConfig> pWorldConfig,
-                                string? nam) {
+                                IOptions<WorldConfig> pWorldConfig) {
+
             m_log = log;
             m_manager = pManager;
-            m_cancelToken = pCancelToken;
+            m_cancelToken = m_manager.ShutdownToken;
 
             m_workItems = new Queue<DoLaterJob>();
-            Name = nam ?? "UNKNOWN";
             m_totalRequests = 0;
             m_manager.Register(this);
 
@@ -57,10 +54,9 @@ namespace KeeKee.Framework.WorkQueue {
             // Start up the task that keeps the work items working
             lock (m_doEvenLater) {
                 if (m_doEvenLaterTask == null) {
-                    m_doEvenLaterTask = Task.Run(() => DoItEventLaterProcessing(), cancellationToken: m_cancelToken);
+                    m_doEvenLaterTask = Task.Run(DoItEventLaterProcessing, m_cancelToken);
 
                     m_log.Log(KLogLevel.DINIT, "Starting do even later task for '{0}'", Name);
-                    m_doEvenLaterTask.Start();
                 }
             }
         }
@@ -124,6 +120,10 @@ namespace KeeKee.Framework.WorkQueue {
         // Add a new work item to the work queue. If we don't have the maximum number
         // of worker threads already working on the queue, start a new thread from
         // the pool to empty the queue.
+        // Worker threads come here to take items off the work queue.
+        // Multiple threads loop around here taking items off the work queue and
+        //   processing them. When there are no more things to do, the threads
+        //   return which puts them back in the thread pool.
         private void AddWorkItemToQueue(DoLaterJob w) {
             if ((m_totalRequests++ % 100) == 0) {
                 m_log.Log(KLogLevel.DRENDERDETAIL, "{0}.AddWorkItemToQueue: Queuing, c={1}, l={2}",
@@ -131,18 +131,37 @@ namespace KeeKee.Framework.WorkQueue {
             }
             lock (m_workItems) {
                 m_workItems.Enqueue(w);
-                if (ActiveWorkProcessors < MaxWorkProcessors) {
-                    ActiveWorkProcessors++;
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(DoWork), null);
-                    // ThreadPool.UnsafeQueueUserWorkItem(new WaitCallback(this.DoWork), null);
+            }
+            while (m_workItems.Count > 0
+                    && ActiveWorkProcessors < MaxWorkProcessors
+                    && m_cancelToken.IsCancellationRequested == false) {
+                DoLaterJob? job = null;
+                lock (m_workItems) {
+                    if (m_workItems.Count > 0) {
+                        job = m_workItems.Dequeue();
+                        ActiveWorkProcessors++;
+                    }
+                }
+                if (job != null) {
+                    Task.Run(() => {
+                        try {
+                            if (!job.DoIt()) {
+                                // LogManager.Log.Log(LogLevel.DRENDERDETAIL, "{0}.DoLater: DoWork: DoEvenLater", m_queueName);
+                                DoItEvenLater(w);
+                            }
+                        } catch (Exception e) {
+                            m_log.Log(KLogLevel.DBADERROR, "{0}.DoLater: DoWork: EXCEPTION: {1}",
+                                        Name, e);
+                            // we drop the work item in  the belief that it will exception again next time
+                        }
+                        lock (m_workItems) {
+                            ActiveWorkProcessors--;   // not sure if this is atomic
+                        }
+                    }, m_cancelToken);
                 }
             }
         }
 
-        // Worker threads come here to take items off the work queue.
-        // Multiple threads loop around here taking items off the work queue and
-        //   processing them. When there are no more things to do, the threads
-        //   return which puts them back in the thread pool.
         private void DoWork(object? x) {
             while (m_workItems.Count > 0) {
                 DoLaterJob? w = null;
@@ -185,8 +204,7 @@ namespace KeeKee.Framework.WorkQueue {
             }
         }
 
-        // Thread that keeps going around and processing the thing queued from long ago
-        private void DoItEventLaterProcessing() {
+        private async Task DoItEventLaterProcessing() {
             while (m_cancelToken.IsCancellationRequested == false) {
                 List<DoLaterJob> doneWaiting = new List<DoLaterJob>();
                 int sleepTime = 200;
@@ -232,7 +250,7 @@ namespace KeeKee.Framework.WorkQueue {
                     doneWaiting.Clear();
                 }
                 if (sleepTime > 0) {
-                    Thread.Sleep(sleepTime);
+                    await Task.Delay(sleepTime, m_cancelToken);
                 }
             }
         }

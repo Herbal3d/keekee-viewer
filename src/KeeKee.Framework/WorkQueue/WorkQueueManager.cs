@@ -9,26 +9,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Hosting;
 
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Statistics;
 
 using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Framework.WorkQueue {
     // A static class which keeps a list of all the allocated work queues
     // and can serve up statistics about them.
-    public class WorkQueueManager : IDisplayable {
+    public class WorkQueueManager : BackgroundService, IDisplayable {
         private readonly KLogger<WorkQueueManager> m_log;
 
         private List<IWorkQueue> m_queues;
 
+        public CancellationToken ShutdownToken { get; private set; }
+
         public WorkQueueManager(KLogger<WorkQueueManager> pLog) {
             m_log = pLog;
             m_queues = new List<IWorkQueue>();
+        }
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+            m_log.LogInfo("WorkQueueManager starting.");
+
+            ShutdownToken = cancellationToken;
+
+            await Task.CompletedTask;
         }
 
         public void Register(IWorkQueue wq) {

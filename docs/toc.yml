@@ -1,4 +1,5 @@
+items:
 - name: Introduction
-  href: introduction.md
-- name: Getting Started
-  href: getting-started.md
+  href: ./introduction.md
+- name: Architecture
+  href: ./Architecture.md

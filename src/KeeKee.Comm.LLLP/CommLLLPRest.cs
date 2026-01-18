@@ -9,18 +9,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.Net;
-using System.Text.Json;
-
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-
-using OMV = OpenMetaverse;
-using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Comm.LLLP {
 

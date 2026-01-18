@@ -6,7 +6,17 @@
         {
           "src": "../src",
           "files": [
-            "**/*.csproj"
+            "KeeKee.Renderer/KeeKee.Renderer.csproj",
+            "KeeKee.Comm.LLLP/KeeKee.Comm.LLLP.csproj",
+            "KeeKee.Renderer.Map/KeeKee.Renderer.Map.csproj",
+            "KeeKee.World/KeeKee.World.csproj",
+            "KeeKee.World.Services/KeeKee.World.Services.csproj",
+            "KeeKee.Framework/KeeKee.Framework.csproj",
+            "KeeKee.Comm/KeeKee.Comm.csproj",
+            "KeeKee.World.LL/KeeKee.World.LL.csproj",
+            "KeeKee/KeeKee.csproj",
+            "KeeKee.Rest/KeeKee.Rest.csproj",
+            "KeeKee.Config/KeeKee.Config.csproj"
           ]
         }
       ],
@@ -20,7 +30,8 @@
           "**/*.{md,yml}"
         ],
         "exclude": [
-          "_site/**"
+          "_site/**",
+          "docfx.usage.notes"
         ]
       }
     ],

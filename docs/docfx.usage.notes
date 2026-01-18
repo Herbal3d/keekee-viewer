@@ -1,0 +1,18 @@
+Docfx: https://dotnet.github.io/docfx/docs/basic-concepts.html
+
+Markdown extensions enabled by default:
+  Media links: https://github.com/xoofx/markdig/blob/master/src/Markdig.Tests/Specs/MediaSpecs.md
+      ![youtube.com](https://www.youtube.com/watch?v=mswPy5bt3TQ)
+  Auto Identifiers: https://github.com/xoofx/markdig/blob/master/src/Markdig.Tests/Specs/AutoIdentifierSpecs.md
+      makes HTML IDs for headings
+        ## This is a heading
+        makes <h2 id="this-is-a-heading">This is a heading</h2>
+  Pipe tables: https://github.com/xoofx/markdig/blob/master/src/Markdig.Tests/Specs/PipeTableSpecs.md
+      simplified tables
+  Autolinks: https://github.com/xoofx/markdig/blob/master/src/Markdig.Tests/Specs/AutoLinks.md
+      format any URL looking thing into a href link (http:, https:, mailto:, ftp:, tel:, www.)
+  Emoji: https://github.com/xoofx/markdig/blob/master/src/Markdig.Tests/Specs/EmojiSpecs.md
+      short codes and smilies turned into unicode characters
+      :), :angry:, :muscle:, :ok_hand:, ...
+        
+

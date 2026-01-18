@@ -35,18 +35,18 @@ namespace KeeKee.World.LL {
         private StatNumber m_queuedTextureRequests = new StatNumber("QueuedTextureRequests", "Number of texture requests waiting to be sent");
         private StatNumber m_activeTextureRequests = new StatNumber("ActiveTextureRequests", "Number of active texture requests");
 
-        private GridClient m_gridClient;
+        private OMV.GridClient m_gridClient;
 
         private StatisticCollection m_stats;
 
         public LLAssetContext(KLogger<LLAssetContext> pLog,
-                            GridClient pGridClient,
+                            LLGridClient pGridClient,
                             BasicWorkQueue pWorkQueue,
                             IOptions<AssetConfig> pAssetConfig)
                         : base(pLog, pWorkQueue, pAssetConfig, "Unknown") {
 
             // This MAX is only used for the UDP texture requests (not HTTP)
-            m_gridClient = pGridClient;
+            m_gridClient = pGridClient.GridClient;
 
             m_gridClient.Settings.MAX_CONCURRENT_TEXTURE_DOWNLOADS = m_maxRequests;
             m_gridClient.Settings.USE_ASSET_CACHE = true;

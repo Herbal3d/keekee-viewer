@@ -90,7 +90,6 @@ namespace KeeKee.Comm.LLLP {
         // The logging in and out flags are true when we're doing that. Use to make sure
         // we don't try logging in or out again.
         // The module flag 'm_connected' is set true when logged in and connected.
-        protected bool m_loaded { get; set; } = false;  // if comm is loaded and should be trying to connect
         protected bool m_shouldBeLoggedIn { get; set; } = false; // true if we should be logged in
         protected LoginParams? m_loginParams { get; set; } // parameters to use when logging in
         protected bool m_isLoggingIn { get; set; } = false;  // true if we are in the process of loggin in
@@ -115,6 +114,7 @@ namespace KeeKee.Comm.LLLP {
                         IOptions<CommConfig> pConnectionConfig,
                         IOptions<AssetConfig> pAssetsConfig,
                         IOptions<LLAgentConfig> pLLAgentConfig,
+                        LLGridClient pGridClient,
                         Grids pGrids,
                         ILLInstanceFactory pInstanceFactory,
                         BasicWorkQueue pWaitTilLater,
@@ -127,6 +127,7 @@ namespace KeeKee.Comm.LLLP {
             GridList = pGrids;
             InstanceFactory = pInstanceFactory;
             m_waitTilLater = pWaitTilLater;
+            m_waitTilLater.Name = "CommLLLP WaitTilLater";
             m_World = pWorld;
 
             CommStatistics = new StatisticCollection();
@@ -144,50 +145,48 @@ namespace KeeKee.Comm.LLLP {
             CommStatistics.AddStat(m_statObjTerseUpdate);
             CommStatistics.AddStat(m_statRequestLocalID);
 
-            GridClient = new OMV.GridClient();
+            GridClient = pGridClient.GridClient;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             m_log.Log(KLogLevel.RestDetail, "CommLLLP ExecuteAsync entered");
             m_cancellationToken = cancellationToken;
 
+            InitConnectionFramework();
+
             while (!cancellationToken.IsCancellationRequested) {
-                InitConnectionFramework();
-
-                while (m_loaded && !cancellationToken.IsCancellationRequested) {
-                    if (m_shouldBeLoggedIn && !IsLoggedIn) {
-                        // we should be logged in and we are not
-                        if (!m_isLoggingIn) {
-                            await StartLogin();
-                        }
+                if (m_shouldBeLoggedIn && !IsLoggedIn) {
+                    // we should be logged in and we are not
+                    if (!m_isLoggingIn) {
+                        await StartLogin();
                     }
-                    if (!cancellationToken.IsCancellationRequested && !IsLoggedIn && IsConnected) {
-                        // if we're not supposed to be running, disconnect everything
-                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
-                        GridClient.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
-                        IsConnected = false;
-                    }
-                    if (!cancellationToken.IsCancellationRequested || (!m_shouldBeLoggedIn && IsLoggedIn)) {
-                        // we shouldn't be logged in but it looks like we are
-                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shouldn't be logged in");
-                        if (!m_isLoggingIn && !m_isLoggingOut) {
-                            // not in logging transistion. start the logout process
-                            m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Starting logout process");
-                            GridClient.Network.Logout();
-                            m_isLoggingIn = false;
-                            m_isLoggingOut = true;
-                            IsLoggedIn = false;
-                            m_shouldBeLoggedIn = false;
-                        }
-                    }
-                    // TODO: update our login parameters for the UI
-
-                    await Task.Delay(500, cancellationToken);
                 }
-                DisconnectConnectionFramework();
+                if (!cancellationToken.IsCancellationRequested && !IsLoggedIn && IsConnected) {
+                    // if we're not supposed to be running, disconnect everything
+                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
+                    GridClient.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
+                    IsConnected = false;
+                }
+                if (!cancellationToken.IsCancellationRequested || (!m_shouldBeLoggedIn && IsLoggedIn)) {
+                    // we shouldn't be logged in but it looks like we are
+                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shouldn't be logged in");
+                    if (!m_isLoggingIn && !m_isLoggingOut) {
+                        // not in logging transistion. start the logout process
+                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Starting logout process");
+                        GridClient.Network.Logout();
+                        m_isLoggingIn = false;
+                        m_isLoggingOut = true;
+                        IsLoggedIn = false;
+                        m_shouldBeLoggedIn = false;
+                    }
+                }
+                // TODO: update our login parameters for the UI
 
-                m_log.Log(KLogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
+                await Task.Delay(500, cancellationToken);
             }
+            DisconnectConnectionFramework();
+
+            m_log.Log(KLogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
         }
 
         /* OLD CODE THAT PROBABLY CAN BE DELETED
