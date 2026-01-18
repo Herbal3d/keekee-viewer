@@ -9,10 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace KeeKee.Config
-{
-    public class CommConfig
-    {
+namespace KeeKee.Config {
+    public class CommConfig {
         public static string subSectionName { get; set; } = "Comm";
 
         // Whether Comm should hold objects if the parent doesn't exist
@@ -21,9 +19,5 @@ namespace KeeKee.Config
         public bool MultipleSims { get; set; } = false;
         // Milliseconds between movement messages sent to server
         public int MovementUpdateInterval { get; set; } = 100;
-        // Application name sent when logging in
-        public string ApplicationName { get; set; } = "KeeKee Viewer";
-        // Version string sent when logging in
-        public string Version { get; set; } = "0.1.0";
     }
 }

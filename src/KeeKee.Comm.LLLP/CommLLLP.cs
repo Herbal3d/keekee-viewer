@@ -29,6 +29,7 @@ namespace KeeKee.Comm.LLLP {
     public class CommLLLP : BackgroundService, ICommProvider {
         private KLogger<CommLLLP> m_log;
 
+        public IOptions<KeeKeeConfig> KeeKeeConfig { get; set; }
         public IOptions<CommConfig> ConnectionConfig { get; set; }
         public IOptions<AssetConfig> AssetsConfig { get; set; }
         public IOptions<LLAgentConfig> LLAgentConfig { get; set; }
@@ -110,20 +111,22 @@ namespace KeeKee.Comm.LLLP {
         protected LLEntity? MainAgent { get; set; } = null;
 
         public CommLLLP(KLogger<CommLLLP> pLog,
-                        UserPersistantParams pUserParams,
+                        IOptions<KeeKeeConfig> pKeeKeeConfig,
                         IOptions<CommConfig> pConnectionConfig,
                         IOptions<AssetConfig> pAssetsConfig,
                         IOptions<LLAgentConfig> pLLAgentConfig,
+                        UserPersistantParams pUserParams,
                         LLGridClient pGridClient,
                         Grids pGrids,
                         ILLInstanceFactory pInstanceFactory,
                         BasicWorkQueue pWaitTilLater,
                         IWorld pWorld) {
             m_log = pLog;
-            m_userPersistantParams = pUserParams;
+            KeeKeeConfig = pKeeKeeConfig;
             ConnectionConfig = pConnectionConfig;
             AssetsConfig = pAssetsConfig;
             LLAgentConfig = pLLAgentConfig;
+            m_userPersistantParams = pUserParams;
             GridList = pGrids;
             InstanceFactory = pInstanceFactory;
             m_waitTilLater = pWaitTilLater;
@@ -382,8 +385,8 @@ namespace KeeKee.Comm.LLLP {
                 m_loginParams.FirstName,
                 m_loginParams.LastName,
                 m_loginParams.Password,
-                ConnectionConfig.Value.ApplicationName,
-                ConnectionConfig.Value.Version
+                KeeKeeConfig.Value.AppName,
+                KeeKeeConfig.Value.AppVersion
             );
 
             // Select sim in the grid

@@ -28,7 +28,8 @@ namespace KeeKee.Framework.Logging {
         // This log level is used for detail logging
         private const LogLevel LLDetail = LogLevel.Information;
 
-        public KLogger(ILogger<T> pLogger, IOptions<KLoggerConfig> pOptions) {
+        public KLogger(ILogger<T> pLogger,
+                       IOptions<KLoggerConfig> pOptions) {
             _innerLogger = pLogger ?? throw new ArgumentNullException(nameof(pLogger));
             _options = pOptions ?? throw new ArgumentNullException(nameof(pOptions));
         }

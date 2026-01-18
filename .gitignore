@@ -56,4 +56,5 @@ nunit-*.xml
 # Generated documentation directories
 docs/_site/
 docs/api/
+dist/
 

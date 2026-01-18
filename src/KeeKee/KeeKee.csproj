@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
+    <OutputPath>..\..\dist\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <PublishDir>..\..\dist\</PublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +31,20 @@
     <ProjectReference Include="..\KeeKee.Renderer\KeeKee.Renderer.csproj" />
     <ProjectReference Include="..\KeeKee.Renderer.Map\KeeKee.Renderer.Map.csproj" />
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\KeeKeeResources\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
