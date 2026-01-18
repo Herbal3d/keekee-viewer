@@ -1,0 +1,165 @@
+body {
+ font-family: Veranda,Arial,Helvetica,sans-serif;
+ font-size: 12px;
+ background: #4A5F6D;
+ color: #EEEAD6;
+ padding: 0px;
+ margin: 0px;
+}
+.footer {
+ font-family: Veranda,Arial,Helvetica,sans-serif;
+ font-size: 10px;
+}
+td {
+ font-family: Veranda,Arial,Helvetica,sans-serif;
+ font-size: 12px;
+ padding: 4px;
+ margin: 4px;
+}
+blockquote {
+ font-family: Veranda,Arial,Helvetica,sans-serif;
+ font-style: italic;
+ font-size: 12px;
+}
+pre {
+ padding: 5px;
+ background-color: #8080B0;
+ color: #000000;
+ margin-left: 20px;
+ font-size: 11px;
+}
+:link {
+ color: #ffffff;
+}
+:visited {
+ color: #d0d0d0;
+}
+.KKSectionHeader {
+}
+/* Statistics ===================================== */
+#KKStatistics div {
+    margin-left: 20px;
+    background: #3A4F5D;
+}
+#KKStatistics h1 {
+    background: #5A6F7D;
+    font-size: 12px;
+}
+
+table.KKCommStats-table-class td {
+    text-align: right;
+    padding: 0px 0px 0px 5px;
+    margin: 0px 0px 0px 0px;
+}
+th.KKCommStats-value-header {
+    width: 10%;
+}
+th.KKCommStats-description-header {
+    width: 45%;
+}
+table.KKCommStats-table-class td.KKCommStats-description-class {
+    text-align: left;
+}
+
+table.KKOgreStats-table-class td {
+    text-align: right;
+    padding: 0px 0px 0px 5px;
+    margin: 0px 0px 0px 0px;
+}
+th.KKOgreStats-value-header {
+    width: 10%;
+}
+th.KKOgreStats-description-header {
+    width: 45%;
+}
+th.KKOgreStats-Display-header {
+    width: 45%;
+}
+table.KKOgreStats-table-class td.KKOgreStats-description-class {
+    text-align: left;
+}
+table.KKOgreStats-table-class td.KKOgreStats-Display-class {
+    text-align: left;
+}
+
+table.KKQueueStats-table-class td {
+    border: 1px solid;
+    text-align: right;
+}
+
+table.KKRendererStats-table-class td {
+    border: 1px solid;
+    text-align: right;
+}
+
+/* Default Parameters ========================= */
+table.KKDefaultParametersTable {
+}
+table.KKDefaultParametersTable td {
+    border: 1px solid;
+}
+#KKDefaultParameters-table td.KKDefaultParameters-value-class {
+    text-align: left;
+}
+#KKDefaultParameters-table td.KKDefaultParameters-description-class {
+    text-align: left;
+    width: 400px;
+}
+/* Chat ======================================= */
+#KKChatText {
+    /* width: 500px; */
+    /* height: 200px; */
+    background: #668396;
+    overflow: auto;
+}
+#KKChatText .KKChatLineTime {
+    color: #c0c0c0
+}
+#KKChatText .KKChatLineFrom {
+    color: #f09090;
+}
+#KKChatText .KKChatLineExpression {
+    color: yellow;
+}
+#KKChatText .ChatTypeStatusBlue {
+    color: #303090;
+}
+#KKChatText .ChatTypeStatusDarkBlue {
+    color: #0000FF;
+}
+#KKChatText .ChatTypeLindenChat {
+    color: yellow;
+}
+#KKChatText .ChatTypeObjectChat {
+    color: yellow;
+}
+#KKChatText .ChatTypeAlert {
+    color: red;
+}
+#KKChatText .ChatTypeError {
+    color: red;
+}
+#KKChatInput {
+    background: #668396;
+}
+/* Avatars ======================================= */
+#KKAvatars-table td {
+    padding: 1px 0px 0px 5px;
+    margin: 0px 0px 0px 0px;
+}
+.KKAvatars-Name-class {
+    color: #f09090;
+}
+.KKAvatars-Region-class {
+    color: #c0c0c0
+}
+/* Stats ======================================= */
+#KKFooter {
+    width: 100%;
+    text-align: right;
+}
+#KKFooterStats {
+    text-align: right;
+    padding: 5px 10px 0px 0px;
+    color: #808080;
+}

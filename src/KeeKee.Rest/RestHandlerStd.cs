@@ -59,7 +59,7 @@ namespace KeeKee.Rest {
             StaticDir = Utilities.JoinFilePieces(BaseUIDir, BaseUrl);
             if (!StaticDir.EndsWith("/")) StaticDir += "/";
 
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "std/");
+            Prefix = StaticDir;
 
             _log.Log(KLogLevel.RestDetail, "RestHandlerStatic: baseUIDir={0}, staticDir={1}, Prefix={2}",
                      BaseUIDir, StaticDir, Prefix);

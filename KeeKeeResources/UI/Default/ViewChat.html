@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>KeeKee Chat</title>
+<link rel="stylesheet" href="/static/KeeKee.css" type="text/css"/>
+<script type="text/javascript" src="/std/jquery.js?xx=4"></script>
+<script type="text/javascript" src="/std/KKScripts.js?xx=4"></script>
+<noscript>
+<p color="red">
+Your browser does not support Javascript. This won't work for you.
+</p>
+</noscript>
+<script type="text/javascript">
+$(document).ready(function() {
+    // setup form to post info when 'Login' is pressed
+    $("#KKChatForm").submit(SendChatSay);
+    $("#KKSayButton").click(SendChatSay);
+    $("#KKWhisperButton").click(SendChatWhisper);
+    $("#KKShoutButton").click(SendChatShout);
+
+    // Start the timed functions
+    var now = new Date();
+    Math.random(now.getSeconds()*now.getMilliseconds());
+    chatTimerProcessing = false;
+    chatTimerHandle = setInterval('TimerChatStuff()', 1500);
+});
+
+var BASEURL='http://127.0.0.1:9144';
+var chatTimerHandle;
+var chatTimerProcessing = false;
+function TimerChatStuff() {
+    if (chatTimerProcessing) return;
+    chatTimerProcessing = true;
+    $.ajax({
+        type: "GET",
+        url: BASEURL+'/api/chat?xx=' + Math.floor(Math.random()*999999),
+        dataType: 'json',
+        timeout: 1000,
+        success: function(data, status) {
+            if (status == 'success') {
+                for (timeCode in data) {
+                    var chatLine = FormatChatLine(data[timeCode]);
+                    PlaceLineInChatDisplay(chatLine);
+                }
+            }
+        },
+        error: function(xmlHTTPRequest, errorType) {
+        }
+    });
+    chatTimerProcessing = false;
+}
+
+function FormatChatLine(chatInfo) {
+    var chatLine = new StringBuffer();
+    chatLine.append('<div class="KKChatLine">');
+    chatLine.append('<span class="KKChatLineTime">');
+    chatLine.append('(');
+    chatLine.append(chatInfo['Time'].substring(8,10));
+    chatLine.append(':');
+    chatLine.append(chatInfo['Time'].substring(10,12));
+    chatLine.append(':');
+    chatLine.append(chatInfo['Time'].substring(12,14));
+    chatLine.append(')');
+    chatLine.append(' </span>');
+    chatLine.append('<span class="KKChatLineFrom">');
+    chatLine.append(chatInfo['From']);
+    chatLine.append('</span>');
+    chatLine.append('<span class="KKChatLineExpression">');
+    if (chatInfo['Type'] == 'Whisper') {
+        chatLine.append(' whispers ');
+    }
+    else {
+        if (chatInfo['Type'] == 'Shout') {
+            chatLine.append(' shouts ');
+        }
+        else {
+            // chatLine.append(' says ');
+            chatLine.append(': ');
+        }
+    }
+    chatLine.append('</span>');
+    chatLine.append('<span class="KKChatLineText ' + chatInfo['EntryType'] + '">');
+    chatLine.append(chatInfo['Message']);
+    chatLine.append('</span>');
+    chatLine.append('</div>');
+    return chatLine.toString();
+}
+
+function PlaceLineInChatDisplay(chatLine) {
+    $('#KKChatText').append(chatLine);
+    if ($('#KKChatText').children().size() > 20) {
+        $('#KKChatText').find('div:first-child').remove();
+    }
+}
+
+function SendChatSay() {
+    return SendChat('Say');
+}
+
+function SendChatWhisper() {
+    return SendChat('Whisper');
+}
+
+function SendChatShout() {
+    return SendChat('Shout');
+}
+
+function SendChat(expression) {
+    var chatt = {};
+    var msg = $('#KKChatInput').text();
+    $('#KKChatInput').empty();
+    var chan = '0';
+    var chanPattern = /^\/(\d+) (.*)$/;
+    var checkChan = chanPattern.exec(msg);
+    if (checkChan && (undefined != checkChan.length) && (checkChan.length > 1)) {
+        chan = checkChan[1];
+        msg = checkChan[2];
+    }
+    chatt['Message'] = msg;
+    chatt['Type'] = expression;
+    chatt['Channel'] = chan;
+    // DebugLog(expression + " " + chan + " '" + msg + "'");
+    $.post(BASEURL + "/api/chat", chatt);
+    return false;
+}
+
+// used in the chat input field to make ENTER submit a 'Say'
+function checkEnter(e) {
+    if (e.keyCode == 13) {
+        // the user typed an Enter in the text field
+        return SendChatSay();
+    }
+    return true;
+}
+
+function DebugLog(msg) {
+    $("#DEBUG").append('<div>' + msg + '</div>');
+    $("#DEBUG").show();
+}
+
+</script>
+</head>
+<body id="KKBody">
+<div id="KKHeader"></div>
+<div id="KKContent">
+<!-- ============================================== -->
+<div class="KKChatContainer">
+<div id="KKChat">
+<form id="KKChatForm">
+    <div id="KKChatText"></div>
+    <div id="KKChatInputArea">
+    <textarea id="KKChatInput" onKeyPress="checkEnter(event)"
+            name="chatinput" rows="1" cols="40"></textarea>
+    <input id="KKSayButton" type="button" type="button" value="Say"/>
+    <input id="KKWhisperButton" type="button" type="button" value="Whisper"/>
+    <input id="KKShoutButton" type="button" type="button" value="Shout"/>
+    </div> <!-- KKChatInputArea -->
+</form>
+</div>  <!-- KKChat -->
+</div>  <!-- KKChatContainer -->
+<!-- ============================================== -->
+</div>  <!-- KKContent -->
+<div id="DEBUG"></div>
+<div id="KKFooter"></div>
+</body>
+</html>

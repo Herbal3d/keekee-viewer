@@ -65,14 +65,6 @@ namespace KeeKee.Rest {
 
         private IRestHandler? m_staticHandler;
         private IRestHandler? m_stdHandler;
-        private IRestHandler? m_faviconHandler;
-
-        // Some system wide rest handlers to make information available
-        private IRestHandler? m_workQueueRestHandler;
-        private IRestHandler? m_paramDefaultRestHandler;
-        private IRestHandler? m_paramIniRestHandler;
-        private IRestHandler? m_paramUserRestHandler;
-        private IRestHandler? m_paramOverrideRestHandler;
 
         // return the full base URL with the port added
         public readonly string BaseURL;
@@ -123,6 +115,7 @@ namespace KeeKee.Rest {
                             await thisHandler.ProcessGetOrPostRequest(context, request, response, cancellationToken);
                         } else {
                             m_log.Log(KLogLevel.Warning, "Request not processed because no matching handler, URL={0}", absURL);
+                            DoErrorResponse(response, HttpStatusCode.NotFound, null);
                         }
                     } catch (Exception e) {
                         m_log.Log(KLogLevel.Error, "RestManager listener exception: {0}", e.ToString());

@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>KeeKee</title>
+<link rel="stylesheet" href="/static/KeeKee.css" type="text/css"/>
+<script type="application/javascript" src="/std/jquery.js"></script>
+<script type="application/javascript" src="/std/KKScripts.js"></script>
+<script type="application/javascript">
+$(document).ready(function() {
+    GetDefaultParameters();
+});
+
+var BASEURL='http://127.0.0.1:9144';
+function GetDefaultParameters() {
+    $.ajax({
+        type: "GET",
+        url: BASEURL + '/api/params/Default',
+        dataType: 'json',
+        timeout: 5000,
+        success: function(data, status) {
+            if (status == 'success') {
+                BuildBasicTable('#KKDefaultParameters', data, true, false);
+            }
+        },
+        error: function(xmlHTTPRequest, errorType) {
+            $('#KKDefaultParameters').append('Could not read parameters');
+        }
+    });
+};
+
+</script>
+</head>
+<body id="KKBody">
+<div id="KKHeader"></div>
+<div id="KKContent">
+
+<div class="KKSectionContainer">
+<a class="KKSectionHeader" href="#">Default Parameters</a>
+<p>These are all the parameters that can be modified in KeeKee.
+The values given are the default values. The "settings.file" file
+(usually "KeeKee.json") overrides any of these values.
+</p>
+<div id="KKDefaultParameters" class="KKSection">
+</div>  <!-- KKDefaultParameters -->
+</div>  <!-- KKSectionContainer -->
+
+<!-- ============================================== -->
+</div>  <!-- KKContent -->
+<div id="DEBUG"></div>
+<div id="KKFooter"></div>
+</body>
+</html>

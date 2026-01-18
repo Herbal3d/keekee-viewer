@@ -22,7 +22,6 @@ public class RestManagerConfig {
     // Directory for static HTML content
     public string UIContentDir { get; set; } =
             Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "./KeeKeeUI");
-    // If specified, the subdirectory under StaticContentDir to take files from
     public string APIBase { get; set; } = "/api";
     public string Skin { get; set; } = "Default";
 }

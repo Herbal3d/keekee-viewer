@@ -72,7 +72,8 @@ namespace KeeKee.Rest {
             }
             if (!StaticDir.EndsWith("/")) StaticDir += "/";
 
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "static/");
+            // Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "static/");
+            Prefix = BaseUrl;
 
             m_log.Log(KLogLevel.RestDetail, "RestHandlerStatic: baseUIDir={0}, staticDir={1}, Prefix={2}",
                      BaseUIDir, StaticDir, Prefix);
@@ -89,6 +90,9 @@ namespace KeeKee.Rest {
 
                 string absURL = pRequest.Url?.AbsolutePath.ToLower() ?? "";
                 string afterString = absURL.Substring(Prefix.Length);
+                // prevent directory traversal attacks
+                afterString = afterString.Replace("\\", "");
+                afterString = afterString.Replace("..", "");
 
                 string filePath = Utilities.JoinFilePieces(StaticDir, afterString);
 
