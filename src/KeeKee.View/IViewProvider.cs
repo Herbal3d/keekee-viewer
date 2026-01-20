@@ -16,10 +16,10 @@ using KeeKee.Renderer;
 using KeeKee.World;
 
 namespace KeeKee.View {
-    public interface IViewProvider : IProvider {
+    public interface IViewProvider {
 
         // the world this viewer is connected to
-        World.World TheWorld { get; }
+        IWorld TheWorld { get; }
         // the renderer the viewer is connected to
         IRenderProvider Renderer { get; }
     }

@@ -9,17 +9,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Windows.Forms;
+using Microsoft.Extensions.Options;
+
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Modules;
-using KeeKee.Framework.Parameters;
 using KeeKee.Framework.WorkQueue;
 using KeeKee.Renderer;
 using KeeKee.World;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.View {
@@ -36,11 +33,15 @@ namespace KeeKee.View {
     /// User input
     ///
     /// </summary>
-    public class Viewer : ModuleBase, IViewProvider {
+    public class Viewer : IViewProvider {
 
-        private ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
+        private KLogger<Viewer> m_log;
+        private IOptions<ViewConfig> m_ViewConfig;
 
-        private IAgent m_trackedAgent;
+        public IWorld TheWorld { get; set; }
+        public IRenderProvider Renderer { get; set; }
+
+        private IEntity m_trackedAgent;
 
         // the viewer manages the camera
         private CameraControl m_mainCamera;
@@ -58,50 +59,36 @@ namespace KeeKee.View {
         private float m_agentCameraBehind;
         private float m_agentCameraAbove;
 
-        private BasicWorkQueue m_workQueue = new BasicWorkQueue("Viewer");
+        private BasicWorkQueue m_workQueue;
 
         /// <summary>
         /// Constructor called in instance of main and not in own thread. This is only
         /// good for setting up structures.
         /// </summary>
-        public Viewer() {
-        }
+        public Viewer(KLogger<Viewer> pLog,
+                      IOptions<ViewConfig> pViewConfig,
+                      BasicWorkQueue pWorkQueue,
+                      IRenderProvider pRenderer,
+                      IWorld pWorld
+                      ) {
+            m_log = pLog;
+            m_ViewConfig = pViewConfig;
+            m_workQueue = pWorkQueue;
+            Renderer = pRenderer;
+            TheWorld = pWorld;
 
-        #region IModule methods
-        public override void OnLoad(string name, KeeKeeBase lgbase) {
-            base.OnLoad(name, lgbase);
-            ModuleParams.AddDefaultParameter(m_moduleName + ".Renderer.Name", "Renderer", "");
-            // todo: make this variable so there can be multiple viewers
+            m_log.Log(KLogLevel.DINIT, "entered AfterAllModulesLoaded()");
 
-            ModuleParams.AddDefaultParameter(m_moduleName + ".Camera.Speed", "5", "Units per second to move camera");
-            ModuleParams.AddDefaultParameter(m_moduleName + ".Camera.RotationSpeed", "0.100", "Degrees to rotate camera");
-            ModuleParams.AddDefaultParameter(m_moduleName + ".Camera.ServerFar", "300.0", "Far distance sent to server");
-
-            ModuleParams.AddDefaultParameter(m_moduleName + ".Camera.BehindAgent", "4.0", "Distance camera is behind agent");
-            ModuleParams.AddDefaultParameter(m_moduleName + ".Camera.AboveAgent", "2.0", "Distance camera is above agent (combined with behind)");
-
-            // m_EntitySlot = EntityBase.AddAdditionSubsystem("VIEWER");        // used by anyone?
-        }
-
-        override public bool AfterAllModulesLoaded() {
-            m_log.Log(LogLevel.DINIT, "entered AfterAllModulesLoaded()");
-
-            Renderer = (IRenderProvider)ModuleManager.Instance.Module(ModuleParams.ParamString(m_moduleName + ".Renderer.Name"));
-            if (Renderer == null) {
-                m_log.Log(LogLevel.DBADERROR, "UNABLE TO FIND RENDERER!!!! ");
-                return false;
-            }
-
-            m_cameraSpeed = ModuleParams.ParamFloat(m_moduleName + ".Camera.Speed");
-            m_cameraRotationSpeed = ModuleParams.ParamFloat(m_moduleName + ".Camera.RotationSpeed");
-            m_agentCameraBehind = ModuleParams.ParamFloat(m_moduleName + ".Camera.BehindAgent");
-            m_agentCameraAbove = ModuleParams.ParamFloat(m_moduleName + ".Camera.AboveAgent");
+            m_cameraSpeed = m_ViewConfig.Value.Camera.Speed;
+            m_cameraRotationSpeed = m_ViewConfig.Value.Camera.RotationSpeed;
+            m_agentCameraBehind = m_ViewConfig.Value.Camera.BehindAgent;
+            m_agentCameraAbove = m_ViewConfig.Value.Camera.AboveAgent;
             m_mainCamera = new CameraControl();
             m_mainCamera.GlobalPosition = new OMV.Vector3d(1000d, 1000d, 40d);   // World coordinates (Z up)
                                                                                  // camera starts pointing down Y axis
             m_mainCamera.Heading = new OMV.Quaternion(OMV.Vector3.UnitZ, Constants.PI / 2);
             m_mainCamera.Zoom = 1.0f;
-            m_mainCamera.Far = ModuleParams.ParamFloat(m_moduleName + ".Camera.ServerFar");
+            m_mainCamera.Far = m_ViewConfig.Value.Camera.ServerFar;
             m_cameraMode = CameraMode.TrackingAgent;
             m_cameraLookAt = new OMV.Vector3d(0d, 0d, 0d);
 
@@ -116,11 +103,6 @@ namespace KeeKee.View {
             TheWorld.OnAgentUpdate += new WorldAgentUpdateCallback(World_OnAgentUpdate);
             TheWorld.OnAgentRemoved += new WorldAgentRemovedCallback(World_OnAgentRemoved);
 
-            m_log.Log(LogLevel.DINIT, "exiting AfterAllModulesLoaded()");
-            return true;
-        }
-
-        override public void Start() {
             // this will cause the renderer to move it's camera whenever the main camera is moved
             m_mainCamera.OnCameraUpdate += new CameraControlUpdateCallback(Renderer.UpdateCamera);
             // this will cause camera direction to be sent back  to the server for interest management
@@ -137,26 +119,10 @@ namespace KeeKee.View {
             // start the renderer
             // ((IModule)Renderer).Start();
 
-            m_log.Log(LogLevel.DINIT, "exiting Start()");
+            m_log.Log(KLogLevel.DINIT, "exiting Start()");
             return;
         }
 
-        override public void Stop() {
-            return;
-        }
-        #endregion IModule methods
-
-        #region IViewProvider methods
-        private IRenderProvider m_Renderer = null;
-        public IRenderProvider Renderer { get { return m_Renderer; } set { m_Renderer = value; } }
-
-        public World.World TheWorld {
-            get {
-                return World.World.Instance;
-            }
-        }
-
-        #endregion IViewProvider methods
 
         private void World_OnEntityNew(IEntity ent) {
             // m_log.Log(LogLevel.DVIEWDETAIL, "OnEntityNew: Telling renderer about a new entity");
@@ -164,38 +130,37 @@ namespace KeeKee.View {
         }
 
         private void World_OnNewFoliage(IEntity ent) {
-            m_log.Log(LogLevel.DVIEWDETAIL, "OnNewFoliage: Telling renderer about a new foliage entity");
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnNewFoliage: Telling renderer about a new foliage entity");
             return;
         }
 
         private void World_OnEntityUpdate(IEntity ent, World.UpdateCodes what) {
-            IEntityAvatar av = null;
-            if (ent.TryGet<IEntityAvatar>(out av)) {
-                m_log.Log(LogLevel.DUPDATEDETAIL | LogLevel.DVIEWDETAIL, "OnEntityUpdate: Avatar: {0}", ent.Name.Name);
+            if (ent.HasComponent<ICmptAgentMovement>()) {
+                m_log.Log(KLogLevel.DUPDATEDETAIL | KLogLevel.DVIEWDETAIL, "OnEntityUpdate: Avatar: {0}", ent.Name.Name);
                 this.Renderer.RenderUpdate(ent, what);
             } else {
-                m_log.Log(LogLevel.DUPDATEDETAIL | LogLevel.DVIEWDETAIL, "OnEntityUpdate: Other. w={0}", what);
+                m_log.Log(KLogLevel.DUPDATEDETAIL | KLogLevel.DVIEWDETAIL, "OnEntityUpdate: Other. w={0}", what);
                 this.Renderer.RenderUpdate(ent, what);
             }
             return;
         }
 
         private void World_OnEntityRemoved(IEntity ent) {
-            m_log.Log(LogLevel.DVIEWDETAIL, "OnEntityRemoved: ");
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnEntityRemoved: ");
             Renderer.UnRender(ent);
             return;
         }
 
         // When a region is connected, one job is to map it into the view.
         // Chat with the renderer to enhance the rcontext with mapping info
-        private void World_OnRegionNew(RegionContextBase rcontext) {
-            m_log.Log(LogLevel.DVIEWDETAIL, "OnRegionNew: ");
+        private void World_OnRegionNew(IRegionContext rcontext) {
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnRegionNew: ");
             Renderer.MapRegionIntoView(rcontext);
             return;
         }
 
-        private void World_OnRegionUpdated(RegionContextBase rcontext, UpdateCodes what) {
-            m_log.Log(LogLevel.DVIEWDETAIL, "OnRegionUpdated: ");
+        private void World_OnRegionUpdated(IRegionContext rcontext, UpdateCodes what) {
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnRegionUpdated: ");
             if ((what & UpdateCodes.Terrain) != 0) {
                 // This is first attempt at terrain. The description of the land comes in
                 // as a heightmap defined by OMV. The renderer will have to deal with that.
@@ -209,8 +174,8 @@ namespace KeeKee.View {
 
         // When a region is connected, one job is to map it into the view.
         // Chat with the renderer to enhance the rcontext with mapping info
-        private void World_OnRegionRemoved(RegionContextBase rcontext) {
-            m_log.Log(LogLevel.DVIEWDETAIL, "OnRegionRemoved: ");
+        private void World_OnRegionRemoved(IRegionContext rcontext) {
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnRegionRemoved: ");
             // TODO: when we have proper region management
             return;
         }
@@ -218,7 +183,7 @@ namespace KeeKee.View {
 
         // called when the camera changes position or orientation
         private void CameraControl_OnCameraUpdate(CameraControl cam) {
-            // m_log.Log(LogLevel.DVIEWDETAIL, "OnCameraUpdate: ");
+            // m_log.Log(KLogLevel.DVIEWDETAIL, "OnCameraUpdate: ");
             if (m_trackedAgent != null) {
                 // tell the agent the camera moved if it cares
                 // This is an outgoing message that tells the world where the camera is
@@ -243,24 +208,24 @@ namespace KeeKee.View {
 
             int sinceLastMouse = System.Environment.TickCount - m_lastMouseMoveTime;
             m_lastMouseMoveTime = System.Environment.TickCount;
-            // m_log.Log(LogLevel.DVIEWDETAIL, "OnMouseMove: x={0}, y={1}, time since last={2}", x, y, sinceLastMouse);
+            // m_log.Log(KLogLevel.DVIEWDETAIL, "OnMouseMove: x={0}, y={1}, time since last={2}", x, y, sinceLastMouse);
             if (m_mainCamera != null) {
                 if (((Renderer.UserInterface.LastKeyCode & Keys.Control) == 0)
                         && ((Renderer.UserInterface.LastKeyCode & Keys.Alt) != 0)) {
-                    m_log.Log(LogLevel.DVIEWDETAIL, "OnMouseMove: ALT: ");
+                    m_log.Log(KLogLevel.DVIEWDETAIL, "OnMouseMove: ALT: ");
                 } else if (((Renderer.UserInterface.LastKeyCode & Keys.Control) != 0)
                           && ((Renderer.UserInterface.LastKeyCode & Keys.Alt) != 0)) {
                     // if ALT+CNTL is held down, movement is on view plain
                     float xMove = x * m_cameraSpeed;
                     float yMove = y * m_cameraSpeed;
                     OMV.Vector3d movement = new OMV.Vector3d(0, xMove, yMove);
-                    m_log.Log(LogLevel.DVIEWDETAIL, "OnMouseMove: CNTL-ALT: Move camera x={0}, y={1}", xMove, yMove);
+                    m_log.Log(KLogLevel.DVIEWDETAIL, "OnMouseMove: CNTL-ALT: Move camera x={0}, y={1}", xMove, yMove);
                     m_mainCamera.GlobalPosition -= movement;
                 } else if ((Renderer.UserInterface.LastKeyCode & Keys.Control) != 0) {
                     // if CNTL is held down, movement is on land plane
                     float xMove = x * m_cameraSpeed;
                     float yMove = y * m_cameraSpeed;
-                    m_log.Log(LogLevel.DVIEWDETAIL, "OnMouseMove: CNTL: Move camera x={0}, y={1}", xMove, yMove);
+                    m_log.Log(KLogLevel.DVIEWDETAIL, "OnMouseMove: CNTL: Move camera x={0}, y={1}", xMove, yMove);
                     OMV.Vector3d movement = new OMV.Vector3d(yMove, xMove, 0f);
                     m_mainCamera.GlobalPosition -= movement;
                 } else if ((Renderer.UserInterface.LastMouseButtons & MouseButtons.Left) != 0) {
@@ -268,7 +233,7 @@ namespace KeeKee.View {
                     float xMove = (-x * m_cameraRotationSpeed * Constants.DEGREETORADIAN) % Constants.TWOPI;
                     float yMove = (-y * m_cameraRotationSpeed * Constants.DEGREETORADIAN) % Constants.TWOPI;
                     // rotate around local axis
-                    // m_log.Log(LogLevel.DVIEWDETAIL, "OnMouseMove: Rotate camera x={0}, y={1}, lmb={2}", 
+                    // m_log.Log(KLogLevel.DVIEWDETAIL, "OnMouseMove: Rotate camera x={0}, y={1}, lmb={2}", 
                     //         xMove, yMove, Renderer.UserInterface.LastMouseButtons);
                     m_mainCamera.rotate(yMove, 0f, xMove);
                 }
@@ -283,11 +248,12 @@ namespace KeeKee.View {
         // called from the renderer when the state of the keyboard changes
         private void UserInterface_OnKeypress(Keys key, bool updown) {
             try {   // we let exceptions test for null
-                m_log.Log(LogLevel.DVIEWDETAIL, "UserInterfase_OnKeypress: k={0}, f={1}", key, updown);
+                m_log.Log(KLogLevel.DVIEWDETAIL, "UserInterfase_OnKeypress: k={0}, f={1}", key, updown);
+                /*
                 switch (key) {
                     case (Keys.Control | Keys.C):
                         // CNTL-C says to stop everything now
-                        m_log.Log(LogLevel.DVIEW, "UserInterfase_OnKeypress: CNTL-C. Setting KeepRunning to FALSE");
+                        m_log.Log(KLogLevel.DVIEW, "UserInterfase_OnKeypress: CNTL-C. Setting KeepRunning to FALSE");
                         LGB.KeepRunning = false;
                         break;
                     case Keys.Right: m_trackedAgent.TurnRight(updown); break;
@@ -303,12 +269,12 @@ namespace KeeKee.View {
                     case Keys.PageDown: m_trackedAgent.MoveDown(updown); break;
                     case Keys.Escape:
                         // force the camera to the client position
-                        m_log.Log(LogLevel.DVIEWDETAIL, "OnKeypress: ESC: restoring camera position");
+                        m_log.Log(KLogLevel.DVIEWDETAIL, "OnKeypress: ESC: restoring camera position");
                         // m_mainCamera.GlobalPosition = m_trackedAgent.GlobalPosition;
                         m_cameraMode = CameraMode.TrackingAgent;
                         UpdateMainCameraToAgentTracking();
                         break;
-                }
+                */
             } catch {
                 // don't do anything, the user will type again later
             }
@@ -320,21 +286,21 @@ namespace KeeKee.View {
         // When an agent is added to the scene
         // At the moment we don't have good control for associating an agent with the viewer.
         // Assume the last agent is the one we are tracking.
-        private void World_OnAgentNew(IAgent agnt) {
-            m_log.Log(LogLevel.DVIEWDETAIL, "OnAgentNew: ");
+        private void World_OnAgentNew(IEntity agnt) {
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnAgentNew: ");
             m_trackedAgent = agnt;
             if (m_mainCamera != null) {
                 m_cameraMode = CameraMode.TrackingAgent;
                 m_mainCamera.AssociatedAgent = agnt;
                 UpdateMainCameraToAgentTracking();
-                m_log.Log(LogLevel.DVIEWDETAIL, "OnAgentNew: Camera to {0}, {1}, {2}",
+                m_log.Log(KLogLevel.DVIEWDETAIL, "OnAgentNew: Camera to {0}, {1}, {2}",
                     m_mainCamera.GlobalPosition.X, m_mainCamera.GlobalPosition.Y, m_mainCamera.GlobalPosition.Z);
             }
             return;
         }
 
-        private void World_OnAgentUpdate(IAgent agnt, UpdateCodes what) {
-            // m_log.Log(LogLevel.DVIEWDETAIL, "OnAgentUpdate: p={0}, h={1}", agnt.GlobalPosition.ToString(), agnt.Heading.ToString());
+        private void World_OnAgentUpdate(IEntity agnt, UpdateCodes what) {
+            // m_log.Log(KLogLevel.DVIEWDETAIL, "OnAgentUpdate: p={0}, h={1}", agnt.GlobalPosition.ToString(), agnt.Heading.ToString());
             if ((what & (UpdateCodes.Rotation | UpdateCodes.Position)) != 0) {
                 // if changing position, update the camera position
                 if (m_cameraMode == CameraMode.TrackingAgent) {
@@ -345,7 +311,7 @@ namespace KeeKee.View {
                     }
                 }
             } else {
-                m_log.Log(LogLevel.DVIEWDETAIL, "OnAgentUpdate: update code not pos or rot: {0}", what);
+                m_log.Log(KLogLevel.DVIEWDETAIL, "OnAgentUpdate: update code not pos or rot: {0}", what);
             }
             return;
         }
@@ -353,7 +319,7 @@ namespace KeeKee.View {
         private void UpdateMainCameraToAgentTracking() {
             try {
                 if (m_mainCamera != null && m_mainCamera.AssociatedAgent != null) {
-                    IAgent agnt = m_mainCamera.AssociatedAgent;
+                    IEntity agnt = m_mainCamera.AssociatedAgent;
                     /*
                     // note: coordinates are in LL form: Z up
                     OMV.Vector3 cameraOffset = new OMV.Vector3(-m_agentCameraBehind, 0, m_agentCameraAbove);
@@ -362,7 +328,7 @@ namespace KeeKee.View {
                     OMV.Vector3 cameraBehind = cameraOffset * invertHeading;
                     // create the global offset from the agent's position
                     OMV.Vector3d globalOffset = new OMV.Vector3d(cameraBehind.X, cameraBehind.Y, cameraBehind.Z);
-                    m_log.Log(LogLevel.DVIEWDETAIL, "OnAgentUpdate: offset={0}, behind={1}, goffset={2}, gpos={3}",
+                    m_log.Log(KLogLevel.DVIEWDETAIL, "OnAgentUpdate: offset={0}, behind={1}, goffset={2}, gpos={3}",
                         cameraOffset.ToString(), cameraBehind.ToString(), 
                         globalOffset.ToString(), agnt.GlobalPosition.ToString());
                     m_mainCamera.Update(agnt.GlobalPosition + globalOffset, agnt.Heading);
@@ -380,7 +346,7 @@ namespace KeeKee.View {
                     OMV.Vector3d kludgeOffset = new OMV.Vector3d(0d, 0d, -10d);
                     OMV.Vector3d desiredCameraPosition = agnt.GlobalPosition + globalRotatedOffset + kludgeOffset;
 
-                    m_log.Log(LogLevel.DVIEWDETAIL, "UpdateMainCameraToAgentTracking: offset={0}, goffset={1}, cpos={2}, apos={3}",
+                    m_log.Log(KLogLevel.DVIEWDETAIL, "UpdateMainCameraToAgentTracking: offset={0}, goffset={1}, cpos={2}, apos={3}",
                         cameraOffset, globalRotatedOffset, desiredCameraPosition, agnt.GlobalPosition);
 
                     m_mainCamera.Update(desiredCameraPosition, agnt.Heading);
@@ -389,8 +355,8 @@ namespace KeeKee.View {
             }
         }
 
-        private void World_OnAgentRemoved(IAgent agnt) {
-            m_log.Log(LogLevel.DVIEWDETAIL, "OnAgentRemoved: ");
+        private void World_OnAgentRemoved(IEntity agnt) {
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnAgentRemoved: ");
             return;
         }
         #endregion Agent management

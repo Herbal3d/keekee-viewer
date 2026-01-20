@@ -10,6 +10,7 @@
 // limitations under the License.
 
 using System.Reflection;
+using System.Text;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
@@ -61,6 +62,10 @@ namespace KeeKee.Framework.Utilities {
             int ret = TickCount() - prev;
             if (ret < 0) ret += TickCountMask + 1;
             return ret;
+        }
+
+        public static byte[] StringToBytes(string s) {
+            return Encoding.UTF8.GetBytes(s);
         }
 
         // Rotate a vector by a quaternian

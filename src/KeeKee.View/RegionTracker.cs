@@ -11,8 +11,6 @@
 
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Modules;
-using KeeKee.Framework.Parameters;
 using KeeKee.Rest;
 using KeeKee.Renderer;
 using KeeKee.World;
@@ -25,78 +23,46 @@ namespace KeeKee.View {
     /// Watch the comings and goings of the regions and handle the level of detail
     /// that the regions are displayed in.
     /// </summary>
-    public class RegionTracker : IRegionTrackerProvider, IModule {
+    public class RegionTracker : IDisposable {
 
-        protected RestHandler m_regionRestHandler;
+        private KLogger<RegionTracker> m_log;
+        private bool m_enabled = false;
+
+        private RestHandlerFactory m_restFactory;
+        protected RestHandlerDisplayable? m_regionRestHandler;
 
         protected IWorld m_world;
         protected IRenderProvider m_renderer;
 
-        #region IMODULE
-        protected string m_moduleName;
-        public string ModuleName { get { return m_moduleName; } set { m_moduleName = value; } }
+        public RegionTracker(KLogger<RegionTracker> pLog,
+                            IWorld pWorld,
+                            RestHandlerFactory pRestFactory,
+                            IRenderProvider pRenderer) {
+            m_log = pLog;
+            m_world = pWorld;
+            m_restFactory = pRestFactory;
+            m_renderer = pRenderer;
 
-        protected KeeKeeBase m_lgb = null;
-        public KeeKeeBase LGB { get { return m_lgb; } }
+            m_log.Log(KLogLevel.DINIT, "starting");
 
-        public IAppParameters ModuleParams { get { return m_lgb.AppParams; } }
-
-        public RegionTracker() {
-            // default to the class name. The module code can set it to something else later.
-            m_moduleName = System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name;
-        }
-
-        // IModule.OnLoad
-        public virtual void OnLoad(string modName, KeeKeeBase lgbase) {
-            LogManager.Log.Log(LogLevel.DINIT, "RegionTracker.OnLoad()");
-            m_moduleName = modName;
-            m_lgb = lgbase;
-            // set the parameter defaults
-            ModuleParams.AddDefaultParameter(ModuleName + ".Regions.Enable", "true",
-                        "Whether to make region information available");
-            ModuleParams.AddDefaultParameter(ModuleName + ".Renderer.Name", "Renderer",
-                        "Name of renderer module for display of region details");
-        }
-
-        // IModule.AfterAllModulesLoaded
-        public virtual bool AfterAllModulesLoaded() {
-            LogManager.Log.Log(LogLevel.DINIT, "EntityTracker.AfterAllModulesLoaded()");
-            // connect to the world and listen for entity events (there is only one world)
-            m_world = World.World.Instance;
-            string rendererName = ModuleParams.ParamString(ModuleName + ".Renderer.Name");
-            m_renderer = (IRenderProvider)ModuleManager.Instance.Module(rendererName);
-            if (ModuleParams.ParamBool(ModuleName + ".Regions.Enable")) {
+            if (m_enabled) {
                 m_world.OnWorldRegionNew += new WorldRegionNewCallback(World_OnWorldRegionNew);
                 m_world.OnWorldRegionRemoved += new WorldRegionRemovedCallback(World_OnWorldRegionRemoved);
                 m_world.OnWorldRegionUpdated += new WorldRegionUpdatedCallback(World_OnWorldRegionUpdated);
+
+                m_regionRestHandler = ((RestHandlerDisplayable)m_restFactory.CreateHandler<RestHandlerDisplayable>());
+                m_regionRestHandler.Prefix = "/region/tracker/info";
+                m_regionRestHandler.DisplayableSource = new RegionInformation(this);
             }
-
-            if (ModuleParams.ParamBool(ModuleName + ".Regions.Enable")) {
-                m_regionRestHandler = new RestHandler("/Tracker/Regions/", new RegionInformation(this));
-            }
-            return true;
         }
 
-        // IModule.Start
-        public virtual void Start() {
-            return;
-        }
-
-        // IModule.Stop
-        public virtual void Stop() {
-            return;
-        }
-
-        // IModule.PrepareForUnload
-        public virtual bool PrepareForUnload() {
-            if (ModuleParams.ParamBool(ModuleName + ".Regions.Enable")) {
+        public void Dispose() {
+            if (m_enabled) {
                 m_world.OnWorldRegionNew -= new WorldRegionNewCallback(World_OnWorldRegionNew);
                 m_world.OnWorldRegionRemoved -= new WorldRegionRemovedCallback(World_OnWorldRegionRemoved);
                 m_world.OnWorldRegionUpdated -= new WorldRegionUpdatedCallback(World_OnWorldRegionUpdated);
             }
-            return false;
         }
-        #endregion IMODULE
 
         #region EVENT PROCESSING
         void World_OnWorldRegionNew(IRegionContext rcontext) {
@@ -116,7 +82,7 @@ namespace KeeKee.View {
              */
             // for the moment, any close by region is good enough for focus
             if (m_renderer != null) {
-                LogManager.Log.Log(LogLevel.DWORLDDETAIL, "RegionTracker: setting focus region {0}", rcontext.Name);
+                m_log.Log(KLogLevel.DWORLDDETAIL, "RegionTracker: setting focus region {0}", rcontext.Name);
                 m_renderer.SetFocusRegion(rcontext);
             }
         }

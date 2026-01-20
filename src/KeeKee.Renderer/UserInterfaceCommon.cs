@@ -15,7 +15,7 @@ using KeeKee.Framework.WorkQueue;
 namespace KeeKee.Renderer {
 
     public class UserInterfaceCommon : IUserInterfaceProvider {
-        private KLogger<UserInterfaceCommon> m_log;
+        private IKLogger m_log;
 
         public event UserInterfaceKeypressCallback? OnUserInterfaceKeypress;
         public event UserInterfaceMouseMoveCallback? OnUserInterfaceMouseMove;
@@ -58,7 +58,7 @@ namespace KeeKee.Renderer {
 
         private BasicWorkQueue m_workQueue;
 
-        public UserInterfaceCommon(KLogger<UserInterfaceCommon> pLog,
+        public UserInterfaceCommon(IKLogger pLog,
                                    BasicWorkQueue pWorkQueue) {
             m_log = pLog;
             m_workQueue = pWorkQueue;
