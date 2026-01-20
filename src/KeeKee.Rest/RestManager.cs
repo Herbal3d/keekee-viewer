@@ -45,7 +45,7 @@ namespace KeeKee.Rest {
     public class RestManager : BackgroundService {
 
         private readonly KLogger<RestManager> m_log;
-        private readonly IOptions<RestManagerConfig> m_config;
+        private readonly IOptions<RestManagerConfig> m_restConfig;
         private readonly IOptions<KeeKeeConfig> m_keeKeeConfig;
 
         public const string MIMEDEFAULT = "text/html";
@@ -59,7 +59,7 @@ namespace KeeKee.Rest {
         // General reference to the base API URL prefix
         public string APIBase {
             get {
-                return m_config.Value.APIBase;
+                return m_restConfig.Value.APIBase;
             }
         }
 
@@ -74,7 +74,7 @@ namespace KeeKee.Rest {
                         IOptions<KeeKeeConfig> pKeeKeeConfig,
                         RestHandlerFactory pRestHandlerFactory) {
             m_log = pLog;
-            m_config = pConfig;
+            m_restConfig = pConfig;
             m_keeKeeConfig = pKeeKeeConfig;
             m_RestHandlerFactory = pRestHandlerFactory;
 
@@ -91,7 +91,7 @@ namespace KeeKee.Rest {
             m_listener.Prefixes.Add(BaseURL + "/");
 
             m_staticHandler = m_RestHandlerFactory.CreateHandler<RestHandlerStatic>();
-            m_stdHandler = m_RestHandlerFactory.CreateHandler<RestHandlerStd>();
+            m_stdHandler = m_RestHandlerFactory.CreateHandler<RestHandlerUI>();
             // m_faviconHandler = m_RestHandlerFactory.CreateHandler<RestHandlerFavicon>();
             // m_workQueueHandler = m_RestHandlerFactory.CreateHandler<RestHandlerWorkQueueStats>();
 
@@ -143,11 +143,14 @@ namespace KeeKee.Rest {
         /// <param name="pResponse">The response structure</param>
         /// <param name="pContentType">The MIME type of the response</param>
         /// <param name="pContentBodySource">Routine to call to generate the content body</param>
-        public void DoSimpleResponse(HttpListenerResponse? pResponse,
+        public async void DoSimpleResponse(HttpListenerResponse? pResponse,
                         string? pContentType,
                         ConstructResponseBody? pContentBodySource) {
 
             if (pResponse == null) return;
+
+            // Construct the self reference for Content-Security-Policy
+            string selfUrl = m_restConfig.Value.BaseURL + ":" + m_restConfig.Value.Port.ToString();
 
             byte[] encodedBuff;
 
@@ -155,6 +158,7 @@ namespace KeeKee.Rest {
                 pResponse.ContentType = pContentType == null ? MIMEDEFAULT : pContentType;
                 pResponse.AddHeader("Server", m_keeKeeConfig.Value.AppName);
                 pResponse.AddHeader("Cache-Control", "no-cache");
+                pResponse.AddHeader("Content-Security-Policy", $"script-src 'self' {selfUrl}");
                 // context.Connection = ConnectionType.Close;
 
                 encodedBuff = pContentBodySource != null ? pContentBodySource() : new byte[0];
@@ -169,7 +173,7 @@ namespace KeeKee.Rest {
 
             pResponse.ContentLength64 = encodedBuff.Length;
             Stream output = pResponse.OutputStream;
-            output.Write(encodedBuff, 0, encodedBuff.Length);
+            await output.WriteAsync(encodedBuff, 0, encodedBuff.Length);
             output.Close();
 
             return;
@@ -197,8 +201,9 @@ namespace KeeKee.Rest {
                 encodedBuff = pContentBodySource != null ? pContentBodySource() : new byte[0];
 
                 pResponse.StatusCode = (int)errCode;
-            } catch {
-                encodedBuff = OneNullBody();
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.Error, "DoErrorResponse exception creating error response: {0}", e.ToString());
+                encodedBuff = new byte[0];
                 pResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
             }
 

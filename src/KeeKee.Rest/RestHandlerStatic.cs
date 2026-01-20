@@ -10,72 +10,55 @@
 // limitations under the License.
 
 using System.Net;
-using System.Text;
 
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest {
+namespace KeeKee.Rest
+{
 
-    public class RestHandlerStatic : IRestHandler {
+    public class RestHandlerStatic : IRestHandler
+    {
 
-        private readonly KLogger<RestHandlerStatic> m_log;
+        private readonly KLogger<RestHandlerStatic> _log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
         private readonly RestManager _RestManager;
 
         /// <summary>
         /// API URL to filesystem base directory mapping
-        /// "/api/static/"  -->  "/.../bin/KeeKeeUI/Default/"
+        /// "/api/std/"  -->  "/.../bin/KeeKeeUI/std/"
         /// </summary>
         // Filesystem base directory for UI content. Comes from config "UIContentDir".
-        public readonly string BaseUIDir = "KeeKeeUI/";
-        // The baseUIDir + skin name + "/"
-        // public readonly string staticDir = "KeeKeeUI/Default/";
-        public readonly string StaticDir = "";
-        // Portion added to API URL to indicate static content
-        public const string BaseUrl = "static/";
-        // The filesystem directory is added to to "skin" the UI. Comes from config "Skin".
-        // If not specified, "Default" is used.
-        public const string DefaultSkinName = "Default";
+        private readonly string BaseUIDir = "/";
+        // Filesystem base directory for standard content
+        // The baseUIDir + BaseUrl + "/"
+        private string StaticDir = "";
 
         // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; }
+        public string Prefix { get; set; } = "/static/";
 
         public RestHandlerStatic(KLogger<RestHandlerStatic> pLogger,
-                                IOptions<RestManagerConfig> pOptions,
+                                IOptions<RestManagerConfig> pRestConfig,
                                 RestManager pRestManager
-                                ) {
-            m_log = pLogger;
-            m_restConfig = pOptions;
+                                )
+        {
+            _log = pLogger;
+            m_restConfig = pRestConfig;
             _RestManager = pRestManager;
 
-            // m_baseUIDIR = "/.../bin/KeeKeeUI/"
             BaseUIDir = m_restConfig.Value.UIContentDir;
             if (!BaseUIDir.EndsWith("/")) BaseUIDir += "/";
 
-            // things referenced as static are from the skinning directory below the UI dir
-            // m_staticDir = "/.../bin/KeeKeeUI/Default/"
-            StaticDir = BaseUIDir;
-            if (m_restConfig.Value.Skin != null && m_restConfig.Value.Skin.Length > 0) {
-                string skinName = m_restConfig.Value.Skin;
-                skinName = skinName.Replace("/", "");  // skin names shouldn't fool with directories
-                skinName = skinName.Replace("\\", "");
-                skinName = skinName.Replace("..", "");
-                StaticDir = StaticDir + skinName;
-            }
+            StaticDir = Utilities.JoinFilePieces(BaseUIDir, Prefix);
             if (!StaticDir.EndsWith("/")) StaticDir += "/";
 
-            // Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "static/");
-            Prefix = BaseUrl;
-
-            m_log.Log(KLogLevel.RestDetail, "RestHandlerStatic: baseUIDir={0}, staticDir={1}, Prefix={2}",
+            _log.Log(KLogLevel.RestDetail, "baseUIDir={0}, staticDir={1}, Prefix={2}",
                      BaseUIDir, StaticDir, Prefix);
 
             _RestManager.RegisterListener(this);
@@ -84,41 +67,55 @@ namespace KeeKee.Rest {
         public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
-                                           CancellationToken pCancelToken) {
+                                           CancellationToken pCancelToken)
+        {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-
-                string absURL = pRequest.Url?.AbsolutePath.ToLower() ?? "";
+            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false)
+            {
+                string absURL = pRequest.Url?.AbsolutePath ?? "";
                 string afterString = absURL.Substring(Prefix.Length);
-                // prevent directory traversal attacks
-                afterString = afterString.Replace("\\", "");
-                afterString = afterString.Replace("..", "");
+
+                // remove any query string
+                int qPos = afterString.IndexOf("?");
+                if (qPos >= 0)
+                {
+                    afterString = afterString.Substring(0, qPos);
+                }
 
                 string filePath = Utilities.JoinFilePieces(StaticDir, afterString);
 
-                try {
-                    if (File.Exists(filePath)) {
-                        m_log.Log(KLogLevel.RestDetail, "RestHandlerStatic: Serving file {0}", filePath);
-                        _RestManager.DoSimpleResponse(pResponse, Utilities.GetMimeTypeFromFileName(filePath), () => {
+                try
+                {
+                    if (File.Exists(filePath))
+                    {
+                        _log.Log(KLogLevel.RestDetail, "Serving file {0}", filePath);
+                        _RestManager.DoSimpleResponse(pResponse, Utilities.GetMimeTypeFromFileName(filePath), () =>
+                        {
                             return File.ReadAllBytes(filePath);
-                        }
-                        );
-                    } else {
-                        m_log.Log(KLogLevel.RestDetail, "RestHandlerStatic: File not found {0}", filePath);
+                        });
+                    }
+                    else
+                    {
+                        _log.Log(KLogLevel.RestDetail, "File not found {0}", filePath);
                         _RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotFound, null);
                     }
-                } catch (Exception e) {
-                    m_log.Log(KLogLevel.Error, "RestHandlerStatic: Exception {0} serving file {1}", e.Message, filePath);
+                }
+                catch (Exception e)
+                {
+                    _log.Log(KLogLevel.Error, "Exception {0} serving file {1}", e.Message, filePath);
                     _RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
                 }
             }
         }
-        public void Dispose() {
+
+        public void Dispose()
+        {
             // _RestManager.UnregisterListener(this);
         }
 
         // Optional displayable interface to get parameters from. Not used here.
-        public OMVSD.OSDMap? GetDisplayable() {
+        public OMVSD.OSDMap? GetDisplayable()
+        {
             return null;
         }
     }

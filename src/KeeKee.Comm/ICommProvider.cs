@@ -27,7 +27,7 @@ namespace KeeKee.Comm {
 
         bool IsLoggedIn { get; }
 
-        Task<OMV.LoginResponseData?> DoLogin(LoginParams parms);
+        Task<OMV.LoginResponseData?> StartLogin(LoginParams parms);
 
         bool StartLogout();
 

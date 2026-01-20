@@ -18,10 +18,10 @@ public class RestManagerConfig {
     // Base URL for rest interfaces
     public string BaseURL { get; set; } = "http://localhost";
     // CSS file for rest display
-    public string CSSLocalURL { get; set; } = "/std/KeeKee.css";
+    public string CSSLocalURL { get; set; } = "/static/KeeKee.css";
     // Directory for static HTML content
     public string UIContentDir { get; set; } =
-            Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "./KeeKeeUI");
+            Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "web");
     public string APIBase { get; set; } = "/api";
     public string Skin { get; set; } = "Default";
 }

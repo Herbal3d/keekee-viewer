@@ -48,8 +48,8 @@ namespace KeeKee.Framework.Utilities {
         public static string JoinFilePieces(string first, string last) {
             // string separator = "" + Path.DirectorySeparatorChar;
             string separator = "/";     // .NET and mono just use the forward slash
-            string f = first.EndsWith(separator) ? first.Substring(first.Length - 1) : first;
-            string l = last.StartsWith(separator) ? last.Substring(1, last.Length - 1) : last;
+            string f = first.EndsWith(separator) ? first.Substring(0, first.Length - 1) : first;
+            string l = last.StartsWith(separator) ? last.Substring(1) : last;
             return f + separator + l;
         }
 

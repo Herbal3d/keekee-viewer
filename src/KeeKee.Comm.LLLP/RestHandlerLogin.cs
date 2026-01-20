@@ -63,6 +63,7 @@ namespace KeeKee.Rest {
 
             if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
                 // TODO: Implement GET handling if needed
+                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
                 m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
@@ -77,7 +78,7 @@ namespace KeeKee.Rest {
                     LoginParams loginParams = new LoginParams();
                     loginParams.FromOSD(body);
 
-                    var result = await m_commProvider.DoLogin(loginParams);
+                    var result = await m_commProvider.StartLogin(loginParams);
 
                     OMVSD.OSDMap respMap = new OMVSD.OSDMap();
                     if (result != null && result.Success) {

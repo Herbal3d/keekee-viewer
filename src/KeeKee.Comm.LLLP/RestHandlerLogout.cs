@@ -61,6 +61,7 @@ namespace KeeKee.Rest {
 
             if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
                 // TODO: Implement GET handling if needed
+                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
                 m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));

@@ -78,6 +78,21 @@ namespace KeeKee.Comm.LLLP {
         // others, like avatar control, can use a little locking.
         private Object m_opLock = new Object();
 
+        private enum LoginStateCode {
+            NotLoggedIn,
+            ShouldLogIn,
+            LogInFailed,
+            LoggingIn,
+            LoggedIn,
+            ShouldLogOut,
+            LoggingOut
+        }
+        private LoginStateCode m_loginState = LoginStateCode.NotLoggedIn;
+
+        public bool IsConnected { get; private set; } = false;
+
+        public bool IsLoggedIn { get; private set; } = false;
+
         /// <summary>
         /// Flag saying we're switching simulator connections. This would suppress things like teleport
         /// and certain status indications.
@@ -91,10 +106,10 @@ namespace KeeKee.Comm.LLLP {
         // The logging in and out flags are true when we're doing that. Use to make sure
         // we don't try logging in or out again.
         // The module flag 'm_connected' is set true when logged in and connected.
-        protected bool m_shouldBeLoggedIn { get; set; } = false; // true if we should be logged in
-        protected LoginParams? m_loginParams { get; set; } // parameters to use when logging in
-        protected bool m_isLoggingIn { get; set; } = false;  // true if we are in the process of loggin in
-        protected bool m_isLoggingOut { get; set; } = false; // true if we are in the process of logging out
+        // protected bool m_shouldBeLoggedIn { get; set; } = false; // true if we should be logged in
+        // protected LoginParams? m_loginParams { get; set; } // parameters to use when logging in
+        // protected bool m_isLoggingIn { get; set; } = false;  // true if we are in the process of loggin in
+        // protected bool m_isLoggingOut { get; set; } = false; // true if we are in the process of logging out
 
         // m_loginGrid has the displayable name. LoggedInGridName has cannoicalized name for app use.
         protected string m_loginGrid { get; set; } = "unknown";
@@ -158,32 +173,36 @@ namespace KeeKee.Comm.LLLP {
             InitConnectionFramework();
 
             while (!cancellationToken.IsCancellationRequested) {
-                if (m_shouldBeLoggedIn && !IsLoggedIn) {
-                    // we should be logged in and we are not
-                    if (!m_isLoggingIn) {
-                        await StartLogin();
-                    }
-                }
-                if (!cancellationToken.IsCancellationRequested && !IsLoggedIn && IsConnected) {
-                    // if we're not supposed to be running, disconnect everything
-                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
-                    GridClient.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
-                    IsConnected = false;
-                }
-                if (!cancellationToken.IsCancellationRequested || (!m_shouldBeLoggedIn && IsLoggedIn)) {
-                    // we shouldn't be logged in but it looks like we are
-                    m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shouldn't be logged in");
-                    if (!m_isLoggingIn && !m_isLoggingOut) {
-                        // not in logging transistion. start the logout process
-                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Starting logout process");
-                        GridClient.Network.Logout();
-                        m_isLoggingIn = false;
-                        m_isLoggingOut = true;
+                switch (m_loginState) {
+                    case LoginStateCode.NotLoggedIn:
+                        // we are not logged in and are idle
+                        IsConnected = false;
                         IsLoggedIn = false;
-                        m_shouldBeLoggedIn = false;
-                    }
+                        break;
+                    case LoginStateCode.LoggingIn:
+                        // we are in the process of logging in
+                        break;
+                    case LoginStateCode.LogInFailed:
+                        // we are in the process of logging in
+                        break;
+                    case LoginStateCode.LoggedIn:
+                        // we are logged in and active
+                        IsConnected = true;
+                        IsLoggedIn = true;
+                        break;
+                    case LoginStateCode.ShouldLogOut:
+                        // Someone requested a logout
+                        m_loginState = LoginStateCode.LoggingOut;
+                        IsConnected = false;
+                        IsLoggedIn = false;
+                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
+                        GridClient.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
+                        break;
+                    case LoginStateCode.LoggingOut:
+                        IsConnected = false;
+                        IsLoggedIn = false;
+                        break;
                 }
-                // TODO: update our login parameters for the UI
 
                 await Task.Delay(500, cancellationToken);
             }
@@ -191,44 +210,6 @@ namespace KeeKee.Comm.LLLP {
 
             m_log.Log(KLogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
         }
-
-        /* OLD CODE THAT PROBABLY CAN BE DELETED
-        /// <summary>
-        /// The statistics ParameterSet has some delegated values that are only valid
-        /// when logging in, etc. When the values are asked for, this routine is called
-        /// delegate which calculates the current values of the statistic.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        protected OMVSD.OSD RuntimeValueFetch(string key) {
-            OMVSD.OSD ret = null;
-            try {
-                if ((GridClient != null) && (IsConnected && m_isLoggedIn)) {
-                    switch (key) {
-                        case FIELDCURRENTSIM:
-                            ret = new OMVSD.OSDString(GridClient.Network.CurrentSim.Name);
-                            break;
-                        case FIELDCURRENTGRID:
-                            ret = new OMVSD.OSDString(m_loginGrid);
-                            break;
-                        case FIELDPOSITIONX:
-                            ret = new OMVSD.OSDString(GridClient.Self.SimPosition.X.ToString());
-                            break;
-                        case FIELDPOSITIONY:
-                            ret = new OMVSD.OSDString(GridClient.Self.SimPosition.Y.ToString());
-                            break;
-                        case FIELDPOSITIONZ:
-                            ret = new OMVSD.OSDString(GridClient.Self.SimPosition.Z.ToString());
-                            break;
-                    }
-                    if (ret != null) return ret;
-                }
-            } catch (Exception e) {
-                m_log.Log(KLogLevel.DCOMM, "RuntimeValueFetch: failure getting {0}: {1}", key, e.ToString());
-            }
-            return new OMVSD.OSDString("");
-        }
-        */
 
         protected void InitConnectionFramework() {
             // Initialize the SL client
@@ -306,7 +287,7 @@ namespace KeeKee.Comm.LLLP {
             gc.Terrain.LandPatchReceived -= Terrain_LandPatchReceived;
         }
 
-        // ICommProvider.DoLogin()
+        // ICommProvider.StartLogin()
         /// <summary>
         /// Called by the REST handler to connect to a simulator.
         /// The login parameters are passed in which is the autorization info.
@@ -314,16 +295,13 @@ namespace KeeKee.Comm.LLLP {
         /// </summary>
         /// <param name="pLoginParams"></param>
         /// <returns></returns>
-        public async Task<OMV.LoginResponseData?> DoLogin(LoginParams pLoginParams) {
+        public async Task<OMV.LoginResponseData?> StartLogin(LoginParams pLoginParams) {
             // Are we already logged in?
-            if (IsLoggedIn || m_isLoggingIn) {
+            if (IsLoggedIn) {
                 return null;
             }
 
-            m_loginParams = pLoginParams;
-            m_shouldBeLoggedIn = true;
-
-            var loginResponse = await StartLogin();
+            var loginResponse = await DoLogin(pLoginParams);
 
             return loginResponse;
         }
@@ -331,7 +309,7 @@ namespace KeeKee.Comm.LLLP {
         // ICommProvider.StartLogout()
         public virtual bool StartLogout() {
             m_log.Log(KLogLevel.DCOMMDETAIL, "Disconnect request -- logout and disconnect");
-            m_shouldBeLoggedIn = false;
+            m_loginState = LoginStateCode.ShouldLogOut;
             return true;
         }
 
@@ -373,18 +351,16 @@ namespace KeeKee.Comm.LLLP {
             return ret;
         }
 
-        // ICommProvider.StartLogin()
-        public async Task<OMV.LoginResponseData?> StartLogin() {
-            if (m_loginParams == null) {
+        public async Task<OMV.LoginResponseData?> DoLogin(LoginParams pLoginParams) {
+            if (pLoginParams == null) {
                 m_log.Log(KLogLevel.DBADERROR, "StartLogin: no login parameters");
                 return null;
             }
-            m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", m_loginParams.FirstName, m_loginParams.LastName);
-            m_isLoggingIn = true;
+            m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", pLoginParams.FirstName, pLoginParams.LastName);
             OMV.LoginParams loginParams = GridClient.Network.DefaultLoginParams(
-                m_loginParams.FirstName,
-                m_loginParams.LastName,
-                m_loginParams.Password,
+                pLoginParams.FirstName,
+                pLoginParams.LastName,
+                pLoginParams.Password,
                 KeeKeeConfig.Value.AppName,
                 KeeKeeConfig.Value.AppVersion
             );
@@ -393,7 +369,7 @@ namespace KeeKee.Comm.LLLP {
             // the format that we must pass is "uri:sim&x&y&z" or the strings "home" or "last"
             // The user inputs either "home", "last", "sim" or "sim/x/y/z"
             string loginSetting = "";
-            string startLoc = m_loginParams.StartLocation ?? "";
+            string startLoc = pLoginParams.StartLocation ?? "";
             if (!String.IsNullOrEmpty(startLoc)) {
                 try {
                     // User specified a sim. In the form of "simname/x/y/z" where the coords are optional.
@@ -435,8 +411,7 @@ namespace KeeKee.Comm.LLLP {
             if (loginParams.URI == null) {
                 m_log.Log(KLogLevel.DBADERROR, "COULD NOT FIND URL OF GRID. Grid=" + m_loginGrid);
                 m_loginMsg = "Unknown Grid name";
-                m_isLoggingIn = false;
-                m_shouldBeLoggedIn = false;
+                m_loginState = LoginStateCode.LogInFailed;
             } else {
                 try {
                     OMV.LoginResponseData response = await GridClient.Network.LoginWithResponseAsync(loginParams, m_cancellationToken);
@@ -444,20 +419,18 @@ namespace KeeKee.Comm.LLLP {
                         m_log.Log(KLogLevel.DCOMM, "Login successful: {0}", response.Message);
                         // m_isConnected = true;
                         IsLoggedIn = true;
-                        m_isLoggingIn = false;
+                        m_loginState = LoginStateCode.LoggedIn;
                         m_loginMsg = response.Message;
                         Comm_OnLoggedIn();
                     } else {
                         m_log.Log(KLogLevel.DCOMM, "Login failed: {0}", response.Message);
-                        m_isLoggingIn = false;
-                        m_shouldBeLoggedIn = false;
+                        m_loginState = LoginStateCode.LogInFailed;
                         m_loginMsg = response.Message;
                     }
                     return response;
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.DBADERROR, "BeginLogin exception: " + e.ToString());
-                    m_isLoggingIn = false;
-                    m_shouldBeLoggedIn = false;
+                    m_loginState = LoginStateCode.LogInFailed;
                 }
             }
             return null;
@@ -466,6 +439,7 @@ namespace KeeKee.Comm.LLLP {
         public virtual void Network_Disconnected(object? sender, OMV.DisconnectedEventArgs args) {
             this.m_statNetDisconnected.Event();
             m_log.Log(KLogLevel.DCOMM, "Disconnected");
+            m_loginState = LoginStateCode.NotLoggedIn;
             IsConnected = false;
         }
 
@@ -480,10 +454,6 @@ namespace KeeKee.Comm.LLLP {
             GridClient.Parcels.RequestAllSimParcels(GridClient.Network.CurrentSim, false, 100);
         }
         */
-
-        public bool IsConnected { get; private set; } = false;
-
-        public bool IsLoggedIn { get; private set; } = false;
 
         // ===============================================================
         public virtual void Network_SimConnected(object? sender, OMV.SimConnectedEventArgs args) {

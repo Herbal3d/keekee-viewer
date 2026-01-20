@@ -38,7 +38,7 @@ namespace KeeKee.Framework.WorkQueue {
         }
 
         public void Register(IWorkQueue wq) {
-            m_log.Log(KLogLevel.DINITDETAIL, "WorkQueueManager: registering queue {0}", wq.Name);
+            m_log.Log(KLogLevel.DINITDETAIL, "registering queue {0}", wq.Name);
             lock (m_queues) m_queues.Add(wq);
         }
 

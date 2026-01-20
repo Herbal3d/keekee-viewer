@@ -101,7 +101,7 @@ namespace KeeKee {
                      services.AddSingleton<Grids>();
                      services.AddSingleton<UserPersistantParams>();
                      services.AddSingleton<WorkQueueManager>();
-                     services.AddHostedService<WorkQueueManager>(); // WorkQueueManager must be started before any WorkQueues
+                     services.AddHostedService(sp => sp.GetRequiredService<WorkQueueManager>());
                      services.AddTransient<BasicWorkQueue>();
                      services.AddTransient<OnDemandWorkQueue>();
                      services.AddTransient<IEntityCollection, EntityCollection>();
@@ -114,10 +114,10 @@ namespace KeeKee {
                      // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
                      services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subSectionName));
                      services.AddTransient<RestHandlerFactory, RestHandlerFactory>();
-                     services.AddTransient<RestHandlerStd, RestHandlerStd>();
+                     services.AddTransient<RestHandlerUI, RestHandlerUI>();
                      services.AddTransient<RestHandlerStatic, RestHandlerStatic>();
                      services.AddSingleton<RestManager>();
-                     services.AddHostedService<RestManager>();
+                     services.AddHostedService(sp => sp.GetRequiredService<RestManager>());
 
                      // Communication services
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
