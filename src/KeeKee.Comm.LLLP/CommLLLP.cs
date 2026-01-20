@@ -29,10 +29,10 @@ namespace KeeKee.Comm.LLLP {
     public class CommLLLP : BackgroundService, ICommProvider {
         private KLogger<CommLLLP> m_log;
 
-        public IOptions<KeeKeeConfig> KeeKeeConfig { get; set; }
-        public IOptions<CommConfig> ConnectionConfig { get; set; }
-        public IOptions<AssetConfig> AssetsConfig { get; set; }
-        public IOptions<LLAgentConfig> LLAgentConfig { get; set; }
+        private IOptions<KeeKeeConfig> m_KeeKeeConfig { get; set; }
+        private IOptions<CommConfig> m_CommConfig { get; set; }
+        private IOptions<AssetConfig> m_AssetsConfig { get; set; }
+        private IOptions<LLAgentConfig> m_LLAgentConfig { get; set; }
 
         private CancellationToken m_cancellationToken;
 
@@ -127,9 +127,9 @@ namespace KeeKee.Comm.LLLP {
 
         public CommLLLP(KLogger<CommLLLP> pLog,
                         IOptions<KeeKeeConfig> pKeeKeeConfig,
-                        IOptions<CommConfig> pConnectionConfig,
-                        IOptions<AssetConfig> pAssetsConfig,
-                        IOptions<LLAgentConfig> pLLAgentConfig,
+                        IOptions<CommConfig> pm_CommConfig,
+                        IOptions<AssetConfig> pm_AssetsConfig,
+                        IOptions<LLAgentConfig> pm_LLAgentConfig,
                         UserPersistantParams pUserParams,
                         LLGridClient pGridClient,
                         Grids pGrids,
@@ -137,10 +137,10 @@ namespace KeeKee.Comm.LLLP {
                         BasicWorkQueue pWaitTilLater,
                         IWorld pWorld) {
             m_log = pLog;
-            KeeKeeConfig = pKeeKeeConfig;
-            ConnectionConfig = pConnectionConfig;
-            AssetsConfig = pAssetsConfig;
-            LLAgentConfig = pLLAgentConfig;
+            m_KeeKeeConfig = pKeeKeeConfig;
+            m_CommConfig = pm_CommConfig;
+            m_AssetsConfig = pm_AssetsConfig;
+            m_LLAgentConfig = pm_LLAgentConfig;
             m_userPersistantParams = pUserParams;
             GridList = pGrids;
             InstanceFactory = pInstanceFactory;
@@ -192,11 +192,19 @@ namespace KeeKee.Comm.LLLP {
                         break;
                     case LoginStateCode.ShouldLogOut:
                         // Someone requested a logout
-                        m_loginState = LoginStateCode.LoggingOut;
-                        IsConnected = false;
-                        IsLoggedIn = false;
-                        m_log.Log(KLogLevel.DCOMM, "KeepLoggedIn: Shutting down the network");
-                        GridClient.Network.Shutdown(OpenMetaverse.NetworkManager.DisconnectType.ClientInitiated);
+                        switch (m_loginState) {
+                            case LoginStateCode.LoggedIn:
+                                m_loginState = LoginStateCode.LoggingOut;
+                                IsConnected = false;
+                                IsLoggedIn = false;
+                                m_log.Log(KLogLevel.DCOMM, "ShouldLogOut request. Logging out from LoggedIn state");
+                                GridClient.Network.Logout();
+                                break;
+                            default:
+                                m_log.Log(KLogLevel.DCOMM, "ShouldLogOut request. Logging out from {0} state", m_loginState.ToString());
+                                m_loginState = LoginStateCode.LoggingOut;
+                                break;
+                        }
                         break;
                     case LoginStateCode.LoggingOut:
                         IsConnected = false;
@@ -217,7 +225,7 @@ namespace KeeKee.Comm.LLLP {
                 var gc = GridClient;
                 // GridClient.Settings.ENABLE_CAPS = true;
                 gc.Settings.ENABLE_SIMSTATS = true;
-                gc.Settings.MULTIPLE_SIMS = ConnectionConfig.Value.MultipleSims;
+                gc.Settings.MULTIPLE_SIMS = m_CommConfig.Value.MultipleSims;
                 gc.Settings.ALWAYS_DECODE_OBJECTS = true;
                 gc.Settings.ALWAYS_REQUEST_OBJECTS = true;
                 gc.Settings.OBJECT_TRACKING = true; // We use our own object tracking system
@@ -230,12 +238,12 @@ namespace KeeKee.Comm.LLLP {
                 gc.Settings.USE_INTERPOLATION_TIMER = false;  // don't need the library helping
                 gc.Settings.SEND_AGENT_UPDATES = true;
                 gc.Self.Movement.AutoResetControls = false;
-                gc.Self.Movement.UpdateInterval = ConnectionConfig.Value.MovementUpdateInterval;
+                gc.Self.Movement.UpdateInterval = m_CommConfig.Value.MovementUpdateInterval;
                 gc.Settings.DISABLE_AGENT_UPDATE_DUPLICATE_CHECK = false;
                 gc.Settings.USE_ASSET_CACHE = false;
                 gc.Settings.PIPELINE_REQUEST_TIMEOUT = 120 * 1000;
-                gc.Settings.ASSET_CACHE_DIR = AssetsConfig.Value.CacheDir;
-                OMV.Settings.RESOURCE_DIR = AssetsConfig.Value.OMVResources;
+                gc.Settings.ASSET_CACHE_DIR = m_AssetsConfig.Value.CacheDir;
+                OMV.Settings.RESOURCE_DIR = m_AssetsConfig.Value.OMVResources;
                 // Crank up the throttle on texture downloads
                 gc.Throttle.Total = 20000000.0f;
                 gc.Throttle.Texture = 2446000.0f;
@@ -361,8 +369,8 @@ namespace KeeKee.Comm.LLLP {
                 pLoginParams.FirstName,
                 pLoginParams.LastName,
                 pLoginParams.Password,
-                KeeKeeConfig.Value.AppName,
-                KeeKeeConfig.Value.AppVersion
+                m_KeeKeeConfig.Value.AppName,
+                KeeKeeConfig.InformationalVersion
             );
 
             // Select sim in the grid
@@ -796,7 +804,7 @@ namespace KeeKee.Comm.LLLP {
                 if (!rcontext.Entities.TryGetEntity(avatarEntityName, out updatedEntity)) {
                     m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: creating avatar {0} {1} ({2})",
                         args.Avatar.FirstName, args.Avatar.LastName, args.Avatar.ID);
-                    updatedEntity = InstanceFactory.CreateLLAvatar(GridClient, LLAgentConfig);
+                    updatedEntity = InstanceFactory.CreateLLAvatar(GridClient, m_LLAgentConfig);
                     updateFlags |= UpdateCodes.New;
                 }
                 if (updatedEntity != null) {

@@ -1,0 +1,215 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "KeeKee LLLP Login API",
+    "description": "REST API endpoint for logging into a virtual world using the LibreMetaverse LLLP (Low Level Login Protocol) communication provider.",
+    "version": "1.0.0",
+    "license": {
+      "name": "Mozilla Public License 2.0",
+      "url": "http://mozilla.org/MPL/2.0/"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:9144/api",
+      "description": "Default local development server"
+    }
+  ],
+  "paths": {
+    "/LLLP/login": {
+      "post": {
+        "summary": "Login to a virtual world",
+        "description": "Initiates a login session to a virtual world grid using the provided credentials. The request body can be sent as either JSON or application/x-www-form-urlencoded format.",
+        "operationId": "loginLLLP",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginParams"
+              },
+              "example": {
+                "UserName": "user.name",
+                "Password": "secret123",
+                "AuthURL": "https://grid.example.com:8002",
+                "FirstName": "User",
+                "LastName": "Name",
+                "StartLocation": "last",
+                "HomeURL": "https://grid.example.com:8002"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginParams"
+              },
+              "example": "UserName=user.name&Password=secret123&AuthURL=https://grid.example.com:8002&FirstName=User&LastName=Name&StartLocation=last&HomeURL=https://grid.example.com:8002"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login attempt completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LoginSuccess"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LoginFailure"
+                    }
+                  ]
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Successful login",
+                    "value": {
+                      "result": "success",
+                      "message": "Login successful",
+                      "session_id": "12345678-1234-1234-1234-123456789abc"
+                    }
+                  },
+                  "failure": {
+                    "summary": "Failed login",
+                    "value": {
+                      "result": "failure",
+                      "message": "Login failed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during login processing",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "GET method not implemented (POST only)",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoginParams": {
+        "type": "object",
+        "properties": {
+          "UserName": {
+            "type": "string",
+            "description": "Full username in the format 'firstname.lastname' or other grid-specific format",
+            "example": "user.name"
+          },
+          "Password": {
+            "type": "string",
+            "format": "password",
+            "description": "User's password for authentication",
+            "example": "secret123"
+          },
+          "AuthURL": {
+            "type": "string",
+            "format": "uri",
+            "description": "Authentication URL for the grid login service",
+            "example": "https://grid.example.com:8002"
+          },
+          "FirstName": {
+            "type": "string",
+            "description": "First name of the avatar/user",
+            "example": "User"
+          },
+          "LastName": {
+            "type": "string",
+            "description": "Last name of the avatar/user",
+            "example": "Name"
+          },
+          "StartLocation": {
+            "type": "string",
+            "description": "Starting location for the avatar. Common values: 'home', 'last', or a region URI",
+            "default": "last",
+            "example": "last"
+          },
+          "HomeURL": {
+            "type": "string",
+            "format": "uri",
+            "description": "Home URL for the grid (used in hypergrid contexts)",
+            "example": "https://grid.example.com:8002"
+          }
+        },
+        "description": "Login parameters for authenticating with a virtual world grid. All fields are optional but at minimum UserName, Password, and AuthURL are typically required for successful login."
+      },
+      "LoginSuccess": {
+        "type": "object",
+        "required": [
+          "result",
+          "message",
+          "session_id"
+        ],
+        "properties": {
+          "result": {
+            "type": "string",
+            "enum": [
+              "success"
+            ],
+            "description": "Indicates successful login"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable success message",
+            "example": "Login successful"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique session identifier for the logged-in session",
+            "example": "12345678-1234-1234-1234-123456789abc"
+          }
+        }
+      },
+      "LoginFailure": {
+        "type": "object",
+        "required": [
+          "result",
+          "message"
+        ],
+        "properties": {
+          "result": {
+            "type": "string",
+            "enum": [
+              "failure"
+            ],
+            "description": "Indicates failed login"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure message",
+            "example": "Login failed"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Authentication and session management operations"
+    }
+  ]
+}

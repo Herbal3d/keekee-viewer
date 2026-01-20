@@ -11,7 +11,6 @@
 
 using System.Net;
 
-using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
 
@@ -20,15 +19,13 @@ using Microsoft.Extensions.Options;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest
-{
+namespace KeeKee.Rest {
 
-    public class RestHandlerStatic : IRestHandler
-    {
+    public class RestHandlerStatic : IRestHandler {
 
-        private readonly KLogger<RestHandlerStatic> _log;
+        private readonly KLogger<RestHandlerStatic> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager _RestManager;
+        private readonly RestManager m_RestManager;
 
         /// <summary>
         /// API URL to filesystem base directory mapping
@@ -46,11 +43,10 @@ namespace KeeKee.Rest
         public RestHandlerStatic(KLogger<RestHandlerStatic> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 RestManager pRestManager
-                                )
-        {
-            _log = pLogger;
+                                ) {
+            m_log = pLogger;
             m_restConfig = pRestConfig;
-            _RestManager = pRestManager;
+            m_RestManager = pRestManager;
 
             BaseUIDir = m_restConfig.Value.UIContentDir;
             if (!BaseUIDir.EndsWith("/")) BaseUIDir += "/";
@@ -58,64 +54,52 @@ namespace KeeKee.Rest
             StaticDir = Utilities.JoinFilePieces(BaseUIDir, Prefix);
             if (!StaticDir.EndsWith("/")) StaticDir += "/";
 
-            _log.Log(KLogLevel.RestDetail, "baseUIDir={0}, staticDir={1}, Prefix={2}",
+            m_log.Log(KLogLevel.RestDetail, "baseUIDir={0}, staticDir={1}, Prefix={2}",
                      BaseUIDir, StaticDir, Prefix);
 
-            _RestManager.RegisterListener(this);
+            m_RestManager.RegisterListener(this);
         }
 
         public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
-                                           CancellationToken pCancelToken)
-        {
+                                           CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false)
-            {
+            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
                 string absURL = pRequest.Url?.AbsolutePath ?? "";
                 string afterString = absURL.Substring(Prefix.Length);
 
                 // remove any query string
                 int qPos = afterString.IndexOf("?");
-                if (qPos >= 0)
-                {
+                if (qPos >= 0) {
                     afterString = afterString.Substring(0, qPos);
                 }
 
                 string filePath = Utilities.JoinFilePieces(StaticDir, afterString);
 
-                try
-                {
-                    if (File.Exists(filePath))
-                    {
-                        _log.Log(KLogLevel.RestDetail, "Serving file {0}", filePath);
-                        _RestManager.DoSimpleResponse(pResponse, Utilities.GetMimeTypeFromFileName(filePath), () =>
-                        {
+                try {
+                    if (File.Exists(filePath)) {
+                        m_log.Log(KLogLevel.RestDetail, "Serving file {0}", filePath);
+                        m_RestManager.DoSimpleResponse(pResponse, Utilities.GetMimeTypeFromFileName(filePath), () => {
                             return File.ReadAllBytes(filePath);
                         });
+                    } else {
+                        m_log.Log(KLogLevel.RestDetail, "File not found {0}", filePath);
+                        m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotFound, null);
                     }
-                    else
-                    {
-                        _log.Log(KLogLevel.RestDetail, "File not found {0}", filePath);
-                        _RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotFound, null);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _log.Log(KLogLevel.Error, "Exception {0} serving file {1}", e.Message, filePath);
-                    _RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
+                } catch (Exception e) {
+                    m_log.Log(KLogLevel.Error, "Exception {0} serving file {1}", e.Message, filePath);
+                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
                 }
             }
         }
 
-        public void Dispose()
-        {
-            // _RestManager.UnregisterListener(this);
+        public void Dispose() {
+            // m_RestManager.UnregisterListener(this);
         }
 
         // Optional displayable interface to get parameters from. Not used here.
-        public OMVSD.OSDMap? GetDisplayable()
-        {
+        public OMVSD.OSDMap? GetDisplayable() {
             return null;
         }
     }

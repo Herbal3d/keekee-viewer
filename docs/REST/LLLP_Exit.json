@@ -1,0 +1,90 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "KeeKee LLLP Exit API",
+    "description": "REST API endpoint for logging out and exiting from a virtual world session using the LibreMetaverse LLLP (Low Level Login Protocol) communication provider.",
+    "version": "1.0.0",
+    "license": {
+      "name": "Mozilla Public License 2.0",
+      "url": "http://mozilla.org/MPL/2.0/"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:9144/api",
+      "description": "Default local development server"
+    }
+  ],
+  "paths": {
+    "/LLLP/exit": {
+      "post": {
+        "summary": "Exit/logout from virtual world session",
+        "description": "Initiates a logout process to disconnect from the current virtual world session. This endpoint does not require any parameters. On success, it returns an HTML response indicating the logout was accepted. The logout process is asynchronous and will disconnect the user from the grid.",
+        "operationId": "exitLLLP",
+        "requestBody": {
+          "required": false,
+          "description": "No request body is required or processed for this endpoint",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Empty object or no body"
+              },
+              "example": {}
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "description": "Empty or no parameters"
+              },
+              "example": ""
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exit/logout request accepted. The logout process has been initiated. Response is HTML formatted with minimal content.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\r\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n<head></head><body></body></html>\r\n"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during logout processing. Response body contains the exception message.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Exception message details"
+              }
+            }
+          },
+          "501": {
+            "description": "GET method not implemented (POST only)",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Authentication and session management operations"
+    }
+  ]
+}

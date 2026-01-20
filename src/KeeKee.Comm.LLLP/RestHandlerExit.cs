@@ -10,7 +10,7 @@
 // limitations under the License.
 
 using System.Net;
-
+using System.Text;
 using KeeKee.Comm;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
@@ -67,8 +67,11 @@ namespace KeeKee.Rest {
 
                 try {
                     m_commProvider.StartLogout();
+                    m_RestManager.DoSimpleResponse(pResponse, null, null);
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.RestDetail, "Exit exception: " + e.ToString());
+                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError,
+                                        () => Encoding.UTF8.GetBytes(e.Message));
                 }
             }
         }

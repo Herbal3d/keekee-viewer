@@ -1,0 +1,31 @@
+<Project>
+  <PropertyGroup>
+    <MajorVersion>0</MajorVersion>
+    <MinorVersion>2</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
+    <GitHash Condition="'$(GitHash)' == ''">unknown</GitHash>
+    <BuildTimestamp>$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</BuildTimestamp>
+    <InformationalVersion>$(VersionPrefix)+$(GitHash).$(BuildTimestamp)</InformationalVersion>
+  </PropertyGroup>
+
+  <!-- Embed the values into the assembly -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>VersionPrefix</_Parameter1>
+      <_Parameter2>$(VersionPrefix)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>GitHash</_Parameter1>
+      <_Parameter2>$(GitHash)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BuildTimestamp</_Parameter1>
+      <_Parameter2>$(BuildTimestamp)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>InformationalVersion</_Parameter1>
+      <_Parameter2>$(InformationalVersion)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+</Project>
