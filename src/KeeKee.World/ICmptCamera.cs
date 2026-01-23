@@ -42,6 +42,8 @@ namespace KeeKee.World {
         public double Zoom { get; set; }
 
         public double Far { get; set; }
+
+        public void UpdateCamera(OMV.Vector3d position, OMV.Quaternion heading, double far);
     }
 }
 

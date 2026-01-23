@@ -188,7 +188,8 @@ namespace KeeKee.View {
                 // tell the agent the camera moved if it cares
                 // This is an outgoing message that tells the world where the camera is
                 //   pointing so the server can do interest management
-                m_trackedAgent.UpdateCamera(cam.GlobalPosition, cam.Heading, cam.Far);
+                ICmptCamera? cmptCam = m_trackedAgent.Cmpt<ICmptCamera>();
+                cmptCam?.UpdateCamera(cam.GlobalPosition, cam.Heading, cam.Far);
             }
         }
 
@@ -320,6 +321,7 @@ namespace KeeKee.View {
             try {
                 if (m_mainCamera != null && m_mainCamera.AssociatedAgent != null) {
                     IEntity agnt = m_mainCamera.AssociatedAgent;
+                    var cmptLoc = agnt.Cmpt<ICmptLocation>();
                     /*
                     // note: coordinates are in LL form: Z up
                     OMV.Vector3 cameraOffset = new OMV.Vector3(-m_agentCameraBehind, 0, m_agentCameraAbove);
@@ -336,7 +338,7 @@ namespace KeeKee.View {
                     // OMV.Vector3 cameraOffset = new OMV.Vector3(0, m_agentCameraBehind, m_agentCameraAbove);
                     OMV.Vector3 cameraOffset = new OMV.Vector3(m_agentCameraBehind, 0, m_agentCameraAbove);
                     // OMV.Vector3 rotatedOffset = Utilities.RotateVector(agnt.Heading, cameraOffset);
-                    OMV.Vector3 rotatedOffset = cameraOffset * OMV.Quaternion.Inverse(agnt.Heading);
+                    OMV.Vector3 rotatedOffset = cameraOffset * OMV.Quaternion.Inverse(cmptLoc.Heading);
                     OMV.Vector3d globalRotatedOffset = new OMV.Vector3d(-rotatedOffset.X, rotatedOffset.Y, rotatedOffset.Z);
                     // 'kludgeOffset' exists because the above calculation doesn't give the right camera position
                     // Don't know why, but this extra offset is needed
@@ -344,12 +346,12 @@ namespace KeeKee.View {
                     // but still some funny offset is needed.
                     // OMV.Vector3d kludgeOffset = new OMV.Vector3d(10d, 10d, 0d);
                     OMV.Vector3d kludgeOffset = new OMV.Vector3d(0d, 0d, -10d);
-                    OMV.Vector3d desiredCameraPosition = agnt.GlobalPosition + globalRotatedOffset + kludgeOffset;
+                    OMV.Vector3d desiredCameraPosition = cmptLoc.GlobalPosition + globalRotatedOffset + kludgeOffset;
 
                     m_log.Log(KLogLevel.DVIEWDETAIL, "UpdateMainCameraToAgentTracking: offset={0}, goffset={1}, cpos={2}, apos={3}",
-                        cameraOffset, globalRotatedOffset, desiredCameraPosition, agnt.GlobalPosition);
+                        cameraOffset, globalRotatedOffset, desiredCameraPosition, cmptLoc.GlobalPosition);
 
-                    m_mainCamera.Update(desiredCameraPosition, agnt.Heading);
+                    m_mainCamera.Update(desiredCameraPosition, cmptLoc.Heading);
                 }
             } catch (Exception e) {
             }

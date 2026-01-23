@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using KeeKee.Framework.Logging;
+using OpenMetaverse;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
@@ -89,6 +90,10 @@ namespace KeeKee.World.LL {
         }
 
         public void Dispose() {
+        }
+
+        public void UpdateCamera(Vector3d position, Quaternion heading, double far) {
+            throw new NotImplementedException();
         }
     }
 }
