@@ -135,6 +135,25 @@ StringBuffer.prototype.append = function(str) {
 StringBuffer.prototype.toString = function() {
     return this.__strings__.join("");
 }
+
+// ===========================================
+// Log debug message to the DEBUGG div if it exists
+// If classname is specified, add that class to the new div
+function LogDebug(msg, classname) {
+    const debugg = document.getElementById("DEBUGG");
+    if (debugg != undefined) {
+        const newline = document.createElement("div");
+        newline.appendChild(document.createTextNode(msg));
+        if (classname != undefined) {
+            newline.setAttribute("class", classname);
+        }
+        debugg.appendChild(newline);
+        if (debugg.childElementCount > 20) {
+            debugg.removeChild(debugg.firstChild);
+        }
+    }
+}
+
 // ===========================================
 // Class for keeping and displaying trending data.
 // A new instance of the class is created and instance.AddPoint(pnt)
@@ -148,35 +167,40 @@ StringBuffer.prototype.toString = function() {
 // Set format before inserting the display html.
 // Look at the default example below for the options.
 // Uses 'sparklines' so you must include that script library.
-TrendData.prototype.maxDataPoints = 100;
-TrendData.prototype.dataPoints = [];
-function TrendData(numberOfPoints) {
-    this.maxDataPoints = numberOfPoints;
-    for (var ii=0; ii<this.maxDataPoints; ii++) this.dataPoints[ii] = 0;
-}
-TrendData.prototype.AddPoint = function(pnt) {
-    for (var ii=this.maxDataPoints-1; ii>0; ii--) {
-        this.dataPoints[ii] = this.dataPoints[ii-1];
+class TrendData {
+    maxDataPoints = 100;
+    dataPoints = [];
+    formatParms = {
+        type: 'line', // line (default), bar, tristate, discrete, bullet, pie or box
+        width: 'auto',      // 'auto' or any css width spec
+        height: 'auto',     // 'auto' or any valid css height spec
+        lineColor: 'black', // Used by line and discrete charts
+        // chartRangeMin: '0', // min value for range, default to min value
+        // chardRangeMax: '0', // max value for range, default to max value
+        // composite: 'true',  // true to overwrite existing chart (chart on chart)
+        fillColor: 'false'  // Set to false to disable fill.
+    };
+
+    constructor(numberOfPoints) {
+        this.maxDataPoints = numberOfPoints;
+        for (var ii=0; ii<this.maxDataPoints; ii++) this.dataPoints[ii] = 0;
     }
-    this.dataPoints[0] = pnt;
+    AddPoint(pnt) {
+        for (var ii=this.maxDataPoints-1; ii>0; ii--) {
+            this.dataPoints[ii] = this.dataPoints[ii-1];
+        }
+        this.dataPoints[0] = pnt;
+    }
+    UpdateDisplay(id) {
+        $.sparkline_display_visible();
+        $(id).sparkline(this.dataPoints, this.formatParams);
+    }
+    Format(format) {
+        this.formatParams = format;
+    }
+
 }
-TrendData.prototype.UpdateDisplay = function(id) {
-    $.sparkline_display_visible();
-    $(id).sparkline(this.dataPoints, this.formatParams);
-    
-}
-TrendData.prototype.Format = function(format) {
-    this.formatParams = format;
-}
-TrendData.prototype.formatParms =
-    {type: 'line', // line (default), bar, tristate, discrete, bullet, pie or box
-     width: 'auto',      // 'auto' or any css width spec
-     height: 'auto',     // 'auto' or any valid css height spec
-     lineColor: 'black', // Used by line and discrete charts
-     // chartRangeMin: '0', // min value for range, default to min value
-     // chardRangeMax: '0', // max value for range, default to max value
-     // composite: 'true',  // true to overwrite existing chart (chart on chart)
-     fillColor: 'false'  // Set to false to disable fill.
-     };
 // ===========================================
+
+
 

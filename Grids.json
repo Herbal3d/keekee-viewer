@@ -1,70 +1,72 @@
 {
-    "Grids": {
-        "Localhost:9000": {
-            "GridName": "Localhost:9000",
-            "GridNick": "Localhost",
-            "LoginURI": "http://localhost:9000",
-            "slurl_base": "hop://localhost:9000/"
-        },
-        "nyxxx": {
-            "GridName": "nyxxx",
-            "GridNick": "nyxxx",
-            "LoginURI": "http://192.168.86.56:9000",
-            "Platform": "OpenSim",
-            "slurl_base": "hop://192.168.86.56:9000/"
-        },
-        "OpenSim Conference": {
-            "GridName": "OpenSim Community Conference",
-            "GridNick": "OpenSimCC",
-            "LoginURI": "http://cc.opensimulator.org:8002/",
-            "HelperURI": "http://cc.opensimulator.org/helper/",
-            "SupportURI": "",
-            "AccountURI": "http://cc.opensimulator.org:8005/wifi/user/account",
-            "PasswordURI": "http://cc.opensimulator.org:8005/wifi/forgotpassword",
-            "WebSite": "http://cc.opensimulator.org:8005/wifi/welcome.html",
-            "Platform": "OpenSim",
-            "Slurl_base": "hop://cc.opensimulator.org:8002/"
-        },
-        "Kitely": {
-            "GridName": "Kitely Grid",
-            "GridNick": "Kitely",
-            "LoginURI": "http://grid.kitely.com:8002/",
-            "HelperURI": "http://grid.kitely.com:8002/",
-            "SupportURI": "",
-            "Platform": "OpenSim",
-            "slurl_base": "hop://grid.kitely.com:8002/"
-        },
-        "WolfTerritories": {
-            "GridName": "Wolf Territories Grid",
-            "GridNick": "WolfTerritories",
-            "LoginURI": "http://grid.wolfterritories.org:8002/",
-            "HelperURI": "http://helper.wolfterritories.org/",
-            "AccountURI": "https://www.wolf-grid.com/index.php?f=newuser",
-            "WebSite": "https://www.wolf-grid.com",
-            "Platform": "OpenSim",
-            "slurl_base": "hop://grid.wolfterritories.org:8002/"
-        },
-        "OSGrid": {
-            "GridName": "OSGrid",
-            "GridNick": "osgrid",
-            "HelperURI": "http://helper.osgrid.org/",
-            "loginpage": "http://www.osgrid.org/splash/",
-            "LoginURI": "http://login.osgrid.org",
-            "WebSite": "http://www.osgrid.org/",
-            "AccountURI": "http://www.osgrid.org/",
-            "PasswordURI": "http://www.osgrid.org/",
-            "Platform": "OpenSim",
-            "slurl_base": "hop://login.osgrid.org/",
-            "web_profile_url": "http://my.osgrid.org/?name=[AGENT_NAME]"
-        },
-        "SecondLife": {
-            "GridName": "Second Life",
-            "GridNick": "agni",
-            "app_slurl_base": "secondlife:///app",
-            "LoginURI": "https://login.agni.lindenlab.com/cgi-bin/login.cgi",
-            "HelperURI": "https://secondlife.com/helpers/",
-            "slurl_base": "http://maps.secondlife.com/secondlife/",
-            "web_profile_url": "https://my.secondlife.com/"
+    "GridConfig": {
+        "Grids": {
+            "Localhost:9000": {
+                "GridName": "Localhost:9000",
+                "GridNick": "Localhost",
+                "LoginURI": "http://localhost:9000",
+                "slurl_base": "hop://localhost:9000/"
+            },
+            "nyxxx": {
+                "GridName": "nyxxx",
+                "GridNick": "nyxxx",
+                "LoginURI": "http://192.168.86.56:9000",
+                "Platform": "OpenSim",
+                "slurl_base": "hop://192.168.86.56:9000/"
+            },
+            "OpenSim Conference": {
+                "GridName": "OpenSim Community Conference",
+                "GridNick": "OpenSimCC",
+                "LoginURI": "http://cc.opensimulator.org:8002/",
+                "HelperURI": "http://cc.opensimulator.org/helper/",
+                "SupportURI": "",
+                "AccountURI": "http://cc.opensimulator.org:8005/wifi/user/account",
+                "PasswordURI": "http://cc.opensimulator.org:8005/wifi/forgotpassword",
+                "WebSite": "http://cc.opensimulator.org:8005/wifi/welcome.html",
+                "Platform": "OpenSim",
+                "Slurl_base": "hop://cc.opensimulator.org:8002/"
+            },
+            "Kitely": {
+                "GridName": "Kitely Grid",
+                "GridNick": "Kitely",
+                "LoginURI": "http://grid.kitely.com:8002/",
+                "HelperURI": "http://grid.kitely.com:8002/",
+                "SupportURI": "",
+                "Platform": "OpenSim",
+                "slurl_base": "hop://grid.kitely.com:8002/"
+            },
+            "WolfTerritories": {
+                "GridName": "Wolf Territories Grid",
+                "GridNick": "WolfTerritories",
+                "LoginURI": "http://grid.wolfterritories.org:8002/",
+                "HelperURI": "http://helper.wolfterritories.org/",
+                "AccountURI": "https://www.wolf-grid.com/index.php?f=newuser",
+                "WebSite": "https://www.wolf-grid.com",
+                "Platform": "OpenSim",
+                "slurl_base": "hop://grid.wolfterritories.org:8002/"
+            },
+            "OSGrid": {
+                "GridName": "OSGrid",
+                "GridNick": "osgrid",
+                "HelperURI": "http://helper.osgrid.org/",
+                "loginpage": "http://www.osgrid.org/splash/",
+                "LoginURI": "http://login.osgrid.org",
+                "WebSite": "http://www.osgrid.org/",
+                "AccountURI": "http://www.osgrid.org/",
+                "PasswordURI": "http://www.osgrid.org/",
+                "Platform": "OpenSim",
+                "slurl_base": "hop://login.osgrid.org/",
+                "web_profile_url": "http://my.osgrid.org/?name=[AGENT_NAME]"
+            },
+            "SecondLife": {
+                "GridName": "Second Life",
+                "GridNick": "agni",
+                "app_slurl_base": "secondlife:///app",
+                "LoginURI": "https://login.agni.lindenlab.com/cgi-bin/login.cgi",
+                "HelperURI": "https://secondlife.com/helpers/",
+                "slurl_base": "http://maps.secondlife.com/secondlife/",
+                "web_profile_url": "https://my.secondlife.com/"
+            }
         }
     }
 }

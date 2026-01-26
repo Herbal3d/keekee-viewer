@@ -163,6 +163,7 @@ namespace KeeKee {
                          };
                      });
                      services.AddTransient<OMVR.IRendering, MeshmerizerR>();
+                     // services.AddHostedService<ViewOGL>();
 
                      // The user interface
                      services.AddSingleton<IUserInterfaceProvider, UserInterfaceCommon>();

@@ -78,7 +78,7 @@ namespace KeeKee.Comm.LLLP {
         // others, like avatar control, can use a little locking.
         private Object m_opLock = new Object();
 
-        private enum LoginStateCode {
+        public enum LoginStateCode {
             NotLoggedIn,
             ShouldLogIn,
             LogInFailed,
@@ -87,7 +87,7 @@ namespace KeeKee.Comm.LLLP {
             ShouldLogOut,
             LoggingOut
         }
-        private LoginStateCode m_loginState = LoginStateCode.NotLoggedIn;
+        public LoginStateCode m_loginState = LoginStateCode.NotLoggedIn;
 
         public bool IsConnected { get; private set; } = false;
 
@@ -113,7 +113,7 @@ namespace KeeKee.Comm.LLLP {
 
         // m_loginGrid has the displayable name. LoggedInGridName has cannoicalized name for app use.
         protected string m_loginGrid { get; set; } = "unknown";
-        protected string LoggedInGridName { get { return m_loginGrid.Replace(".", "_").ToLower(); } }
+        public string LoggedInGridName { get { return m_loginGrid.Replace(".", "_").ToLower(); } }
         protected string m_loginMsg { get; set; } = "";
 
         // If true, hold children objects until parent is available
@@ -123,7 +123,7 @@ namespace KeeKee.Comm.LLLP {
 
 
         // There is one entity who is the main agent we control
-        protected LLEntity? MainAgent { get; set; } = null;
+        public LLEntity? MainAgent { get; set; } = null;
 
         public CommLLLP(KLogger<CommLLLP> pLog,
                         IOptions<KeeKeeConfig> pKeeKeeConfig,

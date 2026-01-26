@@ -17,10 +17,10 @@ using KeeKee.World;
 namespace KeeKee.Renderer.OGL {
     public class AnimatBase {
         public int AnimatType;
-        public const int AnimatTypeAny             = 0;
-        public const int AnimatTypeFixedRotation   = 1;
-        public const int AnimatTypeRotation        = 2;
-        public const int AnimatTypePosition        = 3;
+        public const int AnimatTypeAny = 0;
+        public const int AnimatTypeFixedRotation = 1;
+        public const int AnimatTypeRotation = 2;
+        public const int AnimatTypePosition = 3;
 
         public AnimatBase(int type) {
             AnimatType = type;
@@ -43,8 +43,7 @@ namespace KeeKee.Renderer.OGL {
                         if (!ab.Process(timeSinceLastFrame, rri)) {
                             removeAnimations.Add(ab);   // remember so we can remove later
                         }
-                    }
-                    catch {
+                    } catch {
                     }
                 }
                 // since we can't remove animations while interating the list, do it now
@@ -61,7 +60,7 @@ namespace KeeKee.Renderer.OGL {
         /// <param name="anim"></param>
         /// <param name="id">localID of prim that looks up in RegionRenderInfo.renderPrimList</param>
         /// <returns></returns>
-        public static AnimatBase CreateAnimation(IAnimation anim, uint id) {
+        public static AnimatBase CreateAnimation(ICmptAnimation anim, uint id) {
             if (anim.DoStaticRotation) {
                 // the only programmable animation we know how to do is fixed axis rotation
                 return new AnimatFixedRotation(anim, id);

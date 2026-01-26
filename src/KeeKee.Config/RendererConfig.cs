@@ -15,6 +15,7 @@ namespace KeeKee.Config {
         public static string subSectionName { get; set; } = "Renderer";
 
         public string RenderProvider { get; set; } = "OGL";
+        public int FramesPerSecond { get; set; } = 12;
     }
 }
 

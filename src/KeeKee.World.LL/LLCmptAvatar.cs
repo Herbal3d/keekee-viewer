@@ -20,6 +20,8 @@ namespace KeeKee.World.LL {
         public IEntity ContainingEntity { get; private set; }
         private OMV.GridClient m_client;
 
+        public OMV.UUID? AvatarUUID { get; set; }
+
         public string DisplayName { get; set; } = "";
         public string ActivityFlags { get; set; } = ""; // e.g. "Sitting, AFK"
 
@@ -30,6 +32,49 @@ namespace KeeKee.World.LL {
             m_log = pLog;
             m_client = pClient;
             ContainingEntity = pContainingEntity;
+        }
+
+        public string FullName {
+            get {
+                if (AvatarUUID.HasValue) {
+                    var avName = m_client.Self.Name;
+                    if (avName != null) {
+                        return avName.ToString();
+                    } else {
+                        return $"FullName: Unknown Avatar {AvatarUUID.ToString()}";
+                    }
+                } else {
+                    return "No Avatar UUID";
+                }
+            }
+        }
+        public string First {
+            get {
+                if (AvatarUUID.HasValue) {
+                    var avName = m_client.Self.FirstName;
+                    if (avName != null) {
+                        return avName.ToString();
+                    } else {
+                        return $"First: Unknown Avatar {AvatarUUID.ToString()}";
+                    }
+                } else {
+                    return "No Avatar UUID";
+                }
+            }
+        }
+        public string Last {
+            get {
+                if (AvatarUUID.HasValue) {
+                    var avName = m_client.Self.LastName;
+                    if (avName != null) {
+                        return avName.ToString();
+                    } else {
+                        return $"Last: Unknown Avatar {AvatarUUID.ToString()}";
+                    }
+                } else {
+                    return "No Avatar UUID";
+                }
+            }
         }
 
         public void Dispose() {

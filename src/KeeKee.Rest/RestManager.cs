@@ -158,7 +158,15 @@ namespace KeeKee.Rest {
                 pResponse.ContentType = pContentType == null ? MIMEDEFAULT : pContentType;
                 pResponse.AddHeader("Server", m_keeKeeConfig.Value.AppName);
                 pResponse.AddHeader("Cache-Control", "no-cache");
-                pResponse.AddHeader("Content-Security-Policy", $"script-src 'self' 'unsafe-inline' {selfUrl}");
+                pResponse.AddHeader("Access-Control-Allow-Origin", "*");
+                pResponse.AddHeader(
+                    "Content-Security-Policy",
+                    $"default-src 'self' 'unsafe-inline'; " +
+                    $"script-src 'self' 'unsafe-inline'; " +
+                    $"script-src-elem 'self' 'unsafe-inline'; " +
+                    $"script-src-attr 'self' 'unsafe-inline'; " +
+                    $"connect-src 'self'"
+                );
                 // context.Connection = ConnectionType.Close;
 
                 encodedBuff = pContentBodySource != null ? pContentBodySource() : new byte[0];

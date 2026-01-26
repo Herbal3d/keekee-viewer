@@ -80,6 +80,35 @@ namespace KeeKee.Framework.Utilities {
             return v + v2 + v3;
         }
 
+        /// <summary>
+        /// Parse a string into a Vector3.
+        /// There are three forms:
+        /// 1. "<x,y,z>"   -- angle brackets around comma separated values
+        /// 2. "x,y,z"     -- comma separated values
+        /// 3. "{x,y,z}"   -- JSON separated values
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        /// <exception cref="FormatException"></exception>
+        public static OMV.Vector3 ParseVector3(string s, float defaultValue = 0f) {
+            s = s.Trim();
+            if (s.StartsWith("{") && s.EndsWith("}")) {
+                // JSON format
+                s = s.Substring(1, s.Length - 2);
+            }
+            if (s.StartsWith("<") && s.EndsWith(">")) {
+                s = s.Substring(1, s.Length - 2);
+            }
+            string[] parts = s.Split(',');
+            if (parts.Length != 3) {
+                return new OMV.Vector3(defaultValue, defaultValue, defaultValue);
+            }
+            float x = float.Parse(parts[0].Trim());
+            float y = float.Parse(parts[1].Trim());
+            float z = float.Parse(parts[2].Trim());
+            return new OMV.Vector3(x, y, z);
+        }
+
         public static string GetMimeTypeFromFileName(string fileName) {
             string ext = Path.GetExtension(fileName).ToLower();
             switch (ext) {

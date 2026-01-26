@@ -92,11 +92,13 @@ namespace KeeKee.World {
         public bool HasComponent<T>() where T : class, IEntityComponent {
             return m_components.ContainsKey(typeof(T));
         }
+        // Test and return component if it exists
         public bool HasComponent<T>(out T? component) where T : class, IEntityComponent {
-            bool ret = m_components.ContainsKey(typeof(T));
-            if (ret) {
+            bool ret = false;
+            if (m_components.ContainsKey(typeof(T))) {
                 IEntityComponent cmpt = m_components[typeof(T)];
                 component = (T)cmpt;
+                ret = true;
             } else {
                 component = null;
             }
@@ -117,57 +119,6 @@ namespace KeeKee.World {
             }
             m_components.Clear();
         }
-
-        #region LOCATION
-        protected OMV.Quaternion m_heading = new OMV.Quaternion();
-        virtual public OMV.Quaternion Heading {
-            get {
-                return m_heading;
-            }
-            set {
-                m_heading = value;
-            }
-        }
-
-        virtual public OMV.Vector3 RegionPosition {
-            get {
-                if (this.ContainingEntity == null) {
-                    return this.LocalPosition;
-                } else {
-                    // LogManager.Log.Log(LogLevel.DWORLDDETAIL, "EntityBase.RegionPosition: {0} relative to {1}",
-                    //     this.LocalPosition, this.ContainingEntity.RegionPosition);
-                    return this.LocalPosition;
-                    // DEBUG: the following causes objects to drift off into space. Not sure why.
-                    // return this.LocalPosition + this.ContainingEntity.RegionPosition;
-                }
-            }
-        }
-
-        // local coodinate position relative to a parent (if exists)
-        protected OMV.Vector3 m_localPosition = new OMV.Vector3(0f, 0f, 0f);
-        virtual public OMV.Vector3 LocalPosition {
-            get {
-                return m_localPosition;
-            }
-            set {
-                m_localPosition = value;
-            }
-        }
-
-        protected OMV.Vector3d m_globalPosition;
-        virtual public OMV.Vector3d GlobalPosition {
-            get {
-                OMV.Vector3 regionRelative = this.RegionPosition;
-                if (RegionContext != null) {
-                    return new OMV.Vector3d(
-                        RegionContext.WorldBase.X + (double)regionRelative.X,
-                        RegionContext.WorldBase.Y + (double)regionRelative.Y,
-                        RegionContext.WorldBase.Z + (double)regionRelative.Z);
-                }
-                return new OMV.Vector3d(20d, 20d, 20d);
-            }
-        }
-        #endregion LOCATION
 
         // Tell the entity that something about it changed
         virtual public void Update(UpdateCodes what) {

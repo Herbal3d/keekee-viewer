@@ -9,10 +9,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
 using KeeKee.Framework.Logging;
 using KeeKee.World;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.Renderer.OGL {
@@ -21,6 +20,8 @@ namespace KeeKee.Renderer.OGL {
     /// the rotation as the Process routine is called.
     /// </summary>
     public sealed class AnimatFixedRotation : AnimatBase {
+        private IKLogger? m_Log;
+
         private uint m_infoID;
         private float m_rotationsPerSecond;
         private OMV.Vector3 m_rotationAxis;
@@ -31,14 +32,13 @@ namespace KeeKee.Renderer.OGL {
         /// </summary>
         /// <param name="anim">The IAnimation block with the info.</param>
         /// <param name="id">localID to lookup the prim in the RegionRenderInfo.renderPrimList</param>
-        public AnimatFixedRotation(IAnimation anim, uint id)
+        public AnimatFixedRotation(ICmptAnimation anim, uint id)
                         : base(AnimatBase.AnimatTypeFixedRotation) {
             m_infoID = id;
             if (anim.DoStaticRotation) {
                 m_rotationsPerSecond = anim.StaticRotationRotPerSec;
                 m_rotationAxis = anim.StaticRotationAxis;
-            }
-            else {
+            } else {
                 // shouldn't get here
                 m_rotationsPerSecond = 1;
                 m_rotationAxis = OMV.Vector3.UnitX;
@@ -60,9 +60,8 @@ namespace KeeKee.Renderer.OGL {
                 try {
                     RenderablePrim rp = rri.renderPrimList[m_infoID];
                     rp.Rotation = newRotation * rp.Rotation;
-                }
-                catch (Exception e) {
-                    LogManager.Log.Log(LogLevel.DBADERROR, "Did not find prim for FixedRotation: {0}", e);
+                } catch (Exception e) {
+                    m_Log?.Log(KLogLevel.DBADERROR, "Did not find prim for FixedRotation: {0}", e);
                 }
             }
             return true;        // we never exit

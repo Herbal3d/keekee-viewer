@@ -3,8 +3,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>KeeKee</title>
-<link rel="stylesheet" href="/static/KeeKee.css" type="text/css"/>
-<script type="text/javascript" src="/static/jquery.js"></script>
+<link rel="stylesheet" href="/UI/KeeKee.css" type="text/css"/>
+<script type="text/javascript" src="/static/jquery-4.0.0.min.js"></script>
 <script type="text/javascript" src="/static/KKScripts.js"></script>
 <script type="text/javascript" src="/static/jquery.sparkline.min.js"></script>
 <noscript>
@@ -35,17 +35,23 @@ $(document).ready(function() {
 // If not logged in, the user filled in fields and pressed 'login'
 // which POSTs parameters to the viewer which change the user's
 // login state.
-var BASEURL='http://127.0.0.1:9144';
+// var BASEURL='http://127.0.0.1:9144';
+var BASEURL='';
 var loginTimerHandle;
 // poll for the user's date. Initialize form if first GET.
 function TimerLoginStuff(firstTime) {
     $.ajax({
         type: "GET",
-        url: BASEURL + '/api/LLLP/status/',
+        url: BASEURL + '/api/LLLP/status',
         dataType: 'json',
         timeout: 5000,
         success: function(data, status) {
             if (status == 'success') {
+                if (data.isloggedin.value == 'true') {
+                    data.loginstate = {"value": "login"};
+                } else {
+                    data.loginstate = {"value": "logout"};
+                }
                 if (firstTime) InitializeLoginForm(data);
                 UpdateLoginArea(data);
             }
@@ -58,7 +64,7 @@ function TimerLoginStuff(firstTime) {
         }
     });
             
-    loginTimerHandle = setTimeout('TimerLoginStuff(false)', 3000);
+    loginTimerHandle = setTimeout(() => TimerLoginStuff(false), 3000);
 };
 
 // given a set of login status parameters, update login status area
@@ -75,7 +81,8 @@ function UpdateLoginArea(data) {
     }
 
     $('#KKLoginMessage').empty();
-    $('#KKLoginMessage').append(data.msg.value);
+    if (data.msg != undefined)
+        $('#KKLoginMessage').append(data.msg.value);
 
     if(data.loginstate.value == 'logout') {
         $("#KKLoginForm").slideDown('slow');
@@ -87,16 +94,17 @@ function UpdateLoginArea(data) {
 
 // Called the first time so we can pre-populate the form
 function InitializeLoginForm(data) {
-    $('#KKLoginForm input[name="LOGINFIRST"]').attr('value', data.first.value);
-    $('#KKLoginForm input[name="LOGINLAST"]').attr('value', data.last.value);
-    $('#KKLoginForm input[name="LOGINSIM"]').attr('value', data.sim.value);
+    if (data['first'] != undefined) {
+        $('#KKLoginForm input[name="LOGINFIRST"]').attr('value', data.first?.value ?? "");
+        $('#KKLoginForm input[name="LOGINLAST"]').attr('value', data.last?.value ?? "");
+        $('#KKLoginForm input[name="LOGINSIM"]').attr('value', data.currentsim?.value ?? "");
+    }
     var selector = $('#KKLoginForm select[name="LOGINGRID"]');
     selector.empty();
     for (grid in data.possiblegrids.value) {
         var valu = data.possiblegrids.value[grid];
         selector.append('<option value="' + valu + '">' + valu + '</option>');
     }
-
 }
 
 // Called by login form 'submit' click
@@ -112,7 +120,7 @@ var graphFPS;
 var lastFPS = 10;
 var xxThru = 0;
 function TimerDataStuff() {
-    statTimerHandle = setTimeout('TimerStatDisplay()', 2000);
+    statTimerHandle = setTimeout(() => TimerStatDisplay(), 2000);
 }
 
 // called by timer to fetch and display statistic information
@@ -149,7 +157,7 @@ function TimerStatDisplay() {
             }
         });
     }
-    statTimerHandle = setTimeout('TimerStatDisplay()', 2000);
+    statTimerHandle = setTimeout(() => TimerStatDisplay(), 2000);
 };
 
 function DebugLog(msg) {
@@ -287,7 +295,7 @@ function DebugLog(msg) {
 
 <!-- ============================================== -->
 </div>  <!-- KKContent -->
-<div id="DEBUG"></div>
+<div id="DEBUGG"></div>
 <div id="KKFooter"></div>
 </body>
 </html>

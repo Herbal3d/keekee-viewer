@@ -11,6 +11,8 @@
 
 using KeeKee.World;
 
+using SkiaSharp;
+
 using OMV = OpenMetaverse;
 using OMVR = OpenMetaverse.Rendering;
 
@@ -22,7 +24,7 @@ namespace KeeKee.Renderer.OGL {
         public float[] Normals;
         public float[] TexCoords;
         public int TexturePointer;
-        public System.Drawing.Image Texture;
+        public SKBitmap Texture;
         // TODO: Normals
     }
 
@@ -57,6 +59,36 @@ namespace KeeKee.Renderer.OGL {
     /// rcontext as an interface. This holds all the per region information needed
     /// to render the region.
     /// </summary>
+    public sealed class CmptRegionRenderInfo : IEntityComponent {
+        public CmptRegionRenderInfo() {
+        }
+        public Dictionary<uint, OMV.Primitive> renderFoliageList = new Dictionary<uint, OMV.Primitive>();
+        public Dictionary<uint, RenderablePrim> renderPrimList = new Dictionary<uint, RenderablePrim>();
+        public Dictionary<ulong, RenderableAvatar> renderAvatarList = new Dictionary<ulong, RenderableAvatar>();
+
+        public List<AnimatBase> animations = new List<AnimatBase>();
+
+        public bool refreshTerrain = true;  // force initial build
+        public float[] terrainVertices;
+        public float[] terrainTexCoord;
+        public float[] terrainNormal;
+        public UInt16[] terrainIndices;
+        public float terrainWidth = -1;
+        public float terrainLength = -1;
+        public float oceanHeight = 10f;
+
+        public IEntity ContainingEntity { get; set; }
+
+        public void Dispose() {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Rendering information for OpenGL in the region. This is attached the
+    /// rcontext as an interface. This holds all the per region information needed
+    /// to render the region.
+    /// </summary>
     public sealed class RegionRenderInfo {
         public RegionRenderInfo() {
             this.renderFoliageList = new Dictionary<uint, OMV.Primitive>();
@@ -81,6 +113,7 @@ namespace KeeKee.Renderer.OGL {
         public float terrainWidth;
         public float terrainLength;
         public float oceanHeight;
+
     }
 
     /// <summary>

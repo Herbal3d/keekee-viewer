@@ -9,32 +9,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Text;
-using System.Windows.Forms;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+
 using OpenTK;
-using OpenTK.Graphics.OpenGL;
-using Tao.OpenGl;
-using KeeKee.Framework;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
+
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
-using KeeKee.Framework.Modules;
-using KeeKee.Framework.Parameters;
+using KeeKee.Framework.Utilities;
 using KeeKee.World;
 using KeeKee.World.LL;
+
 using OMV = OpenMetaverse;
 using OMVR = OpenMetaverse.Rendering;
 
 
 namespace KeeKee.Renderer.OGL {
-    public partial class ViewOGL : Form, IModule, IViewOGL {
-        private ILog m_log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
+    public class ViewOGL : BackgroundService, IViewOGL {
+        private KLogger<ViewOGL> m_log;
+
+        private IOptions<RendererConfig> m_rendererConfig;
+        private IOptions<RendererOGLConfig> m_rendererOGLConfig;
 
         const uint TERRAIN_START = (uint)Int32.MaxValue + 1;
+
+        private OpenTK.GLControl glControl;
 
         private RendererOGL m_renderer;
         private System.Threading.Timer m_refreshTimer;
@@ -51,52 +54,74 @@ namespace KeeKee.Renderer.OGL {
 
         private bool m_glControlLoaded = false;
 
-        #region IModule
-        protected string m_moduleName;
-        public string ModuleName { get { return m_moduleName; } set { m_moduleName = value; } }
+        public ViewOGL(KLogger<ViewOGL> pLog,
+                        IOptions<RendererConfig> pRendererConfig,
+                        IOptions<RendererOGLConfig> pRendererOGLConfig,
+                        IRenderProvider pRenderProvider) {
+            m_log = pLog;
+            m_rendererConfig = pRendererConfig;
+            m_rendererOGLConfig = pRendererOGLConfig;
+            var rendererOGL = pRenderProvider as RendererOGL;
+            if (rendererOGL == null) {
+                throw new KeeKeeException("ViewOGL: RenderProvider is not RendererOGL");
+            }
+            m_renderer = rendererOGL;
 
-        protected KeeKeeBase m_lgb = null;
-        public KeeKeeBase LGB { get { return m_lgb; } }
-
-        public IAppParameters ModuleParams { get { return m_lgb.AppParams; } }
-
-        public ViewOGL() {
-            // default to the class name. The module code can set it to something else later.
-            m_moduleName = System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name;
+            m_framesPerSec = m_rendererConfig.Value.FramesPerSecond;
         }
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+            m_log.LogInfo("Starting.");
 
-        // IModule.OnLoad
-        public virtual void OnLoad(string modName, KeeKeeBase lgbase) {
-            m_log.Log(LogLevel.DINIT, ModuleName + ".OnLoad()");
-            m_moduleName = modName;
-            m_lgb = lgbase;
-
-            m_lgb.AppParams.AddDefaultParameter("ViewOGL.Renderer.Name", "Renderer", "The renderer we will get UI from");
-            m_lgb.AppParams.AddDefaultParameter("ViewOGL.FramesPerSec", "12", "The rate to throttle frame rendering");
-
-            InitializeComponent();
-            // glControl.InitializeContexts();
-        }
-
-        // IModule.AfterAllModulesLoaded
-        public virtual bool AfterAllModulesLoaded() {
-            m_log.Log(LogLevel.DINIT, ModuleName + ".AfterAllModulesLoaded()");
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ViewOGL));
+            this.glControl = new OpenTK.GLControl();
+            this.SuspendLayout();
+            // 
+            // glControl
+            // 
+            this.glControl.BackColor = System.Drawing.Color.Black;
+            this.glControl.Location = new System.Drawing.Point(5, 5);
+            this.glControl.Name = "glControl";
+            this.glControl.Size = new System.Drawing.Size(800, 600);
+            this.glControl.TabIndex = 0;
+            this.glControl.VSync = false;
+            this.glControl.Load += new System.EventHandler(this.GLWindow_Load);
+            this.glControl.MouseLeave += new System.EventHandler(this.GLWindow_MouseLeave);
+            this.glControl.Paint += new System.Windows.Forms.PaintEventHandler(this.GLWindow_Paint);
+            this.glControl.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.GLWindow_PreviewKeyDown);
+            this.glControl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.GLWindow_MouseMove);
+            this.glControl.KeyUp += new System.Windows.Forms.KeyEventHandler(this.GLWindow_KeyUp);
+            this.glControl.MouseDown += new System.Windows.Forms.MouseEventHandler(this.GLWindow_MouseDown);
+            this.glControl.Resize += new System.EventHandler(this.GLWindow_Resize);
+            this.glControl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.GLWindow_MouseUp);
+            this.glControl.MouseEnter += new System.EventHandler(this.GLWindow_MouseEnter);
+            // 
+            // ViewOGL
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(812, 613);
+            this.Controls.Add(this.glControl);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Name = "ViewOGL";
+            this.Text = "KeeKee -- World";
+            this.Load += new System.EventHandler(this.GLWindow_Load);
+            this.ResizeEnd += new System.EventHandler(this.GLWindow_Resize);
+            this.ResumeLayout(false);
 
             try {
-                // get a handle to the renderer module in KeeKee
-                string rendererName = m_lgb.AppParams.ParamString("ViewOGL.Renderer.Name");
-                m_framesPerSec = Math.Min(100, Math.Max(1, m_lgb.AppParams.ParamInt("ViewOGL.FramesPerSec")));
-                m_frameTimeMs = 1000 / m_framesPerSec;
-                m_renderer = (RendererOGL)m_lgb.ModManager.Module(rendererName);
-                m_log.Log(LogLevel.DINIT, "Initialize. Connecting to renderer {0} at {1}fps",
-                                m_renderer, m_framesPerSec);
+                // the link to the renderer for display is also a link to the user interface routines
+                m_UILink = m_renderer.UserInterface;
+                m_cameraModified = true;
+
+                while (!cancellationToken.IsCancellationRequested) {
+                    this.glControl.Invalidate();
+                    await Task.Delay(m_frameTimeMs, cancellationToken);
+                }
 
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "Initialize. exception: {0}", e.ToString());
+                m_log.Log(KLogLevel.DBADERROR, "Initialize. exception: {0}", e.ToString());
                 throw new KeeKeeException("Exception initializing view");
             }
-
-            return true;
         }
 
         // IModule.Start
@@ -112,12 +137,6 @@ namespace KeeKee.Renderer.OGL {
             return;
         }
 
-        // IModule.PrepareForUnload
-        public virtual bool PrepareForUnload() {
-            return false;
-        }
-        #endregion IModule
-
         public void Initialize() {
             try {
                 // the link to the renderer for display is also a link to the user interface routines
@@ -128,7 +147,7 @@ namespace KeeKee.Renderer.OGL {
                     this.glControl.Invalidate();
                 }, null, 2000, m_frameTimeMs);
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "Initialize. exception: {0}", e.ToString());
+                m_log.Log(KLogLevel.DBADERROR, "Initialize. exception: {0}", e.ToString());
                 throw new KeeKeeException("Exception initializing view");
             }
         }
@@ -151,8 +170,7 @@ namespace KeeKee.Renderer.OGL {
             GL.Enable(EnableCap.DepthTest);
             GL.DepthMask(true);
             GL.DepthFunc(DepthFunction.Less);
-            GL.Frustum(1.0, -1.0, -1.0, 1.0, 1.0,
-                (double)ModuleParams.ParamFloat(m_renderer.ModuleName + ".OGL.Camera.Far"));
+            GL.Frustum(1.0, -1.0, -1.0, 1.0, 1.0, (double)m_rendererOGLConfig.Value.CameraFar);
 
             GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
             GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)All.Modulate);
@@ -161,7 +179,7 @@ namespace KeeKee.Renderer.OGL {
         private void InitLighting() {
             GL.Enable(EnableCap.Lighting);
 
-            OMV.Vector3 ambientSpec = ModuleParams.ParamVector3(m_renderer.m_moduleName + ".OGL.Global.Ambient");
+            OMV.Vector3 ambientSpec = Utilities.ParseVector3(m_rendererOGLConfig.Value.GlobalAmbient);
             float[] globalAmbient = { ambientSpec.X, ambientSpec.Y, ambientSpec.Z, 1.0f };
             GL.LightModel(LightModelParameter.LightModelAmbient, globalAmbient);
 
@@ -169,12 +187,14 @@ namespace KeeKee.Renderer.OGL {
 
             // set up the sun (Light0)
             GL.Enable(EnableCap.Light0);
-            OMV.Vector3 sunSpec = ModuleParams.ParamVector3(m_renderer.m_moduleName + ".OGL.Sun.Ambient");
+
+            OMV.Vector3 sunSpec = Utilities.ParseVector3(m_rendererOGLConfig.Value.SunAmbient, 0.4f);
             float[] sunAmbient = { sunSpec.X, sunSpec.Y, sunSpec.Z, 1.0f };
-            sunSpec = ModuleParams.ParamVector3(m_renderer.m_moduleName + ".OGL.Sun.Diffuse");
+            sunSpec = Utilities.ParseVector3(m_rendererOGLConfig.Value.SunDiffuse, 1.0f);
             float[] sunDiffuse = { sunSpec.X, sunSpec.Y, sunSpec.Z, 1.0f };
-            sunSpec = ModuleParams.ParamVector3(m_renderer.m_moduleName + ".OGL.Sun.Specular");
+            sunSpec = Utilities.ParseVector3(m_rendererOGLConfig.Value.SunSpecular, 0.8f);
             float[] sunSpecular = { sunSpec.X, sunSpec.Y, sunSpec.Z, 1.0f };
+
             GL.Light(LightName.Light0, LightParameter.Ambient, sunAmbient);
             GL.Light(LightName.Light0, LightParameter.Diffuse, sunDiffuse);
             GL.Light(LightName.Light0, LightParameter.Specular, sunSpecular);
@@ -186,7 +206,7 @@ namespace KeeKee.Renderer.OGL {
             m_renderer.Camera.FocalPoint = new OMV.Vector3(128f, 128f, 0f);
             m_renderer.Camera.Zoom = 1.0d;
             // m_renderer.Camera.Far = 512.0d;
-            m_renderer.Camera.Far = (double)ModuleParams.ParamFloat(m_renderer.m_moduleName + ".OGL.Camera.Far");
+            m_renderer.Camera.Far = (double)m_rendererOGLConfig.Value.CameraFar;
         }
 
         #region GLControl Callbacks
@@ -229,7 +249,7 @@ namespace KeeKee.Renderer.OGL {
         private void GLWindow_Load(object sender, EventArgs e) {
             if (m_glControlLoaded) return;
             m_glControlLoaded = true;
-            m_log.Log(LogLevel.DRENDERDETAIL, "GLWindow_Load");
+            m_log.Log(KLogLevel.DRENDERDETAIL, "GLWindow_Load");
 
             InitOpenGL();
             InitLighting();
@@ -298,7 +318,7 @@ namespace KeeKee.Renderer.OGL {
                 GL.Flush();
                 glControl.SwapBuffers();
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "Exception rendering frame: {0}", e);
+                m_log.Log(KLogLevel.DBADERROR, "Exception rendering frame: {0}", e);
             }
         }
 
@@ -651,7 +671,7 @@ namespace KeeKee.Renderer.OGL {
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             } catch (Exception e) {
-                m_log.Log(LogLevel.DBADERROR, "Failed binding texture id={0}, uuid={1}: {2}", id, textureUUID, e);
+                m_log.Log(KLogLevel.DBADERROR, "Failed binding texture id={0}, uuid={1}: {2}", id, textureUUID, e);
                 textureID = 0;
             }
 
@@ -747,7 +767,7 @@ namespace KeeKee.Renderer.OGL {
         private void GLWindow_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e) {
             if (m_UILink != null) {
                 m_keyDown = true;
-                // LogManager.Log.Log(LogLevel.DVIEWDETAIL, "ViewWindow.GLWindow_KeyDown: k={0}", e.KeyCode);
+                // LogManager.Log.Log(KLogLevel.DVIEWDETAIL, "ViewWindow.GLWindow_KeyDown: k={0}", e.KeyCode);
                 m_UILink.ReceiveUserIO(ReceiveUserIOInputEventTypeCode.KeyPress, (int)e.KeyCode, 0f, 0f);
             }
         }
@@ -758,7 +778,7 @@ namespace KeeKee.Renderer.OGL {
 
         private void GLWindow_KeyUp(object sender, KeyEventArgs e) {
             if (m_UILink != null) {
-                // LogManager.Log.Log(LogLevel.DVIEWDETAIL, "ViewWindow.GLWindow_KeyUp: k={0}", e.KeyCode);
+                // LogManager.Log.Log(KLogLevel.DVIEWDETAIL, "ViewWindow.GLWindow_KeyUp: k={0}", e.KeyCode);
                 // debug == we're only getting key ups
                 if (!m_keyDown) {
                     // for some reason, some keys don't give us a down to go with the up
