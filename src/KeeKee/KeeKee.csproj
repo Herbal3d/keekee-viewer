@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\*.json">
+    <Content Include="..\..\*.json" Exclude="..\..\tsconfig.json;..\..\package.json;..\..\package-lock.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
@@ -46,5 +46,11 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
+
+    <!-- TypeScript Compilation Target -->
+    <Target Name="CompileTypeScript" BeforeTargets="Build">
+      <Exec Command="npm install" WorkingDirectory="$(ProjectDir)..\.." ContinueOnError="true" />
+      <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)..\.." />
+    </Target>
 
 </Project>

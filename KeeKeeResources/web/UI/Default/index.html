@@ -1,6 +1,5 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html lang="en-US">
 <head>
 <title>KeeKee</title>
 <link rel="stylesheet" href="/UI/KeeKee.css" type="text/css"/>
@@ -40,28 +39,28 @@ var BASEURL='';
 var loginTimerHandle;
 // poll for the user's date. Initialize form if first GET.
 function TimerLoginStuff(firstTime) {
-    $.ajax({
-        type: "GET",
-        url: BASEURL + '/api/LLLP/status',
-        dataType: 'json',
-        timeout: 5000,
-        success: function(data, status) {
-            if (status == 'success') {
-                if (data.isloggedin.value == 'true') {
-                    data.loginstate = {"value": "login"};
-                } else {
-                    data.loginstate = {"value": "logout"};
-                }
-                if (firstTime) InitializeLoginForm(data);
-                UpdateLoginArea(data);
-            }
-        },
-        error: function(xmlHTTPRequest, errorType) {
-            UpdateLoginArea( {
-                msg: {"value": "Lost connection to viewer"},
-                loginstate: {"value": "logout"}
-            });
+    fetch( BASEURL + '/api/LLLP/status', { method: 'GET', cache: 'no-cache' } )
+    .then( response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        return response.json();
+    })
+    .then( data => {
+        LogDebug('Login data: ' + JSON.stringify(data));
+        if (data.isloggedin.value == 'true') {
+            data.loginstate = {"value": "login"};
+        } else {
+            data.loginstate = {"value": "logout"};
+        }
+        if (firstTime) InitializeLoginForm(data);
+        UpdateLoginArea(data);
+    })
+    .catch( error => {
+        UpdateLoginArea( {
+            msg: {"value": "Lost connection to viewer"},
+            loginstate: {"value": "logout"}
+        });
     });
             
     loginTimerHandle = setTimeout(() => TimerLoginStuff(false), 3000);

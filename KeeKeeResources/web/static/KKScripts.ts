@@ -1,7 +1,16 @@
 // Various common JS routines written for KeeKee
-// Copyright 2009, Robert Adams
-// Licensed under BSD licence 
-//          (http://www.opensource.org/licenses/bsd-license.php)
+// Copyright 2026, Robert Adams
+// Licensed under Mozilla Public License 2.0
+// See LICENSE file in top directory for details.
+
+// ===========================================
+// Data format for table building:
+//   {rowname: { col1: val, col2: val; ...}, ...)
+interface TableData {
+    [rowName: string]: {
+        [colName: string]: string | number | boolean | null;
+    };
+}
 
 // ===========================================
 // Build a string for a table to hold the passed data.
@@ -33,113 +42,110 @@
 //     addDisplayCol: add a last column named display (default=false)
 //     columns: an array of column names to display. If empty, build
 //       the column names from the data
-function BuildTableForData(sectID, tableID, data, addRowName, addDisplayCol, columns) {
-    var L = 0;
-    for (var K in columns) { L++; }
-    if (L == 0) {
-        // build an array of all the column names
-        for (row in data) {
-            for (col in data[row]) {
-                if (columns[col] == undefined) {
-                    columns[col] = col;
-                }
-                
-            }
-        }
-    }
+function BuildTableForData(sectID: string, tableID: string, data: TableData,
+            pAddRowName?: boolean, pAddDisplayCol?: boolean, pColumns?: Array<string>) : HTMLElement {
+    var addRowName = pAddRowName ?? true;
+    var addDisplayCol = pAddDisplayCol ?? false;
+
+    var columns = pColumns ?? new Array<string>();
     if (addDisplayCol) {
-        columns['Display'] = 'Display';
+        columns.push("Display");
     }
+
     // create a table with td's with id's for cell addressing
-    var buff = new StringBuffer();
-    var tableClass = MakeID(sectID + "-table-class")
-    buff.append('<table id="' + tableID + '" class="' + tableClass +'">');
-    buff.append('<tr>');
-    var headerClass = MakeID(sectID + '-rowName-header');
-    if (addRowName) buff.append('<th class="' + headerClass + '"></th>');
-    for (col in columns) {
-        headerClass = MakeID(sectID + '-' + columns[col] + '-header');
-        buff.append('<th class="' + headerClass +'">' + columns[col] + '</th>');
+    var tbl = aTable(tableID, MakeID(sectID + '-table-class'));
+    var headerRow = aTableRow(undefined, MakeID(sectID + '-headerRow'));
+    if (addRowName) {
+        var headerCell = aTableHeaderCell(MakeID(sectID + '-rowName-header'));
+        headerRow.appendChild(headerCell);
     }
-    buff.append('</tr>');
-    for (row in data) {
-        buff.append('<tr>');
+    if (columns.length != 0) {
+        for (let col in columns) {
+            var headerCell = aTableHeaderCell(MakeID(sectID + '-' + columns[col] + '-header'));
+            headerCell.appendChild(document.createTextNode(columns[col]));
+            headerRow.appendChild(headerCell);
+        }
+    }
+    tbl.appendChild(headerRow);
+    for (let row in data) {
+        var tableRow = aTableRow();
         if (addRowName) {
-            var rowID=MakeID(sectID + '-rowName-' + row);
-            var rowClass = MakeID(sectID + '--class');
-            buff.append('<td id="' + rowID + '" class="' + rowClass + '">.</td>');
+            var rowCell = aTableData(MakeID(sectID + '--class'), MakeID(sectID + '-rowName-' + row));
+            rowCell.appendChild(document.createTextNode('.'));
+            tableRow.appendChild(rowCell);
         }
-        for (col in columns) {
-            var cellID = MakeID(sectID + '-' + row + '-' + col);
-            var cellClass = MakeID(sectID + '-' + col + '-class');
-            buff.append('<td id="' + cellID + '" class="' + cellClass + '">.</td>');
+        for (let col in columns) {
+            var cell = aTableData(MakeID(sectID + '-' + col + '-class'), MakeID(sectID + '-' + row + '-' + col));
+            cell.appendChild(document.createTextNode('.'));
+            tableRow.appendChild(cell);
         }
-        buff.append('</tr>');
+        tbl.appendChild(tableRow);
     }
-    buff.append('</table>');
-    return buff.toString();
+    return tbl;
 }
 
 // ===========================================
 // table in the specified section.
 // Clear whatever is there and refill it with the data.
-function BuildBasicTable(sect, data /*, addRowName, rebuild, addDisplayCol*/) {
-    var sectID = MakeID(sect.substr(1))
+function BuildBasicTable(sect:string, data:any, paddRowName?: boolean, prebuild?: boolean, paddDisplayCol?: boolean) : void {
+    var sectID = MakeID(sect)
     var tableID = MakeID(sectID + "-table")
-    var addRowName = true;
-    var rebuild = false;
-    var addDisplayCol = false;
-    if (arguments.length > 2) addRowName = arguments[2];
-    if (arguments.length > 3) rebuild = arguments[3];
-    if (arguments.length > 4) addDisplayCol = arguments[4];
+    var addRowName = paddRowName ?? true;
+    var rebuild = prebuild ?? false;
+    var addDisplayCol = paddDisplayCol ?? false;
+
     var specifyColumns = new Array();
     if (arguments.length > 5) specifyColumns = arguments[5];
-    if ($('#' + tableID).length == 0 || rebuild) {
+
+    if (document.getElementById(tableID) == null || rebuild) {
         // table does not exist. Build same
-        $(sect).empty();
-        $(sect).append(BuildTableForData(sectID, tableID, data, addRowName, addDisplayCol, specifyColumns));
+        var sectElem = document.querySelector(sect);
+        if (sectElem != null) {
+            sectElem.innerHTML = "";
+            sectElem.appendChild(BuildTableForData(sectID, tableID, data, addRowName, addDisplayCol, specifyColumns));
+        }
     }
     // Fill its cells with the text data
-    for (row in data) {
-        $('#' + MakeID(sectID + '-rowName-' + row)).text(row);
-        for (col in data[row]) {
+    for (let row in data) {
+        var rowName = document.getElementById(MakeID(sectID + '-rowName-' + row));
+        if (rowName != null) rowName.textContent = row;
+        for (let col in data[row]) {
             var cellID = MakeID(sectID + '-' + row + '-' + col);
-            if ($('#' + cellID).length != 0) {
-                $('#' + cellID).text(data[row][col]);
+            if (document.getElementById(cellID) != null) {
+                document.getElementById(cellID)!.textContent = data[row][col];
             }
         }
     }
 }
 // ===========================================
-// do a table and specify which columns to display
-// Note that column names are passed in as a list.
-function BuildColumnTable(sect, data, addRow, rebuild, addDisp, columns) {
-    var colSpec = new Array();
-    for (col in columns) {
-        colSpec[columns[col]] = columns[col];
-    }
-    BuildBasicTable(sect, data, addRow, rebuild, addDisp, colSpec);
+function aTable(className?:string, idName?:string) : HTMLElement {
+    return anElement("table", className, idName);
+}
+function aTableRow(className?:string, idName?:string) : HTMLElement {
+    return anElement("tr", className, idName);
+}
+function aTableHeaderCell(className?:string, idName?:string) : HTMLElement {
+    return anElement("th", className, idName);
+}
+function aTableData(className?:string, idName?:string) : HTMLElement {
+    return anElement("td", className, idName);
+}
+function anElement(tagName:string, className?:string, idName?:string) : HTMLElement {
+    var ret = document.createElement(tagName);
+    if (className != undefined) ret.setAttribute("class", className);
+    if (idName != undefined) ret.setAttribute("id", idName);
+    return ret;
 }
 
 // clean up ID so there are no dots
-function MakeID(inID) {
+function MakeID(inID:string):string {
     return inID.replace(/\./g, '-');
-}
-// Appendable string
-function StringBuffer() {
-    this.__strings__ = new Array;
-}
-StringBuffer.prototype.append = function(str) {
-    this.__strings__.push(str);
-}
-StringBuffer.prototype.toString = function() {
-    return this.__strings__.join("");
 }
 
 // ===========================================
 // Log debug message to the DEBUGG div if it exists
 // If classname is specified, add that class to the new div
-function LogDebug(msg, classname) {
+function LogDebug(msg: string, classname?: string) : void {
     const debugg = document.getElementById("DEBUGG");
     if (debugg != undefined) {
         const newline = document.createElement("div");
@@ -149,7 +155,7 @@ function LogDebug(msg, classname) {
         }
         debugg.appendChild(newline);
         if (debugg.childElementCount > 20) {
-            debugg.removeChild(debugg.firstChild);
+            debugg.removeChild(debugg.firstChild as ChildNode);
         }
     }
 }
@@ -169,7 +175,7 @@ function LogDebug(msg, classname) {
 // Uses 'sparklines' so you must include that script library.
 class TrendData {
     maxDataPoints = 100;
-    dataPoints = [];
+    dataPoints = new Array<number>();
     formatParms = {
         type: 'line', // line (default), bar, tristate, discrete, bullet, pie or box
         width: 'auto',      // 'auto' or any css width spec
@@ -181,26 +187,28 @@ class TrendData {
         fillColor: 'false'  // Set to false to disable fill.
     };
 
-    constructor(numberOfPoints) {
+    constructor(numberOfPoints: number) {
         this.maxDataPoints = numberOfPoints;
         for (var ii=0; ii<this.maxDataPoints; ii++) this.dataPoints[ii] = 0;
     }
-    AddPoint(pnt) {
+    AddPoint(pnt: number) {
         for (var ii=this.maxDataPoints-1; ii>0; ii--) {
             this.dataPoints[ii] = this.dataPoints[ii-1];
         }
         this.dataPoints[0] = pnt;
     }
-    UpdateDisplay(id) {
-        $.sparkline_display_visible();
-        $(id).sparkline(this.dataPoints, this.formatParams);
+    UpdateDisplay(id: string) {
+        var spark = document.getElementById(id);
+        // spark.sparkline_display_visible();
+        // spark.sparkline(this.dataPoints, this.formatParms);
     }
-    Format(format) {
-        this.formatParams = format;
+    Format(format: any) {
+        this.formatParms = format;
     }
 
 }
 // ===========================================
+
 
 
 
