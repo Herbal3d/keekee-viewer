@@ -148,6 +148,12 @@ namespace KeeKee.Comm.LLLP {
             m_waitTilLater.Name = "CommLLLP WaitTilLater";
             m_World = pWorld;
 
+            // DEBUG DEBUG: try setting OMV log level to debug
+            OMV.Settings.LOG_LEVEL = Microsoft.Extensions.Logging.LogLevel.Debug;
+            if (!OMV.Logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug)) {
+                m_log.Log(KLogLevel.DCOMM, "OMV Logger not enabled");
+            }
+
             CommStatistics = new StatisticCollection();
             CommStatistics.AddStat(m_statNetDisconnected);
             CommStatistics.AddStat(m_statNetLoginProgress);
@@ -228,7 +234,7 @@ namespace KeeKee.Comm.LLLP {
                 gc.Settings.MULTIPLE_SIMS = m_CommConfig.Value.MultipleSims;
                 gc.Settings.ALWAYS_DECODE_OBJECTS = true;
                 gc.Settings.ALWAYS_REQUEST_OBJECTS = true;
-                gc.Settings.OBJECT_TRACKING = true; // We use our own object tracking system
+                gc.Settings.OBJECT_TRACKING = true;
                 gc.Settings.AVATAR_TRACKING = true; //but we want to use the libsl avatar system
                 gc.Settings.SEND_AGENT_APPEARANCE = true;    // for the moment, don't do appearance
                 gc.Settings.SEND_AGENT_THROTTLE = true;    // tell them how fast we want it when connected
@@ -240,7 +246,7 @@ namespace KeeKee.Comm.LLLP {
                 gc.Self.Movement.AutoResetControls = false;
                 gc.Self.Movement.UpdateInterval = m_CommConfig.Value.MovementUpdateInterval;
                 gc.Settings.DISABLE_AGENT_UPDATE_DUPLICATE_CHECK = false;
-                gc.Settings.USE_ASSET_CACHE = false;
+                gc.Settings.USE_ASSET_CACHE = true;
                 gc.Settings.PIPELINE_REQUEST_TIMEOUT = 120 * 1000;
                 gc.Settings.ASSET_CACHE_DIR = m_AssetsConfig.Value.CacheDir;
                 OMV.Settings.RESOURCE_DIR = m_AssetsConfig.Value.OMVResources;
@@ -414,7 +420,7 @@ namespace KeeKee.Comm.LLLP {
             // if we didn't get anything useful, default to last
             loginParams.Start = String.IsNullOrEmpty(loginSetting) ? "last" : loginSetting;
 
-            GridList.SetCurrentGrid(m_loginGrid);
+            GridList.SetCurrentGrid(pLoginParams.Grid ?? "OSGrid");
             loginParams.URI = GridList.GridLoginURI(GridList.CurrentGrid);
             if (loginParams.URI == null) {
                 m_log.Log(KLogLevel.DBADERROR, "COULD NOT FIND URL OF GRID. Grid=" + m_loginGrid);
@@ -422,18 +428,28 @@ namespace KeeKee.Comm.LLLP {
                 m_loginState = LoginStateCode.LogInFailed;
             } else {
                 try {
+                    m_log.Log(KLogLevel.DCOMM, "Logging in to grid {0} at {1} as {2} {3} start {4}",
+                        GridList.CurrentGrid, loginParams.URI,
+                        loginParams.FirstName, loginParams.LastName,
+                        loginParams.Start);
                     OMV.LoginResponseData response = await GridClient.Network.LoginWithResponseAsync(loginParams, m_cancellationToken);
-                    if (response.Success) {
-                        m_log.Log(KLogLevel.DCOMM, "Login successful: {0}", response.Message);
-                        // m_isConnected = true;
-                        IsLoggedIn = true;
-                        m_loginState = LoginStateCode.LoggedIn;
-                        m_loginMsg = response.Message;
-                        Comm_OnLoggedIn();
-                    } else {
-                        m_log.Log(KLogLevel.DCOMM, "Login failed: {0}", response.Message);
+                    if (response == null) {
+                        m_log.Log(KLogLevel.DBADERROR, "Login response is null");
                         m_loginState = LoginStateCode.LogInFailed;
-                        m_loginMsg = response.Message;
+                        return null;
+                    } else {
+                        if (response.Success) {
+                            m_log.Log(KLogLevel.DCOMM, "Login successful: {0}", response.Message);
+                            // m_isConnected = true;
+                            IsLoggedIn = true;
+                            m_loginState = LoginStateCode.LoggedIn;
+                            m_loginMsg = response.Message;
+                            Comm_OnLoggedIn();
+                        } else {
+                            m_log.Log(KLogLevel.DCOMM, "Login failed: {0}", response.Message);
+                            m_loginState = LoginStateCode.LogInFailed;
+                            m_loginMsg = response.Message;
+                        }
                     }
                     return response;
                 } catch (Exception e) {

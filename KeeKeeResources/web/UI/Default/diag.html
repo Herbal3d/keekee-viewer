@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <title>KeeKee Diagnostics</title>
+    <link rel="stylesheet" href="/UI/KeeKee-colors.css" type="text/css"/>
+    <link rel="stylesheet" href="/UI/KeeKee.css" type="text/css"/>
+    <noscript>
+        <p color="red">
+        Your browser does not support Javascript. This won't work for you.
+        </p>
+    </noscript>
+</head>
+<body id="k-body">
+<div id="k-header">Diagnostics</div>
+<div id="k-content">
+    <!-- ============================================== -->
+    <div class="k-section">
+        <a class="k-sectionHeader" href="#">Login</a>
+        <div id="k-login" class="k-SectionContent">
+            <table id="k-gridLogin-table">
+                <tr>
+                    <td class="k-textDisplay k-textRight">First name: </td>
+                    <td><input type="text" id="k-gridLogin-first" size="40" maxlength="40"/></td>
+                </tr>
+                <tr>
+                    <td class="k-textDisplay k-textRight">Last name: </td>
+                    <td><input type="text" id="k-gridLogin-last" size="40" maxlength="40"/></td>
+                </tr>
+                <tr>
+                    <td class="k-textDisplay k-textRight">Password: </td>
+                    <td><input type="password" id="k-gridLogin-password" size="40" maxlength="40"/></td>
+                </tr>
+                <tr>
+                    <td class="k-textDisplay k-textRight">Grid: </td>
+                    <td>
+                        <select size="1" id="k-gridLogin-gridSelect">
+                            <option selected value="OSGrid">OSGrid</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="k-textDisplay k-textRight">Start location: </td>
+                    <td><input type="text" id="k-gridLogin-startLoc" size="40" maxlength="64" value="Last"/></td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="k-textCenter">
+                        <input type="button" id="k-gridLogin-loginButton" class="k-button k-clickable" op="gridLogin" value="Login"/>
+                        <!-- <input type="button" id="k-gridLogin-logoutButton" value="Logout" disabled="disabled"/> -->
+                    </td>
+                </tr>
+            </table>
+        </div>  <!-- k-login -->
+    </div>  <!-- k-section -->
+
+    <!-- ============================================== -->
+    <div class="k-section">
+        <a class="k-sectionHeader" href="#">Chat</a>
+        <div id="k-chat" class="k-section">
+            <textarea name="chattext" rows="20" cols="80"></textarea>
+        </div>  <!-- k-chat -->
+    </div>  <!-- k-section -->
+
+    <!-- ============================================== -->
+    <div class="k-section">
+        <a class="k-sectionHeader" href="#">Inventory</a>
+        <div id="k-inventory" class="k-section">
+            <p>Look at all the stuff in my inventory</p>
+        </div>  <!-- k-inventory -->
+    </div>  <!-- k-section -->
+
+    <!-- ============================================== -->
+    <div class="k-section">
+        <a class="k-sectionHeader" href="#">Statistics</a>
+        <div id="k-statistics" class="k-section">
+            <table width="100%">
+                <tr>
+                    <td rowspan="2">
+                        <div id="k-statsComm">
+                            <h1>Communication Stats</h1>
+                        </div>  <!-- k-statsComm -->
+                    </td>
+                    <td>
+                        <div id="k-statsWorkQueue">
+                            <h1>WorkQueues</h1>
+                        </div>  <!-- k-statsWorkQueue -->
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div id="k-statsRenderer">
+                            <h1>Renderer</h1>
+                        </div>  <!-- k-statsRenderer -->
+                    </td>
+                </tr>
+            </table>
+
+            <h1>Stat Graphs</h1>
+            <div id="k-statCharts">
+            </div>  <!-- k-statCharts -->
+        </div>  <!-- k-statistics -->
+    </div>  <!-- k-section -->
+
+    <!-- ============================================== -->
+</div>  <!-- k-content -->
+<div id="k-DEBUGG"></div>
+<div id="k-footer"></div>
+</body>
+<script type="module" src="/UI/diag.js"></script>
+</html>

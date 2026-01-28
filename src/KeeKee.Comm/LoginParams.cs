@@ -25,6 +25,7 @@ namespace KeeKee.Comm {
         public virtual string? LastName { get; set; }
         public virtual string? StartLocation { get; set; }
         public virtual string? HomeURL { get; set; }
+        public virtual string? Grid { get; set; }
 
         public void FromOSD(OMVSD.OSD osd) {
             if (osd is OMVSD.OSDMap map) {
@@ -35,6 +36,7 @@ namespace KeeKee.Comm {
                 LastName = map.ContainsKey("LastName") ? map["LastName"].AsString() : null;
                 StartLocation = map.ContainsKey("StartLocation") ? map["StartLocation"].AsString() : null;
                 HomeURL = map.ContainsKey("HomeURL") ? map["HomeURL"].AsString() : null;
+                Grid = map.ContainsKey("Grid") ? map["Grid"].AsString() : null;
             }
         }
     }

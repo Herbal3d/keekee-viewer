@@ -40,8 +40,8 @@ namespace KeeKee.World {
         }
 
         public string? GridLoginURI(string gridName) {
-            string ret = m_gridConfig.Value.Grids[gridName].LoginURI;
-            return ret;
+            var gridDef = GetGridDefinition(gridName);
+            return gridDef?.LoginURI ?? "";
         }
 
         /// <summary>

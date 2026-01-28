@@ -85,9 +85,10 @@ namespace KeeKee.Rest {
                         respMap.Add("result", new OMVSD.OSDString("success"));
                         respMap.Add("message", new OMVSD.OSDString(result.Message));
                         respMap.Add("session_id", new OMVSD.OSDString(result.SessionID.ToString()));
+                        respMap.Add("loginResp", respMap);
                     } else {
                         respMap.Add("result", new OMVSD.OSDString("failure"));
-                        respMap.Add("message", new OMVSD.OSDString("Login failed"));
+                        respMap.Add("message", new OMVSD.OSDString("Login information was null"));
                     }
                     byte[] respBytes = Encoding.UTF8.GetBytes(respMap.ToString());
                     m_RestManager.DoSimpleResponse(pResponse, "application/json", () => respBytes);

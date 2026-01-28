@@ -1,7 +1,14 @@
-// Various common JS routines written for KeeKee
-// Copyright 2026, Robert Adams
-// Licensed under Mozilla Public License 2.0
-// See LICENSE file in top directory for details.
+// Copyright 2025 Robert Adams
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ===========================================
 
 // ===========================================
 // Data format for table building:
@@ -42,7 +49,7 @@ interface TableData {
 //     addDisplayCol: add a last column named display (default=false)
 //     columns: an array of column names to display. If empty, build
 //       the column names from the data
-function BuildTableForData(sectID: string, tableID: string, data: TableData,
+export function BuildTableForData(sectID: string, tableID: string, data: TableData,
             pAddRowName?: boolean, pAddDisplayCol?: boolean, pColumns?: Array<string>) : HTMLElement {
     var addRowName = pAddRowName ?? true;
     var addDisplayCol = pAddDisplayCol ?? false;
@@ -87,7 +94,7 @@ function BuildTableForData(sectID: string, tableID: string, data: TableData,
 // ===========================================
 // table in the specified section.
 // Clear whatever is there and refill it with the data.
-function BuildBasicTable(sect:string, data:any, paddRowName?: boolean, prebuild?: boolean, paddDisplayCol?: boolean) : void {
+export function BuildBasicTable(sect:string, data:any, paddRowName?: boolean, prebuild?: boolean, paddDisplayCol?: boolean) : void {
     var sectID = MakeID(sect)
     var tableID = MakeID(sectID + "-table")
     var addRowName = paddRowName ?? true;
@@ -143,24 +150,6 @@ function MakeID(inID:string):string {
 }
 
 // ===========================================
-// Log debug message to the DEBUGG div if it exists
-// If classname is specified, add that class to the new div
-function LogDebug(msg: string, classname?: string) : void {
-    const debugg = document.getElementById("DEBUGG");
-    if (debugg != undefined) {
-        const newline = document.createElement("div");
-        newline.appendChild(document.createTextNode(msg));
-        if (classname != undefined) {
-            newline.setAttribute("class", classname);
-        }
-        debugg.appendChild(newline);
-        if (debugg.childElementCount > 20) {
-            debugg.removeChild(debugg.firstChild as ChildNode);
-        }
-    }
-}
-
-// ===========================================
 // Class for keeping and displaying trending data.
 // A new instance of the class is created and instance.AddPoint(pnt)
 // is called to add data points. A sequence of up to
@@ -173,7 +162,7 @@ function LogDebug(msg: string, classname?: string) : void {
 // Set format before inserting the display html.
 // Look at the default example below for the options.
 // Uses 'sparklines' so you must include that script library.
-class TrendData {
+export class TrendData {
     maxDataPoints = 100;
     dataPoints = new Array<number>();
     formatParms = {
@@ -207,8 +196,3 @@ class TrendData {
     }
 
 }
-// ===========================================
-
-
-
-

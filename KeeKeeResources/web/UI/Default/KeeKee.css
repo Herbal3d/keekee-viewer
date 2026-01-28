@@ -1,165 +1,177 @@
 body {
- font-family: Veranda,Arial,Helvetica,sans-serif;
- font-size: 12px;
- background: #4A5F6D;
- color: #EEEAD6;
- padding: 0px;
- margin: 0px;
+    font-family: Veranda,Arial,Helvetica,sans-serif;
+    font-size: 12px;
+    background: var(--k-body-bg);
+    color: var(--k-text-primary);
+    padding: 0px;
+    margin: 0px;
 }
 .footer {
- font-family: Veranda,Arial,Helvetica,sans-serif;
- font-size: 10px;
+    font-family: Veranda,Arial,Helvetica,sans-serif;
+    font-size: 10px;
 }
 td {
- font-family: Veranda,Arial,Helvetica,sans-serif;
- font-size: 12px;
- padding: 4px;
- margin: 4px;
+    font-family: Veranda,Arial,Helvetica,sans-serif;
+    font-size: 12px;
+    padding: 4px;
+    margin: 4px;
 }
 blockquote {
- font-family: Veranda,Arial,Helvetica,sans-serif;
- font-style: italic;
- font-size: 12px;
+    font-family: Veranda,Arial,Helvetica,sans-serif;
+    font-style: italic;
+    font-size: 12px;
 }
 pre {
- padding: 5px;
- background-color: #8080B0;
- color: #000000;
- margin-left: 20px;
- font-size: 11px;
+    padding: 5px;
+    background-color: var(--k-pre-bg);
+    color: var(--k-text-black);
+    margin-left: 20px;
+    font-size: 11px;
 }
 :link {
- color: #ffffff;
+    color: var(--k-link-color);
 }
 :visited {
- color: #d0d0d0;
+    color: var(--k-link-visited);
 }
-.KKSectionHeader {
+/* General formatting ============================= */
+.k-section {
+    border: 1px solid var(--k-border-color);
+    margin: 10px 10px 10px 10px;
+    padding: 0px 0px 0px 0px;
 }
+.k-sectionHeader {
+    display: block;
+    background: var(--k-stats-bg);
+    color: var(--k-text-primary);
+    font-weight: bold;
+    padding: 5px 10px 5px 10px;
+    text-decoration: none;
+}
+.k-sectionHeader:hover {
+    background: var(--k-stats-section-bg);
+    color: var(--k-text-primary);
+    text-decoration: none;
+}
+.k-SectionContent {
+    padding: 10px 10px 10px 10px;
+}
+.k-textDisplay {
+    font-family: Veranda,Arial,Helvetica,sans-serif;
+    font-size: 12px;
+    color: var(--k-text-primary);
+}
+.k-textRight {
+    text-align: right;
+}
+.k-button {
+    display: inline;
+    margin: 4px;
+    padding: 2px;
+    text-align: center;
+    border: 3px solid var(--k-dialog-accent);
+    border-radius: 5px;
+    -moz-border-radius: 5px;
+    color: var(--k-dialog-button-color);
+    background: var(--k-dialog-button-bg);
+    opacity: 100;
+    width: 7em;
+    height: 2em;
+}   
+
 /* Statistics ===================================== */
-#KKStatistics div {
-    margin-left: 20px;
-    background: #3A4F5D;
+table.k-stats {
+    background: var(--k-stats-bg);
+    font-size: 14px;
+    font-weight: bold;
+    padding: 5px 5px 5px 5px;
+    margin: 0px 0px 0px 0px;
 }
-#KKStatistics h1 {
-    background: #5A6F7D;
+table.k-stats th {
+    text-align: center;
+    padding: 0px 10px 0px 10px;
+    margin: 0px 0px 0px 0px;
+}
+table.k-stats td {
+    text-align: right;
+    padding: 0px 10px 0px 10px;
+    margin: 0px 0px 0px 0px;
+}
+table.k-stats td.description {
+    text-align: left;
+    padding: 0px 10px 0px 10px;
+    margin: 0px 0px 0px 0px;
+    width: 45%;
+}
+table.k-stats tr {
+    border-bottom: 1px solid var(--k-border-color);
+}
+
+
+#k-Statistics div {
+    margin-left: 20px;
+    background: var(--k-stats-section-bg);
+}
+#k-Statistics h1 {
+    background: var(--k-stats-bg);
     font-size: 12px;
 }
 
-table.KKCommStats-table-class td {
-    text-align: right;
-    padding: 0px 0px 0px 5px;
-    margin: 0px 0px 0px 0px;
-}
-th.KKCommStats-value-header {
-    width: 10%;
-}
-th.KKCommStats-description-header {
-    width: 45%;
-}
-table.KKCommStats-table-class td.KKCommStats-description-class {
-    text-align: left;
-}
-
-table.KKOgreStats-table-class td {
-    text-align: right;
-    padding: 0px 0px 0px 5px;
-    margin: 0px 0px 0px 0px;
-}
-th.KKOgreStats-value-header {
-    width: 10%;
-}
-th.KKOgreStats-description-header {
-    width: 45%;
-}
-th.KKOgreStats-Display-header {
-    width: 45%;
-}
-table.KKOgreStats-table-class td.KKOgreStats-description-class {
-    text-align: left;
-}
-table.KKOgreStats-table-class td.KKOgreStats-Display-class {
-    text-align: left;
-}
-
-table.KKQueueStats-table-class td {
-    border: 1px solid;
-    text-align: right;
-}
-
-table.KKRendererStats-table-class td {
-    border: 1px solid;
-    text-align: right;
-}
-
-/* Default Parameters ========================= */
-table.KKDefaultParametersTable {
-}
-table.KKDefaultParametersTable td {
-    border: 1px solid;
-}
-#KKDefaultParameters-table td.KKDefaultParameters-value-class {
-    text-align: left;
-}
-#KKDefaultParameters-table td.KKDefaultParameters-description-class {
-    text-align: left;
-    width: 400px;
-}
 /* Chat ======================================= */
-#KKChatText {
+#k-chatText {
     /* width: 500px; */
     /* height: 200px; */
-    background: #668396;
+    background: var(--k-chat-bg);
     overflow: auto;
 }
-#KKChatText .KKChatLineTime {
-    color: #c0c0c0
+#k-chatText .KKChatLineTime {
+    color: var(--k-chat-time)
 }
-#KKChatText .KKChatLineFrom {
-    color: #f09090;
+#k-chatText .KKChatLineFrom {
+    color: var(--k-chat-from);
 }
-#KKChatText .KKChatLineExpression {
-    color: yellow;
+#k-chatText .KKChatLineExpression {
+    color: var(--k-chat-expression);
 }
-#KKChatText .ChatTypeStatusBlue {
-    color: #303090;
+#k-chatText .ChatTypeStatusBlue {
+    color: var(--k-chat-status-blue);
 }
-#KKChatText .ChatTypeStatusDarkBlue {
-    color: #0000FF;
+#k-chatText .ChatTypeStatusDarkBlue {
+    color: var(--k-chat-status-darkblue);
 }
-#KKChatText .ChatTypeLindenChat {
-    color: yellow;
+#k-chatText .ChatTypeLindenChat {
+    color: var(--k-chat-linden);
 }
-#KKChatText .ChatTypeObjectChat {
-    color: yellow;
+#k-chatText .ChatTypeObjectChat {
+    color: var(--k-chat-object);
 }
-#KKChatText .ChatTypeAlert {
-    color: red;
+#k-chatText .ChatTypeAlert {
+    color: var(--k-chat-alert);
 }
-#KKChatText .ChatTypeError {
-    color: red;
+#k-chatText .ChatTypeError {
+    color: var(--k-chat-error);
 }
-#KKChatInput {
-    background: #668396;
+#k-chatInput {
+    background: var(--k-chat-bg);
 }
 /* Avatars ======================================= */
-#KKAvatars-table td {
+#k-avatars-table td {
     padding: 1px 0px 0px 5px;
     margin: 0px 0px 0px 0px;
 }
-.KKAvatars-Name-class {
-    color: #f09090;
+.k-avatars-Name-class {
+    color: var(--k-avatar-name);
 }
-.KKAvatars-Region-class {
-    color: #c0c0c0
+.k-avatars-Region-class {
+    color: var(--k-avatar-region)
 }
 /* Stats ======================================= */
-#KKFooter {
+#k-footer {
     width: 100%;
     text-align: right;
 }
-#KKFooterStats {
+#k-footerStats {
     text-align: right;
     padding: 5px 10px 0px 0px;
-    color: #808080;
+    color: var(--k-text-muted);
 }
