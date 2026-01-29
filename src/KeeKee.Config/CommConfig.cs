@@ -19,5 +19,8 @@ namespace KeeKee.Config {
         public bool MultipleSims { get; set; } = false;
         // Milliseconds between movement messages sent to server
         public int MovementUpdateInterval { get; set; } = 100;
+
+        // Enable debug messages from the communication layer (usually libremetaverse))
+        public bool EnableLowLevelCommDebugging { get; set; } = false;
     }
 }

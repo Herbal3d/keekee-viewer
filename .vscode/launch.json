@@ -5,7 +5,7 @@
             "name": ".NET Core Launch (KeeKee)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "build-local-libremetaverse",
             "program": "${workspaceFolder}/dist/KeeKee.dll",
             "args": [],
             "cwd": "${workspaceFolder}",

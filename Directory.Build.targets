@@ -1,0 +1,46 @@
+<!--
+  Copyright 2025 Robert Adams
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+<Project>
+  <PropertyGroup Condition="'$(LibreMetaverseLocalDir)' != ''">
+    <LibreMetaverseLocalDirFull>$([System.IO.Path]::GetFullPath('$(LibreMetaverseLocalDir)'))</LibreMetaverseLocalDirFull>
+    <LibreMetaverseDll>$(LibreMetaverseLocalDirFull)/LibreMetaverse.dll</LibreMetaverseDll>
+    <LibreMetaversePrimMesherDll>$(LibreMetaverseLocalDirFull)/LibreMetaverse.PrimMesher.dll</LibreMetaversePrimMesherDll>
+    <LibreMetaverseStructuredDataDll>$(LibreMetaverseLocalDirFull)/LibreMetaverse.StructuredData.dll</LibreMetaverseStructuredDataDll>
+    <LibreMetaverseTypesDll>$(LibreMetaverseLocalDirFull)/LibreMetaverse.Types.dll</LibreMetaverseTypesDll>
+  </PropertyGroup>
+
+  <Target Name="ValidateLibreMetaverseLocalDir" BeforeTargets="ResolveReferences" Condition="'$(LibreMetaverseLocalDir)' != ''">
+    <Error Condition="!Exists('$(LibreMetaverseDll)')"
+           Text="LibreMetaverse.dll not found in '$(LibreMetaverseLocalDirFull)'. Did you mean to point at a bin/Debug/net9.0 folder?" />
+  </Target>
+
+  <!-- Use local LibreMetaverse build if specified (targets import after project files) -->
+  <ItemGroup Condition="'$(LibreMetaverseLocalDir)' != '' and Exists('$(LibreMetaverseDll)')">
+    <PackageReference Remove="LibreMetaverse" />
+    <PackageReference Remove="LibreMetaverse.PrimMesher" />
+    <PackageReference Remove="LibreMetaverse.StructuredData" />
+    <PackageReference Remove="LibreMetaverse.Types" />
+
+    <Reference Include="LibreMetaverse">
+      <HintPath>$(LibreMetaverseDll)</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="LibreMetaverse.PrimMesher" Condition="Exists('$(LibreMetaversePrimMesherDll)')">
+      <HintPath>$(LibreMetaversePrimMesherDll)</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="LibreMetaverse.StructuredData" Condition="Exists('$(LibreMetaverseStructuredDataDll)')">
+      <HintPath>$(LibreMetaverseStructuredDataDll)</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="LibreMetaverse.Types" Condition="Exists('$(LibreMetaverseTypesDll)')">
+      <HintPath>$(LibreMetaverseTypesDll)</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -21,6 +21,7 @@ using KeeKee.World;
 using KeeKee.World.LL;
 
 using OMV = OpenMetaverse;
+using OpenMetaverse.Packets;
 
 namespace KeeKee.Comm.LLLP {
     /// <summary>
@@ -148,12 +149,6 @@ namespace KeeKee.Comm.LLLP {
             m_waitTilLater.Name = "CommLLLP WaitTilLater";
             m_World = pWorld;
 
-            // DEBUG DEBUG: try setting OMV log level to debug
-            OMV.Settings.LOG_LEVEL = Microsoft.Extensions.Logging.LogLevel.Debug;
-            if (!OMV.Logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug)) {
-                m_log.Log(KLogLevel.DCOMM, "OMV Logger not enabled");
-            }
-
             CommStatistics = new StatisticCollection();
             CommStatistics.AddStat(m_statNetDisconnected);
             CommStatistics.AddStat(m_statNetLoginProgress);
@@ -229,7 +224,17 @@ namespace KeeKee.Comm.LLLP {
             // Initialize the SL client
             try {
                 var gc = GridClient;
-                // GridClient.Settings.ENABLE_CAPS = true;
+
+                // DEBUG DEBUG: try setting OMV log level to debug
+                if (m_CommConfig.Value.EnableLowLevelCommDebugging) {
+                    OMV.Settings.LOG_LEVEL = Microsoft.Extensions.Logging.LogLevel.Debug;
+                    if (!OMV.Logger.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug)) {
+                        m_log.Log(KLogLevel.DCOMM, "OMV Logger not enabled");
+                    }
+                    OMV.Logger.Log("OMV Logger debug enabled from config", Microsoft.Extensions.Logging.LogLevel.Debug);
+                }
+                // END DEBUG DEBUG
+
                 gc.Settings.ENABLE_SIMSTATS = true;
                 gc.Settings.MULTIPLE_SIMS = m_CommConfig.Value.MultipleSims;
                 gc.Settings.ALWAYS_DECODE_OBJECTS = true;
@@ -422,6 +427,8 @@ namespace KeeKee.Comm.LLLP {
 
             GridList.SetCurrentGrid(pLoginParams.Grid ?? "OSGrid");
             loginParams.URI = GridList.GridLoginURI(GridList.CurrentGrid);
+            // Update the Settings value incase someone uses it
+            GridClient.Settings.LOGIN_SERVER = loginParams.URI ?? "";
             if (loginParams.URI == null) {
                 m_log.Log(KLogLevel.DBADERROR, "COULD NOT FIND URL OF GRID. Grid=" + m_loginGrid);
                 m_loginMsg = "Unknown Grid name";
