@@ -28,9 +28,16 @@ Array.from(document.getElementsByClassName('k-clickable')).forEach( nn => {
     });
 });
 
+// Diagnostic test button
 ClickableOps['diagTest'] = function(pTarget: EventTarget) {
     LogDebug('Diagnostic test operation invoked');
 };
+// Button to refetch the grid list from the viewer
+ClickableOps['refetchGrids'] = function(pTarget: EventTarget) {
+    LogDebug('Refetch grids operation invoked');
+    FetchGridInfo();
+};
+// Button to do the login based on the form entries
 ClickableOps['gridLogin'] = function(pTarget: EventTarget) {
     LogDebug('Do the login');
     var first = (document.getElementById('k-gridLogin-first') as HTMLInputElement).value;
@@ -74,6 +81,41 @@ ClickableOps['gridLogin'] = function(pTarget: EventTarget) {
         LogDebug('Login exception error: ' + error.message);
     });
 };
+
+interface GridInfo {
+    GridNick: string;
+    GridName: string;
+    LoginURI: string;
+}
+interface GridsInfo {
+    grids: Array<GridInfo>;
+}
+
+// Fetch the list of grids from the viewer and populate the grid select box
+function FetchGridInfo() {
+    fetch( BASEURL + '/api/LLLP/login', { method: 'GET', cache: 'no-cache' } )
+    .then( response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then( data => {
+        LogDebug('Grid data: ' + JSON.stringify(data));
+        var selector = (document.getElementById('k-gridLogin-gridSelect') as HTMLSelectElement);
+        selector.options.length = 0;
+        for (let grid in data.grids) {
+            let valu = data.grids[grid];
+            let opt = document.createElement('option');
+            opt.value = valu.GridNick;
+            opt.text = valu.GridName;
+            selector.add(opt);
+        }
+    })
+    .catch( error => {
+        LogDebug('Fetch grids exception error: ' + error.message);
+    });
+}
 
 /*
 <script type="text/javascript">

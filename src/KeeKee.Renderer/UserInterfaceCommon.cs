@@ -59,9 +59,9 @@ namespace KeeKee.Renderer {
         private BasicWorkQueue m_workQueue;
 
         public UserInterfaceCommon(IKLogger pLog,
-                                   BasicWorkQueue pWorkQueue) {
+                                   WorkQueueManager pQueueManager) {
             m_log = pLog;
-            m_workQueue = pWorkQueue;
+            m_workQueue = pQueueManager.CreateBasicWorkQueue("UICommonWorkQueue");
             m_repeatTimer = new Timer(OnRepeatTimer);
         }
 

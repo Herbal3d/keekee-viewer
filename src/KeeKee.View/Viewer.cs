@@ -67,13 +67,13 @@ namespace KeeKee.View {
         /// </summary>
         public Viewer(KLogger<Viewer> pLog,
                       IOptions<ViewConfig> pViewConfig,
-                      BasicWorkQueue pWorkQueue,
+                      WorkQueueManager pQueueManager,
                       IRenderProvider pRenderer,
                       IWorld pWorld
                       ) {
             m_log = pLog;
             m_ViewConfig = pViewConfig;
-            m_workQueue = pWorkQueue;
+            m_workQueue = pQueueManager.CreateBasicWorkQueue("ViewerWorkQueue");
             Renderer = pRenderer;
             TheWorld = pWorld;
 

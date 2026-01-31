@@ -20,8 +20,8 @@ namespace KeeKee.World.LL {
         public OMV.Primitive? Prim { get; set; }
 
         public const ulong NOREGION = 0xffffffff;
-
         public OMV.Simulator? Sim { get; set; }
+
 
         // an LL localID is a per sim unique handle for the item
         public const uint NOLOCALID = 0xffffffff;
@@ -36,7 +36,7 @@ namespace KeeKee.World.LL {
                         )
                     : base(pLog, pWorld, pRContext, pAContext) {
             this.Prim = pPrim;
-            this.Sim = RegionContext is LLRegionContext rcontext ? rcontext.Simulator : null;
+            this.Sim = pRContext is LLRegionContext rcontext ? rcontext.Simulator : null;
             this.LocalID = pPrim != null ? pPrim.LocalID : LLEntity.NOLOCALID;
         }
 

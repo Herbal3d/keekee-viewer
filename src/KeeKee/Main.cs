@@ -102,8 +102,6 @@ namespace KeeKee {
                      services.AddSingleton<UserPersistantParams>();
                      services.AddSingleton<WorkQueueManager>();
                      services.AddHostedService(sp => sp.GetRequiredService<WorkQueueManager>());
-                     services.AddTransient<BasicWorkQueue>();
-                     services.AddTransient<OnDemandWorkQueue>();
                      services.AddTransient<IEntityCollection, EntityCollection>();
                      services.AddTransient<RegionState>();
 
@@ -147,6 +145,7 @@ namespace KeeKee {
 
                      // services.AddTransient<IAnimation, LLAnimation>();
                      services.AddSingleton<IWorld, World.World>();
+                     services.AddTransient<RegionState>();
 
                      // Renderer services
                      services.Configure<RendererConfig>(context.Configuration.GetSection(RendererConfig.subSectionName));

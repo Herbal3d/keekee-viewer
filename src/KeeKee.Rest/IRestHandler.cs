@@ -11,7 +11,6 @@
 
 using System.Net;
 using KeeKee.Framework;
-using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
 

@@ -36,10 +36,10 @@ namespace KeeKee.View {
 
         public UserInterfaceViewWindow(KLogger<UserInterfaceViewWindow> pLog,
                                        // IOptions<UserInterfaceConfig> pConfig,
-                                       BasicWorkQueue pWorkQueue) {
+                                       WorkQueueManager pQueueManager) {
             m_log = pLog;
 
-            m_ui = new UserInterfaceCommon(pLog, pWorkQueue);
+            m_ui = new UserInterfaceCommon(pLog, pQueueManager);
             m_ui.OnUserInterfaceKeypress += UI_OnUserInterfaceKeypress;
             m_ui.OnUserInterfaceMouseMove += UI_OnUserInterfaceMouseMove;
             m_ui.OnUserInterfaceMouseButton += UI_OnUserInterfaceMouseButton;

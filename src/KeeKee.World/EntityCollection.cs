@@ -30,14 +30,10 @@ namespace KeeKee.World {
 
         protected OMV.DoubleDictionary<string, ulong, IEntity> m_entityDictionary;
 
-        protected string m_name;
-
         public EntityCollection(KLogger<EntityCollection> pLog,
-                                BasicWorkQueue pWorkQueue,
-                                string nam) {
+                                WorkQueueManager pQueueManager) {
             m_log = pLog;
-            m_name = nam;
-            m_workQueueEvent = pWorkQueue;
+            m_workQueueEvent = pQueueManager.CreateBasicWorkQueue("EntityCollectionWorkQueue");
             m_entityDictionary = new OMV.DoubleDictionary<string, ulong, IEntity>();
         }
 

@@ -37,29 +37,15 @@ namespace KeeKee.Comm.LLLP {
 
         private CancellationToken m_cancellationToken;
 
+        private CommLLLPStats m_stats = new CommLLLPStats();
+        public StatisticCollection CommStatistics { get { return m_stats.CommStatistics; } }
+
         // ICommProvider.Name
         public string Name { get { return "CommLLLP"; } }
 
-
-        // Statistics ===============================================
-        // ICommProvider.CommStatistics
-        public StatisticCollection CommStatistics { get; private set; }
-        private Stat<long> m_statNetDisconnected = new StatCounter("Network_Disconnected", "Number of 'network disconnected' messages");
-        private Stat<long> m_statNetLoginProgress = new StatCounter("Network_LoginProgress", "Number of 'login progress' messages");
-        private Stat<long> m_statNetSimChanged = new StatCounter("Network_SimChanged", "Number of 'sim changed' messages");
-        private Stat<long> m_statNetSimConnected = new StatCounter("Network_SimConnected", "Number of 'sim connected' messages");
-        private Stat<long> m_statNetEventQueueRunning = new StatCounter("Network_EventQueueRunning", "Number of 'event queue running' messages");
-        private Stat<long> m_statObjAttachmentUpdate = new StatCounter("Object_AttachmentUpdate", "Number of 'attachment update' messages");
-        private Stat<long> m_statObjAvatarUpdate = new StatCounter("Object_AvatarUpdate", "Number of 'avatar update' messages");
-        private Stat<long> m_statObjKillObject = new StatCounter("Object_KillObject", "Number of 'kill object' messages");
-        private Stat<long> m_statObjObjectProperties = new StatCounter("Object_ObjectProperties", "Number of 'object properties' messages");
-        private Stat<long> m_statObjObjectPropertiesUpdate = new StatCounter("Object_ObjectPropertiesUpdate", "Number of 'object properties update' messages");
-        private Stat<long> m_statObjObjectUpdate = new StatCounter("Object_ObjectUpdate", "Number of 'object update' messages");
-        private Stat<long> m_statObjTerseUpdate = new StatCounter("Object_TerseObjectUpdate", "Number of 'terse object update' messages");
-        private Stat<long> m_statRequestLocalID = new StatCounter("RequestLocalID", "Number of RequestLocalIDs made");
-        // ==========================================================
-
         public ILLInstanceFactory InstanceFactory { get; private set; }
+
+        public IAssetContext LLLPAssetContext { get; private set; }
 
         private IWorld m_World;
         public Grids GridList;
@@ -131,38 +117,24 @@ namespace KeeKee.Comm.LLLP {
                         IOptions<CommConfig> pm_CommConfig,
                         IOptions<AssetConfig> pm_AssetsConfig,
                         IOptions<LLAgentConfig> pm_LLAgentConfig,
+                        IAssetContext pAssetContext,
                         UserPersistantParams pUserParams,
                         LLGridClient pGridClient,
                         Grids pGrids,
                         ILLInstanceFactory pInstanceFactory,
-                        BasicWorkQueue pWaitTilLater,
+                        WorkQueueManager pQueueManager,
                         IWorld pWorld) {
             m_log = pLog;
             m_KeeKeeConfig = pKeeKeeConfig;
             m_CommConfig = pm_CommConfig;
             m_AssetsConfig = pm_AssetsConfig;
             m_LLAgentConfig = pm_LLAgentConfig;
+            LLLPAssetContext = pAssetContext;
             m_userPersistantParams = pUserParams;
             GridList = pGrids;
             InstanceFactory = pInstanceFactory;
-            m_waitTilLater = pWaitTilLater;
-            m_waitTilLater.Name = "CommLLLP WaitTilLater";
+            m_waitTilLater = pQueueManager.CreateBasicWorkQueue("CommLLLP WaitTilLater");
             m_World = pWorld;
-
-            CommStatistics = new StatisticCollection();
-            CommStatistics.AddStat(m_statNetDisconnected);
-            CommStatistics.AddStat(m_statNetLoginProgress);
-            CommStatistics.AddStat(m_statNetSimChanged);
-            CommStatistics.AddStat(m_statNetSimConnected);
-            CommStatistics.AddStat(m_statNetEventQueueRunning);
-            CommStatistics.AddStat(m_statObjAttachmentUpdate);
-            CommStatistics.AddStat(m_statObjAvatarUpdate);
-            CommStatistics.AddStat(m_statObjKillObject);
-            CommStatistics.AddStat(m_statObjObjectProperties);
-            CommStatistics.AddStat(m_statObjObjectPropertiesUpdate);
-            CommStatistics.AddStat(m_statObjObjectUpdate);
-            CommStatistics.AddStat(m_statObjTerseUpdate);
-            CommStatistics.AddStat(m_statRequestLocalID);
 
             GridClient = pGridClient.GridClient;
         }
@@ -468,7 +440,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         public virtual void Network_Disconnected(object? sender, OMV.DisconnectedEventArgs args) {
-            this.m_statNetDisconnected.Event();
+            m_stats.NetDisconnected.Event();
             m_log.Log(KLogLevel.DCOMM, "Disconnected");
             m_loginState = LoginStateCode.NotLoggedIn;
             IsConnected = false;
@@ -488,7 +460,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Network_SimConnected(object? sender, OMV.SimConnectedEventArgs args) {
-            this.m_statNetSimConnected.Event();
+            m_stats.NetSimConnected.Event();
             m_log.Log(KLogLevel.DWORLD, "Network_SimConnected: Simulator connected {0}", args.Simulator.Name);
         }
 
@@ -498,7 +470,7 @@ namespace KeeKee.Comm.LLLP {
             lock (m_opLock) {
                 // the sim isn't really up until the caps queue is running
                 IsConnected = true;   // good enough reason to think we're connected
-                this.m_statNetEventQueueRunning.Event();
+                m_stats.NetEventQueueRunning.Event();
                 m_log.Log(KLogLevel.DWORLD, "Network_EventQueueRunning: Simulator connected {0}", args.Simulator.Name);
 
                 regionContext = FindRegion(args.Simulator);
@@ -535,7 +507,7 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         public virtual void Network_SimChanged(object? sender, OMV.SimChangedEventArgs args) {
             // disable teleports until we have a good connection to the simulator (event queue working)
-            this.m_statNetSimChanged.Event();
+            m_stats.NetSimChanged.Event();
             if (!GridClient.Network.CurrentSim.Caps.IsEventQueueRunning) {
                 m_SwitchingSims = true;
             }
@@ -575,15 +547,17 @@ namespace KeeKee.Comm.LLLP {
             }
             if (QueueTilOnline(args.Simulator, CommActionCode.OnObjectUpdated, sender, args)) return;
             lock (m_opLock) {
-                LLRegionContext rcontext = FindRegion(args.Simulator);
+                LLRegionContext? rcontext = FindRegion(args.Simulator);
+                if (rcontext == null) return;
+
                 if (!ParentExists(rcontext, args.Prim.ParentID)) {
                     // if this requires a parent and the parent isn't here yet, queue this operation til later
                     rcontext.RequestLocalID(args.Prim.ParentID);
-                    m_statRequestLocalID.Event();
+                    m_stats.RequestLocalID.Event();
                     QueueTilLater(args.Simulator, CommActionCode.OnObjectUpdated, sender, args);
                     return;
                 }
-                m_statObjObjectUpdate.Event();
+                m_stats.ObjObjectUpdate.Event();
                 IEntity? updatedEntity;
                 // a full update says everything changed
                 UpdateCodes updateFlags = 0;
@@ -595,7 +569,7 @@ namespace KeeKee.Comm.LLLP {
                         // code called to create the entry if it's not found
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim);
+                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -629,8 +603,7 @@ namespace KeeKee.Comm.LLLP {
             // if we don't need a parent no need to check
             if (parentID == 0) return true; // if no parent say we have the parent
                                             // see if the parent is known
-            IEntity parentEntity = null;
-            regionContext.TryGetEntityLocalID(parentID, out parentEntity);
+            regionContext.TryGetEntityLocalID(parentID, out IEntity? parentEntity);
             return (parentEntity != null);
         }
 
@@ -697,7 +670,7 @@ namespace KeeKee.Comm.LLLP {
                     return;
                 }
 
-                m_statObjAttachmentUpdate.Event();
+                m_stats.ObjAttachmentUpdate.Event();
                 m_log.Log(KLogLevel.DUPDATEDETAIL, "OnNewAttachment: id={0}, lid={1}", args.Prim.ID.ToString(), args.Prim.LocalID);
 
                 try {
@@ -705,7 +678,7 @@ namespace KeeKee.Comm.LLLP {
                     UpdateCodes updateFlags = UpdateCodes.FullUpdate;
                     IEntity ent;
                     if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out ent, () => {
-                        LLEntity newEnt = InstanceFactory.CreateLLPhysical(GridClient, args.Prim);
+                        LLEntity newEnt = InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
                         updateFlags |= UpdateCodes.New;
                         string? attachmentID = "1"; // default attachment ID
                         if (args.Prim.NameValues != null) {
@@ -738,7 +711,7 @@ namespace KeeKee.Comm.LLLP {
             if (QueueTilOnline(args.Simulator, CommActionCode.TerseObjectUpdate, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
             OMV.ObjectMovementUpdate update = args.Update;
-            m_statObjTerseUpdate.Event();
+            m_stats.ObjTerseUpdate.Event();
             IEntity? updatedEntity = null;
             UpdateCodes updateFlags = 0;
             lock (m_opLock) {
@@ -761,7 +734,7 @@ namespace KeeKee.Comm.LLLP {
                         // code called to create the entry if it's not found
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim);
+                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -790,12 +763,12 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         private void Objects_ObjectProperties(object? sender, OMV.ObjectPropertiesEventArgs args) {
             m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectProperties:");
-            m_statObjObjectProperties.Event();
+            m_stats.ObjObjectProperties.Event();
         }
         // ===============================================================
         private void Objects_ObjectPropertiesUpdated(object? sender, OMV.ObjectPropertiesUpdatedEventArgs args) {
             m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectPropertiesUpdated:");
-            m_statObjObjectPropertiesUpdate.Event();
+            m_stats.ObjObjectPropertiesUpdate.Event();
         }
         // ===============================================================
         public void Objects_AvatarUpdate(object? sender, OMV.AvatarUpdateEventArgs args) {
@@ -812,7 +785,7 @@ namespace KeeKee.Comm.LLLP {
                     QueueTilLater(args.Simulator, CommActionCode.OnAvatarUpdate, sender, args);
                     return;
                 }
-                m_statObjAvatarUpdate.Event();
+                m_stats.ObjAvatarUpdate.Event();
                 m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_AvatarUpdate: cntl={0}, parent={1}, p={2}, r={3}",
                             args.Avatar.ControlFlags.ToString("x"), args.Avatar.ParentID,
                             args.Avatar.Position, args.Avatar.Rotation);
@@ -827,7 +800,7 @@ namespace KeeKee.Comm.LLLP {
                 if (!rcontext.Entities.TryGetEntity(avatarEntityName, out updatedEntity)) {
                     m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: creating avatar {0} {1} ({2})",
                         args.Avatar.FirstName, args.Avatar.LastName, args.Avatar.ID);
-                    updatedEntity = InstanceFactory.CreateLLAvatar(GridClient, m_LLAgentConfig);
+                    updatedEntity = InstanceFactory.CreateLLAvatar(GridClient, rcontext, LLLPAssetContext);
                     updateFlags |= UpdateCodes.New;
                 }
                 if (updatedEntity != null) {
@@ -854,7 +827,7 @@ namespace KeeKee.Comm.LLLP {
             if (QueueTilOnline(args.Simulator, CommActionCode.KillObject, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
             if (rcontext == null) return;
-            m_statObjKillObject.Event();
+            m_stats.ObjKillObject.Event();
             m_log.Log(KLogLevel.DWORLDDETAIL, "Object killed:");
             try {
                 IEntity removedEntity;
@@ -911,14 +884,15 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         // given a simulator. Find the region info that we store the stuff in
         // Note that, if we are not connected, we just return null thus showing our unhappiness.
-        public virtual LLRegionContext? FindRegion(OMV.Simulator sim) {
+        public virtual LLRegionContext? FindRegion(OMV.Simulator? sim) {
+            if (sim == null) return null;
             LLRegionContext? foundRegion = null;
             if (IsConnected) {
                 lock (m_regionList) {
                     if (!m_regionList.TryGetValue(sim.ID, out foundRegion)) {
                         // we are connected but doen't have a regionContext for this simulator. Build one.
 
-                        foundRegion = InstanceFactory.CreateLLRegionContext(GridClient, sim);
+                        foundRegion = InstanceFactory.CreateLLRegionContext(GridClient, sim, LLLPAssetContext);
                         // foundRegion.Name = new EntityNameLL(LoggedInGridName + "/Region/" + sim.Name.Trim());
                         foundRegion.Name = new EntityNameLL(LoggedInGridName + "/" + sim.Name.Trim());
 

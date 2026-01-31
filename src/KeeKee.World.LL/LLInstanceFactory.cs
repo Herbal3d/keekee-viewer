@@ -10,11 +10,12 @@
 // limitations under the License.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using KeeKee.Config;
+using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
-using Microsoft.Extensions.Options;
 
 namespace KeeKee.World.LL {
     /// <summary>
@@ -24,10 +25,10 @@ namespace KeeKee.World.LL {
     /// </summary>
     public interface ILLInstanceFactory {
         T Create<T>(params object[] parameters) where T : class;
-        LLEntity CreateLLEntity(params object[] parameters);
-        LLEntity CreateLLAvatar(OMV.GridClient pClient, IOptions<LLAgentConfig> pConfig);
-        LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim);
-        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim);
+        LLEntity CreateLLEntity(OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext);
+        LLEntity CreateLLAvatar(OMV.GridClient pClient, IRegionContext pRContext, IAssetContext pAContext);
+        LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext);
+        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim, IAssetContext pAContext);
     }
     public class LLInstanceFactory : ILLInstanceFactory {
 
@@ -40,12 +41,16 @@ namespace KeeKee.World.LL {
             return ActivatorUtilities.CreateInstance<T>(_provider, parameters);
         }
 
-        public LLEntity CreateLLEntity(params object[] parameters) {
-            return ActivatorUtilities.CreateInstance<LLEntity>(_provider, parameters);
+        public LLEntity CreateLLEntity(OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext) {
+            return new LLEntity(
+                _provider.GetRequiredService<KLogger<LLEntity>>(),
+                _provider.GetRequiredService<IWorld>(),
+                pRContext, pAContext, pPrim);
         }
 
-        public LLEntity CreateLLAvatar(OMV.GridClient pClient, IOptions<LLAgentConfig> pConfig) {
-            LLEntity ava = ActivatorUtilities.CreateInstance<LLEntity>(_provider);
+        public LLEntity CreateLLAvatar(OMV.GridClient pClient, IRegionContext pRContext, IAssetContext pAContext) {
+            IOptions<LLAgentConfig> pConfig = _provider.GetRequiredService<IOptions<LLAgentConfig>>();
+            LLEntity ava = CreateLLEntity(null, pRContext, pAContext);
             ava.AddComponent<LLCmptAvatar>(new LLCmptAvatar(ava.EntityLogger, ava, pClient));
             ava.AddComponent<LLCmptLocation>(new LLCmptLocation(ava.EntityLogger, ava, pClient));
             ava.AddComponent<LLCmptAgentMovement>(new LLCmptAgentMovement(ava.EntityLogger, ava, pClient, pConfig));
@@ -60,14 +65,23 @@ namespace KeeKee.World.LL {
             return ava;
         }
 
-        public LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim) {
-            LLEntity phy = ActivatorUtilities.CreateInstance<LLEntity>(_provider, pPrim);
+        public LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext) {
+            LLEntity phy = CreateLLEntity(pPrim, pRContext, pAContext);
             phy.AddComponent<LLCmptLocation>(new LLCmptLocation(phy.EntityLogger, phy, pClient));
             return phy;
         }
 
-        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim) {
-            return ActivatorUtilities.CreateInstance<LLRegionContext>(_provider, pGridClient);
+        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim, IAssetContext pAContext) {
+            return new LLRegionContext(
+                _provider.GetRequiredService<KLogger<LLRegionContext>>(),
+                this,
+                _provider.GetRequiredService<IWorld>(),
+                pAContext,
+                _provider.GetRequiredService<IEntityCollection>(),
+                _provider.GetRequiredService<RegionState>(),
+                _provider.GetRequiredService<LLTerrainInfo>(),
+                pGridClient,
+                pSim);
         }
 
         public override string ToString() {

@@ -49,12 +49,12 @@ namespace KeeKee.World {
         protected IOptions<AssetConfig> m_assetConfig;
 
         public AssetContextBase(IKLogger pLog,
-                                BasicWorkQueue pWorkQueue,
+                                WorkQueueManager pQueueManager,
                                 IOptions<AssetConfig> pAssetConfig,
                                 string name) {
             m_log = pLog;
             m_assetConfig = pAssetConfig;
-            m_completionWork = pWorkQueue;
+            m_completionWork = pQueueManager.CreateBasicWorkQueue("AssetContextBaseWorkQueue");
 
             CacheDirBase = pAssetConfig.Value.CacheDir ?? "./Cache";
             m_maxRequests = pAssetConfig.Value.MaxTextureRequests;

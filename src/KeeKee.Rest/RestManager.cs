@@ -19,7 +19,6 @@ using KeeKee.Config;
 using KeeKee.Framework.Logging;
 
 using OMVSD = OpenMetaverse.StructuredData;
-using KeeKee.Framework.Utilities;
 
 namespace KeeKee.Rest {
 
@@ -95,32 +94,37 @@ namespace KeeKee.Rest {
             // m_faviconHandler = m_RestHandlerFactory.CreateHandler<RestHandlerFavicon>();
             // m_workQueueHandler = m_RestHandlerFactory.CreateHandler<RestHandlerWorkQueueStats>();
 
-            m_log.Log(KLogLevel.RestDetail, "Start(). Starting listening");
-            m_listener.Start();
+            try {
+                m_log.Log(KLogLevel.RestDetail, "Start(). Starting listening");
+                m_listener.Start();
 
-            while (cancellationToken.IsCancellationRequested == false) {
-                await m_listener.GetContextAsync().ContinueWith(async (task) => {
-                    try {
-                        HttpListenerContext context = task.Result;
-                        HttpListenerRequest request = context.Request;
-                        HttpListenerResponse response = context.Response;
+                while (cancellationToken.IsCancellationRequested == false) {
+                    await m_listener.GetContextAsync().ContinueWith(async (task) => {
+                        try {
+                            HttpListenerContext context = task.Result;
+                            HttpListenerRequest request = context.Request;
+                            HttpListenerResponse response = context.Response;
 
-                        string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
-                        m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
+                            string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
+                            m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
 
-                        IRestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
+                            IRestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
 
-                        if (thisHandler != null) {
-                            string afterString = absURL.Substring(thisHandler.Prefix.Length);
-                            await thisHandler.ProcessGetOrPostRequest(context, request, response, cancellationToken);
-                        } else {
-                            m_log.Log(KLogLevel.Warning, "Request not processed because no matching handler, URL={0}", absURL);
-                            DoErrorResponse(response, HttpStatusCode.NotFound, null);
+                            if (thisHandler != null) {
+                                string afterString = absURL.Substring(thisHandler.Prefix.Length);
+                                await thisHandler.ProcessGetOrPostRequest(context, request, response, cancellationToken);
+                            } else {
+                                m_log.Log(KLogLevel.Warning, "Request not processed because no matching handler, URL={0}", absURL);
+                                DoErrorResponse(response, HttpStatusCode.NotFound, null);
+                            }
+                        } catch (Exception e) {
+                            m_log.Log(KLogLevel.Error, "RestManager listener exception: {0}", e.ToString());
                         }
-                    } catch (Exception e) {
-                        m_log.Log(KLogLevel.Error, "RestManager listener exception: {0}", e.ToString());
-                    }
-                }, cancellationToken);
+                    }, cancellationToken);
+                }
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.Error, "RestManager ExecuteAsync listener registration exception: {0}", e.ToString());
+                return;
             }
 
             // TODO: cleanup on exit

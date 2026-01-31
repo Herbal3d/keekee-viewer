@@ -9,8 +9,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
+using KeeKee.Config;
 using KeeKee.Framework.Logging;
 
 using OMVSD = OpenMetaverse.StructuredData;
@@ -23,10 +26,13 @@ namespace KeeKee.Framework.WorkQueue {
 
         private List<IWorkQueue> m_queues;
 
+        private IServiceProvider m_provider;
         public CancellationToken ShutdownToken { get; private set; }
 
-        public WorkQueueManager(KLogger<WorkQueueManager> pLog) {
+        public WorkQueueManager(KLogger<WorkQueueManager> pLog,
+                                IServiceProvider pProvider) {
             m_log = pLog;
+            m_provider = pProvider;
             m_queues = new List<IWorkQueue>();
         }
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
@@ -35,6 +41,18 @@ namespace KeeKee.Framework.WorkQueue {
             ShutdownToken = cancellationToken;
 
             await Task.CompletedTask;
+        }
+
+        // Create and return a BasicWorkQueue registered with this manager
+        public BasicWorkQueue CreateBasicWorkQueue(string name) {
+            var q = new BasicWorkQueue(
+                m_provider.GetRequiredService<KLogger<BasicWorkQueue>>(),
+                this,
+                m_provider.GetRequiredService<IOptions<WorldConfig>>(),
+                name
+                );
+            Register(q);
+            return q;
         }
 
         public void Register(IWorkQueue wq) {

@@ -14,9 +14,9 @@ using System.Text;
 
 using KeeKee.Comm;
 using KeeKee.Config;
-using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
+using KeeKee.World;
 
 using Microsoft.Extensions.Options;
 
@@ -32,6 +32,7 @@ namespace KeeKee.Rest {
         private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
+        private readonly Grids m_grids;
 
         /// <summary>
         /// </summary>
@@ -43,6 +44,7 @@ namespace KeeKee.Rest {
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
+                                Grids pGrids,
                                 ICommProvider pCommProvider
                                 ) {
             m_log = pLogger;
@@ -50,6 +52,7 @@ namespace KeeKee.Rest {
             m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
+            m_grids = pGrids;
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/login");
 
@@ -61,11 +64,33 @@ namespace KeeKee.Rest {
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
 
+            if (pRequest == null || pResponse == null) {
+                m_log.Log(KLogLevel.Error, "RestHandlerLogin: Null request or response in ProcessGetOrPostRequest");
+                return;
+            }
             if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                // TODO: Implement GET handling if needed
-                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
+                // GET handling returns the server status and the available grids
+                try {
+                    OMVSD.OSDMap respMap = new OMVSD.OSDMap();
+                    OMVSD.OSDArray gridArray = new OMVSD.OSDArray();
+                    m_grids.ForEach((gd) => {
+                        OMVSD.OSDMap gridMap = new OMVSD.OSDMap();
+                        gridMap.Add("GridNick", new OMVSD.OSDString(gd.GridNick));
+                        gridMap.Add("GridName", new OMVSD.OSDString(gd.GridName));
+                        gridMap.Add("LoginURI", new OMVSD.OSDString(gd.LoginURI));
+                        gridArray.Add(gridMap);
+                    });
+                    respMap.Add("grids", gridArray);
+
+                    byte[] respBytes = Encoding.UTF8.GetBytes(respMap.ToString());
+                    m_RestManager.DoSimpleResponse(pResponse, "application/json", () => respBytes);
+                } catch (Exception e) {
+                    m_log.Log(KLogLevel.Error, "RestHandlerLogin: Exception {0} trying to do GET login", e.Message);
+                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
+                }
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
+                // POST handling does the login
                 m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 string strBody = "";
@@ -78,14 +103,14 @@ namespace KeeKee.Rest {
                     LoginParams loginParams = new LoginParams();
                     loginParams.FromOSD(body);
 
-                    var result = await m_commProvider.StartLogin(loginParams);
+                    OMV.LoginResponseData result = await m_commProvider.StartLogin(loginParams);
 
                     OMVSD.OSDMap respMap = new OMVSD.OSDMap();
                     if (result != null && result.Success) {
                         respMap.Add("result", new OMVSD.OSDString("success"));
                         respMap.Add("message", new OMVSD.OSDString(result.Message));
                         respMap.Add("session_id", new OMVSD.OSDString(result.SessionID.ToString()));
-                        respMap.Add("loginResp", respMap);
+                        respMap.Add("loginResp", result.ToString());
                     } else {
                         respMap.Add("result", new OMVSD.OSDString("failure"));
                         respMap.Add("message", new OMVSD.OSDString("Login information was null"));
@@ -93,7 +118,7 @@ namespace KeeKee.Rest {
                     byte[] respBytes = Encoding.UTF8.GetBytes(respMap.ToString());
                     m_RestManager.DoSimpleResponse(pResponse, "application/json", () => respBytes);
                 } catch (Exception e) {
-                    m_log.Log(KLogLevel.Error, "RestHandlerStatic: Exception {0} trying to do login", e.Message);
+                    m_log.Log(KLogLevel.Error, "RestHandlerLogin: Exception {0} trying to do login", e.Message);
                     m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
                 }
             }

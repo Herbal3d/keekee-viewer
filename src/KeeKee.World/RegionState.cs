@@ -67,8 +67,8 @@ namespace KeeKee.World {
             }
         }
 
-        public RegionState(BasicWorkQueue pWorkQueue) {
-            m_stateWork = pWorkQueue;
+        public RegionState(WorkQueueManager pQueueManager) {
+            m_stateWork = pQueueManager.CreateBasicWorkQueue("RegionStateWorkQueue");
             m_regionState = RegionStateCode.Uninitialized;
         }
 

@@ -41,9 +41,9 @@ namespace KeeKee.World.LL {
 
         public LLAssetContext(KLogger<LLAssetContext> pLog,
                             LLGridClient pGridClient,
-                            BasicWorkQueue pWorkQueue,
+                            WorkQueueManager pQueueManager,
                             IOptions<AssetConfig> pAssetConfig)
-                        : base(pLog, pWorkQueue, pAssetConfig, "Unknown") {
+                        : base(pLog, pQueueManager, pAssetConfig, "Unknown") {
 
             // This MAX is only used for the UDP texture requests (not HTTP)
             m_gridClient = pGridClient.GridClient;

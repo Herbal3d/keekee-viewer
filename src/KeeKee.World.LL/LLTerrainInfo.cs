@@ -21,7 +21,10 @@ namespace KeeKee.World.LL {
         protected OMV.Simulator m_simulator;
         public OMV.Simulator Simulator { get { return m_simulator; } }
 
-        public LLTerrainInfo(KLogger<LLTerrainInfo> pLog, IWorld pWorld, IRegionContext pRContext, IAssetContext pAContext)
+        public LLTerrainInfo(KLogger<LLTerrainInfo> pLog,
+                            IWorld pWorld,
+                            IRegionContext pRContext,
+                            IAssetContext pAContext)
                     : base(pLog, pWorld, pRContext, pAContext) {
             m_log = pLog;
             TerrainPatchStride = 16;
@@ -84,7 +87,7 @@ namespace KeeKee.World.LL {
                                 }
                             }
                         }
-                        // LogManager.Log.Log(LogLevel.DWORLDDETAIL,
+                        // m_log.Log(KLogLevel.DWORLDDETAIL,
                         //         "LLTerrainInfo: UpdateHeightMap: {0} null patches = {1}", sim.Name, nullPatchCount);
                     } catch {
                         // this usually happens when first starting a region

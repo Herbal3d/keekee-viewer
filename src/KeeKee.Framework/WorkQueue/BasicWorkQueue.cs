@@ -39,11 +39,13 @@ namespace KeeKee.Framework.WorkQueue {
 
         public BasicWorkQueue(KLogger<BasicWorkQueue> log,
                                 WorkQueueManager pManager,
-                                IOptions<WorldConfig> pWorldConfig) {
+                                IOptions<WorldConfig> pWorldConfig,
+                                string pName) {
 
             m_log = log;
             m_manager = pManager;
             m_cancelToken = m_manager.ShutdownToken;
+            Name = pName;
 
             m_workItems = new Queue<DoLaterJob>();
             m_totalRequests = 0;

@@ -216,7 +216,9 @@ namespace KeeKee.World {
 
         public void UpdateAgent(UpdateCodes what) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "UpdateAgent: ");
-            OnAgentUpdate?.Invoke(m_agent, what);
+            if (m_agent != null) {
+                OnAgentUpdate?.Invoke(m_agent, what);
+            }
         }
 
         public void RemoveAgent() {

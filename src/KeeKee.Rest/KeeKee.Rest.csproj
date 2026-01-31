@@ -12,6 +12,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
     <PackageReference Include="LibreMetaverse" Version="*" />
+    <PackageReference Include="LibreMetaverse.StructuredData" Version="*" />
   </ItemGroup>
 
 
