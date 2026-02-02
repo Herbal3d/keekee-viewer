@@ -16,3 +16,13 @@ Markdown extensions enabled by default:
       :), :angry:, :muscle:, :ok_hand:, ...
         
 
+At one point, I considered making the Docfx pages have a blog-like structure for progress
+updates and such. CoPilot built me a template (/templates/blog) which looks for a section
+in pages and inserts things from a _posts directory. The HTML is:
+    <!--
+    ## Latest Status and Updates
+    
+    <div id="blog-posts" class="blog-posts" data-posts-root="_posts"></div>
+    -->
+The <div> will be replaced with title and summeries of the entries in _posts/.
+Eventually didn't like the idea. Will consider where to go public later.

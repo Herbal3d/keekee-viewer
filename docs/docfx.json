@@ -31,6 +31,7 @@
         ],
         "exclude": [
           "_site/**",
+          "_posts/**",
           "docfx.usage.notes"
         ]
       }
@@ -45,7 +46,8 @@
     "output": "_site",
     "template": [
       "default",
-      "modern"
+      "modern",
+      "templates/material"
     ],
     "globalMetadata": {
       "_appName": "KeeKee-viewer",

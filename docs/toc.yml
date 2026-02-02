@@ -1,5 +1,5 @@
 items:
 - name: Introduction
-  href: ./introduction.md
+  href: ./index.md
 - name: Architecture
   href: ./Architecture.md
