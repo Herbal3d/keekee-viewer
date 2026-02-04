@@ -11,7 +11,9 @@
 
 using OMV = OpenMetaverse;
 
-namespace KeeKee.World {
+using KeeKee.Contexts;
+
+namespace KeeKee.Entity {
 
     public interface ICmptLocation : IEntityComponent {
 

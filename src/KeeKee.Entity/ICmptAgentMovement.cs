@@ -9,7 +9,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace KeeKee.World {
+using KeeKee.Contexts;
+
+namespace KeeKee.Entity {
 
     /// <summary>
     /// The user acts on the world as an 'agent'. There is often an avatar

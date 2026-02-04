@@ -9,6 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;

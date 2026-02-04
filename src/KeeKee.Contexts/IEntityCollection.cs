@@ -13,11 +13,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace KeeKee.World {
+namespace KeeKee.Contexts {
 
     public delegate void EntityNewCallback(IEntity ent);
     public delegate void EntityUpdateCallback(IEntity ent, UpdateCodes what);
     public delegate void EntityRemovedCallback(IEntity ent);
+
+    // used in TryGetCreateentity calls to create the entity if needed
+    public delegate IEntity CreateEntityCallback();
 
     /// <summary>
     /// A collection of entities. Any entity that is a 'parent' of a set
@@ -73,7 +76,7 @@ namespace KeeKee.World {
         /// <param name="ent">found entity</param>
         /// <param name="createIt">delegate called to create the entity if it doesn't exist</param>
         /// <returns>true if we created a new entry</returns>
-        bool TryGetCreateEntity(EntityName entName, out IEntity? ent, RegionCreateEntityCallback createIt);
+        bool TryGetCreateEntity(EntityName entName, out IEntity? ent, CreateEntityCallback createIt);
 
         IEntity FindEntity(Predicate<IEntity> pred);
 

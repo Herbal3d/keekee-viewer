@@ -9,12 +9,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public class LLCmptAvatar : ICmptAvatar, IEntityComponent {
+    public class LLCmptAvatar : ICmptAvatar {
 
         private IKLogger m_log;
         public IEntity ContainingEntity { get; private set; }

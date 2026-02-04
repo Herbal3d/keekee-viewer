@@ -1,4 +1,4 @@
-﻿// Copyright 2025 Robert Adams
+// Copyright 2025 Robert Adams
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -10,14 +10,14 @@
 // limitations under the License.
 
 using KeeKee.Contexts;
-using KeeKee.Renderer;
 
-namespace KeeKee.View {
-    public interface IViewProvider {
+namespace KeeKee.Entity {
 
-        // the world this viewer is connected to
-        IWorld TheWorld { get; }
-        // the renderer the viewer is connected to
-        IRenderProvider Renderer { get; }
+    public interface ICmptAvatar : IEntityComponent {
+
+        string DisplayName { get; set; }
+        string ActivityFlags { get; set; }
+
     }
 }
+

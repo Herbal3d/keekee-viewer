@@ -9,13 +9,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Text.RegularExpressions;
+
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.World;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
@@ -30,8 +29,8 @@ namespace KeeKee.World.LL {
                 : base(ent.Name) {
         }
 
-        public EntityNameLL(IEntity entityContext, string name)
-                : base(entityContext.AssetContext, name) {
+        public EntityNameLL(IEntity pEntity, string name)
+                : base(pEntity.AssetContext, name) {
         }
 
         public EntityNameLL(IAssetContext acontext, string name)
@@ -48,8 +47,9 @@ namespace KeeKee.World.LL {
 
         // Return the cache filename for this entity. This is not based in the cache directory.
         // At the moment, closely tied to the Ogre resource storage structure
-        public override string CacheFilename {
+        public string CacheFilename {
             get {
+                /*
                 string entReplace = Regex.Replace(EntityPart, EntityNameMatch, CachedNameReplace);
                 // if the replacement didn't happen entReplace == entName
                 string newName = base.CombineEntityName(HeaderPart, HostPart, entReplace);
@@ -60,9 +60,12 @@ namespace KeeKee.World.LL {
                     newName.Replace('/', Path.DirectorySeparatorChar);
                 }
                 return newName;
+                */
+                return this.Name;
             }
         }
 
+        /*
         // This class has a little more specific knowlege of how the complete entity name
         // can be converted into its parts or override the default routines.
         private const string HostPartMatch = @"^(.*)/........-....-....-....-.*$";
@@ -71,13 +74,14 @@ namespace KeeKee.World.LL {
         public override string ExtractHostPartFromEntityName() {
             return Regex.Replace(this.Name, HostPartMatch, HostPartReplace);
         }
+        */
 
-        private const string UUIDMatch = @"^.*/(........-....-....-....-............).*$";
-        private const string UUIDReplace = @"$1";
+        // private const string UUIDMatch = @"^.*/(........-....-....-....-............).*$";
+        // private const string UUIDReplace = @"$1";
         // LL entities have a UUID in them of the real name of the entity
-        public override string ExtractEntityFromEntityName() {
-            return Regex.Replace(this.Name, UUIDMatch, UUIDReplace);
-        }
+        // public override string ExtractEntityFromEntityName() {
+        //     return Regex.Replace(this.Name, UUIDMatch, UUIDReplace);
+        // }
 
     }
 }

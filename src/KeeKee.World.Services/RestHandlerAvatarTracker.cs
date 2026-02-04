@@ -12,6 +12,8 @@
 using System.Net;
 using System.Text;
 
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
 using KeeKee.Rest;

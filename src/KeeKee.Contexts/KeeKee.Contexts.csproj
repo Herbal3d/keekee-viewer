@@ -9,17 +9,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
     <PackageReference Include="LibreMetaverse" Version="*" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\KeeKee.Config\KeeKee.Config.csproj" />
-    <ProjectReference Include="..\KeeKee.Contexts\KeeKee.Contexts.csproj" />
-    <ProjectReference Include="..\KeeKee.Entity\KeeKee.Entity.csproj" />
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
-    <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" />
   </ItemGroup>
 
 </Project>

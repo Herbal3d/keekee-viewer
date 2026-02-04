@@ -12,10 +12,11 @@
 using Microsoft.Extensions.Options;
 
 using KeeKee.Config;
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
 using KeeKee.Renderer;
-using KeeKee.World;
 
 using OMV = OpenMetaverse;
 
@@ -134,7 +135,7 @@ namespace KeeKee.View {
             return;
         }
 
-        private void World_OnEntityUpdate(IEntity ent, World.UpdateCodes what) {
+        private void World_OnEntityUpdate(IEntity ent, UpdateCodes what) {
             if (ent.HasComponent<ICmptAgentMovement>()) {
                 m_log.Log(KLogLevel.DUPDATEDETAIL | KLogLevel.DVIEWDETAIL, "OnEntityUpdate: Avatar: {0}", ent.Name.Name);
                 this.Renderer.RenderUpdate(ent, what);

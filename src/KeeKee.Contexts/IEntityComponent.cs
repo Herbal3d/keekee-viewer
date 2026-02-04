@@ -9,20 +9,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Framework;
+using KeeKee.Framework.Logging;
+
 using OMV = OpenMetaverse;
 
-namespace KeeKee.World {
-    /// <summary>
-    /// Lights that fill the world. Used for sun and moon. Individual object 
-    /// lighting is done by the entities themselves.
-    /// </summary>
-    public interface ICmptLight : IEntityComponent {
-        bool Visible { get; set; }
+namespace KeeKee.Contexts {
 
-        OMV.Color4 Color { get; set; }
-
-        OMV.Vector3 Position { get; set; }
-
-        OMV.Vector3 Target { get; set; }
+    public interface IEntityComponent : IDisposable {
+        // The entity that contains this component
+        IEntity ContainingEntity { get; }
     }
 }
+

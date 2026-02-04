@@ -9,17 +9,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
+using KeeKee.Contexts;
+
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
-public enum SpecialRenderTypes {
-    Foliage,
-    Particles
-};
+    public enum SpecialRenderTypes {
+        Foliage,
+        Particles
+    };
 
-public interface ISpecialRender {
-    SpecialRenderTypes Type { get; set; }
-}
+    public interface ISpecialRender : IEntityComponent {
+        SpecialRenderTypes Type { get; set; }
+    }
 }

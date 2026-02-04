@@ -12,8 +12,10 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-using KeeKee.Framework;
+using KeeKee.Contexts;
 using KeeKee.Config;
+using KeeKee.Entity;
+using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
 using KeeKee.Framework.Statistics;
@@ -528,10 +530,10 @@ namespace KeeKee.Comm.LLLP {
             // update the region's view of the terrain
             regionContext.TerrainInfo.UpdatePatch(regionContext, args.X, args.Y, args.HeightMap);
             // tell the world the earth is moving
-            if (QueueTilOnline(args.Simulator, CommActionCode.RegionStateChange, regionContext, World.UpdateCodes.Terrain)) {
+            if (QueueTilOnline(args.Simulator, CommActionCode.RegionStateChange, regionContext, UpdateCodes.Terrain)) {
                 return;
             }
-            regionContext.Update(World.UpdateCodes.Terrain);
+            regionContext.Update(UpdateCodes.Terrain);
         }
 
         // ===============================================================
@@ -1053,7 +1055,7 @@ namespace KeeKee.Comm.LLLP {
                     case CommActionCode.RegionStateChange:
                         // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: RegionStateChange");
                         // NOTE that this goes straight to the status update routine
-                        ((IRegionContext)p1).Update((World.UpdateCodes)p2);
+                        ((IRegionContext)p1).Update((UpdateCodes)p2);
                         break;
                     case CommActionCode.OnObjectDataBlockUpdated:
                         // m_log.Log(KLogLevel.DCOMMDETAIL, "RegionAction: OnObjectDataBlockUpdated");

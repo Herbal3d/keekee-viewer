@@ -9,12 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using OMV = OpenMetaverse;
-
-namespace KeeKee.World {
+namespace KeeKee.Contexts {
 
     public delegate void WorldRegionNewCallback(IRegionContext rcontext);
     public delegate void WorldRegionUpdatedCallback(IRegionContext rcontext, UpdateCodes what);

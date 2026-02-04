@@ -9,13 +9,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 
 namespace KeeKee.World {
-    public class TerrainInfoBase : EntityBase, ITerrainInfo {
+    public class TerrainInfoBase : IEntity, ITerrainInfo {
         public float[,] HeightMap { get; protected set; } = new float[256, 256];
 
         public int HeightMapWidth { get; protected set; } = 256;
@@ -43,7 +42,7 @@ namespace KeeKee.World {
         }
 
         public TerrainInfoBase(IKLogger pLog, IWorld pWorld, IRegionContext pRContext, IAssetContext pAContext)
-                        : base(pLog, pWorld, pRContext, pAContext) {
+                        : base(pLog, pWorld, pRContext, pAContext, EntityClassifications.TerrainEntity) {
         }
 
         public override void Dispose() {

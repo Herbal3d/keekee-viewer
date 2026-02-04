@@ -11,7 +11,7 @@
 
 using KeeKee.Framework.WorkQueue;
 
-namespace KeeKee.World {
+namespace KeeKee.Contexts {
 
     public enum RegionStateCode : uint {
         None = 0,

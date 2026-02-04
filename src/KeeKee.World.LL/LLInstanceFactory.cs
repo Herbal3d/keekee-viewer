@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using KeeKee.Config;
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
@@ -25,7 +26,7 @@ namespace KeeKee.World.LL {
     /// </summary>
     public interface ILLInstanceFactory {
         T Create<T>(params object[] parameters) where T : class;
-        LLEntity CreateLLEntity(OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext);
+        LLEntity CreateLLEntity(OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext, EntityClassifications pClassification);
         LLEntity CreateLLAvatar(OMV.GridClient pClient, IRegionContext pRContext, IAssetContext pAContext);
         LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext);
         public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim, IAssetContext pAContext);
@@ -41,16 +42,16 @@ namespace KeeKee.World.LL {
             return ActivatorUtilities.CreateInstance<T>(_provider, parameters);
         }
 
-        public LLEntity CreateLLEntity(OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext) {
+        public LLEntity CreateLLEntity(OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext, EntityClassifications pClassification) {
             return new LLEntity(
                 _provider.GetRequiredService<KLogger<LLEntity>>(),
                 _provider.GetRequiredService<IWorld>(),
-                pRContext, pAContext, pPrim);
+                pRContext, pAContext, pPrim, pClassification);
         }
 
         public LLEntity CreateLLAvatar(OMV.GridClient pClient, IRegionContext pRContext, IAssetContext pAContext) {
             IOptions<LLAgentConfig> pConfig = _provider.GetRequiredService<IOptions<LLAgentConfig>>();
-            LLEntity ava = CreateLLEntity(null, pRContext, pAContext);
+            LLEntity ava = CreateLLEntity(null, pRContext, pAContext, EntityClassifications.AvatarEntity);
             ava.AddComponent<LLCmptAvatar>(new LLCmptAvatar(ava.EntityLogger, ava, pClient));
             ava.AddComponent<LLCmptLocation>(new LLCmptLocation(ava.EntityLogger, ava, pClient));
             ava.AddComponent<LLCmptAgentMovement>(new LLCmptAgentMovement(ava.EntityLogger, ava, pClient, pConfig));
@@ -66,7 +67,7 @@ namespace KeeKee.World.LL {
         }
 
         public LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext) {
-            LLEntity phy = CreateLLEntity(pPrim, pRContext, pAContext);
+            LLEntity phy = CreateLLEntity(pPrim, pRContext, pAContext, EntityClassifications.PrimitiveEntity);
             phy.AddComponent<LLCmptLocation>(new LLCmptLocation(phy.EntityLogger, phy, pClient));
             return phy;
         }

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KeeKee.Config\KeeKee.Config.csproj" />
+    <ProjectReference Include="..\KeeKee.Contexts\KeeKee.Contexts.csproj" />
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
     <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" />

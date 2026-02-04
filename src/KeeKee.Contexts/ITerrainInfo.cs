@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace KeeKee.World {
+namespace KeeKee.Contexts {
     public interface ITerrainInfo {
         // generic terrain description
         float[,] HeightMap { get; }

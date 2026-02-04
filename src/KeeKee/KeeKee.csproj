@@ -27,6 +27,8 @@
     <ProjectReference Include="..\KeeKee.Config\KeeKee.Config.csproj" />
     <ProjectReference Include="..\KeeKee.Comm\KeeKee.Comm.csproj" />
     <ProjectReference Include="..\KeeKee.Comm.LLLP\KeeKee.Comm.LLLP.csproj" />
+    <ProjectReference Include="..\KeeKee.Contexts\KeeKee.Contexts.csproj" />
+    <ProjectReference Include="..\KeeKee.Entity\KeeKee.Entity.csproj" />
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
     <ProjectReference Include="..\KeeKee.Renderer\KeeKee.Renderer.csproj" />
     <ProjectReference Include="..\KeeKee.Renderer.Map\KeeKee.Renderer.Map.csproj" />

@@ -1,4 +1,4 @@
-// Copyright 2025 Robert Adams
+﻿// Copyright 2025 Robert Adams
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,14 +9,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using KeeKee.Framework;
+using KeeKee.Contexts;
 
 using OMV = OpenMetaverse;
 
-namespace KeeKee.World {
+namespace KeeKee.Entity {
+    public interface ICmptAnimation : IEntityComponent {
+        // For the moment, there is not much to an animation. Someday this will
+        // contain all the stuff for an avatar animation.
+        OMV.Vector3 AngularVelocity { get; set; }
 
-    public interface IEntityComponent : IDisposable {
-        // The entity that contains this component
-        IEntity ContainingEntity { get; }
+        // fixed rotation
+        bool DoStaticRotation { get; set; }
+        OMV.Vector3 StaticRotationAxis { get; set; }
+        float StaticRotationRotPerSec { get; set; }
+
+
     }
 }

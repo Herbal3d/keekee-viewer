@@ -9,15 +9,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-using KeeKee.Framework;
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
 using KeeKee.Renderer;
-using KeeKee.World;
 
 namespace KeeKee.View {
 

@@ -9,15 +9,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
-using Microsoft.Extensions.DependencyInjection;
+
 using OMV = OpenMetaverse;
 
-namespace KeeKee.World {
+namespace KeeKee.Entity {
     public class EntityCollection : IEntityCollection {
         protected KLogger<EntityCollection> m_log;
 
@@ -140,7 +138,7 @@ namespace KeeKee.World {
         /// <param name="ent"></param>
         /// <param name="createIt"></param>
         /// <returns>true if we created a new entry</returns>
-        public bool TryGetCreateEntity(EntityName entName, out IEntity? ent, RegionCreateEntityCallback createIt) {
+        public bool TryGetCreateEntity(EntityName entName, out IEntity? ent, CreateEntityCallback createIt) {
             // m_log.Log(LogLevel.DWORLDDETAIL, "TryGetCreateEntity: n={0}", entName);
             try {
                 lock (this) {

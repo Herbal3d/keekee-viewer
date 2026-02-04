@@ -18,6 +18,8 @@ using NLog.Extensions.Logging;
 
 using KeeKee.Config;
 using KeeKee.Comm.LLLP;
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 using KeeKee.Renderer;
@@ -102,7 +104,7 @@ namespace KeeKee {
                      services.AddSingleton<UserPersistantParams>();
                      services.AddSingleton<WorkQueueManager>();
                      services.AddHostedService(sp => sp.GetRequiredService<WorkQueueManager>());
-                     services.AddTransient<IEntityCollection, EntityCollection>();
+                     services.AddTransient<EntityCollection>();
                      services.AddTransient<RegionState>();
 
                      // Logger and KLogger wrapper for base logger

@@ -12,14 +12,13 @@
 using Microsoft.Extensions.Options;
 
 using KeeKee.Config;
-using KeeKee.Comm;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
 
 using OMV = OpenMetaverse;
-using System.Threading.Tasks;
 
-namespace KeeKee.World {
+namespace KeeKee.Contexts {
+
     /// <summary>
     /// Base class for the asset context associated with an entity. This provides
     /// functions for accessing the contents of the entity (prim info, textures, ...).
@@ -28,7 +27,35 @@ namespace KeeKee.World {
     /// that actually find and fetch the data. The information goes into the caching
     /// system for access by the renderer and other subsystems.
     /// </summary>
-    public abstract class AssetContextBase : IAssetContext, IDisposable {
+    public abstract class IAssetContext : IDisposable {
+        public class WaitingInfo : IComparable<WaitingInfo> {
+            public OMV.UUID worldID;
+            public string filename;
+            public OMV.AssetType type;
+            public TaskCompletionSource<AssetLoadInfo>? tcs;
+            public WaitingInfo(OMV.UUID wid) {
+                worldID = wid;
+            }
+            public int CompareTo(WaitingInfo? other) {
+                return other == null ? 1 : worldID.CompareTo(other.worldID);
+            }
+        }
+
+        public class AssetLoadInfo {
+            public OMV.TextureRequestState DownloadState;
+            public OMV.Assets.AssetTexture AssetData;
+            public EntityName entityName;
+            public OMV.AssetType type = OMV.AssetType.Texture;
+            public bool HasTransparancy = false;
+            public AssetLoadInfo(EntityName ename, OMV.AssetType typ,
+                                    OMV.TextureRequestState state,
+                                    OMV.Assets.AssetTexture assetData) {
+                entityName = ename;
+                type = typ;
+                DownloadState = state;
+                AssetData = assetData;
+            }
+        }
 
         protected IKLogger m_log;
 
@@ -36,7 +63,7 @@ namespace KeeKee.World {
 
         public string CacheDirBase { get; set; } = "";
 
-        public static List<AssetContextBase> AssetContexts = new List<AssetContextBase>();
+        public static List<IAssetContext> AssetContexts = new List<IAssetContext>();
 
         // used to lock access to the filesystem so the threads and instances of this don't get too tangled
         protected static readonly object FileSystemAccessLock = new object();
@@ -48,7 +75,7 @@ namespace KeeKee.World {
 
         protected IOptions<AssetConfig> m_assetConfig;
 
-        public AssetContextBase(IKLogger pLog,
+        public IAssetContext(IKLogger pLog,
                                 WorkQueueManager pQueueManager,
                                 IOptions<AssetConfig> pAssetConfig,
                                 string name) {
@@ -77,7 +104,7 @@ namespace KeeKee.World {
         /// call to the OnDownload* events will show it's progress.
         /// </summary>
         /// <param name="textureEntityName">the entity name of this texture</param>
-        public abstract Task<IAssetContext.AssetLoadInfo> DoTextureLoad(EntityName textureEntityName, AssetType typ);
+        public abstract Task<IAssetContext.AssetLoadInfo> DoTextureLoad(EntityName textureEntityName, OMV.AssetType typ);
 
         /*
         /// <summary>
@@ -120,7 +147,7 @@ namespace KeeKee.World {
         /// <param name="textureEntityName"></param>
         /// <param name="finished"></param>
         /// <returns></returns>
-        public async Task<IAssetContext.AssetLoadInfo> RequestTextureLoad(EntityName textureEntityName, AssetType typ) {
+        public async Task<IAssetContext.AssetLoadInfo> RequestTextureLoad(EntityName textureEntityName, OMV.AssetType typ) {
             IAssetContext? textureOwner = null;
             lock (AssetContexts) {
                 foreach (IAssetContext acb in AssetContexts) {
@@ -182,7 +209,7 @@ namespace KeeKee.World {
         protected void MakeParentDirectoriesExist(string? filename) {
             string? textureDirName = Path.GetDirectoryName(filename ?? "");
             if (textureDirName != null) {
-                lock (AssetContextBase.FileSystemAccessLock) {
+                lock (IAssetContext.FileSystemAccessLock) {
                     if (!Directory.Exists(textureDirName)) {
                         Directory.CreateDirectory(textureDirName);
                     }
@@ -235,7 +262,7 @@ namespace KeeKee.World {
         }
 
         // implementation function to get comm specific entity names from received texture information
-        protected virtual EntityName ConvertToEntityName(AssetContextBase acb, string id) {
+        protected virtual EntityName ConvertToEntityName(IAssetContext acb, string id) {
             return new EntityName(acb, id);
         }
 

@@ -12,13 +12,15 @@
 using Microsoft.Extensions.Options;
 
 using KeeKee.Config;
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
 
-    public class LLCmptAgentMovement : IEntityComponent, ICmptAgentMovement {
+    public class LLCmptAgentMovement : ICmptAgentMovement {
         private IKLogger m_log;
 
         public IEntity ContainingEntity { get; private set; }

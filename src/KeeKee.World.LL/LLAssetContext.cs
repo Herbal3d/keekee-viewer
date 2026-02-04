@@ -13,6 +13,7 @@ using Microsoft.Extensions.Options;
 
 using KeeKee.Comm;
 using KeeKee.Config;
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Statistics;
 
@@ -29,7 +30,7 @@ namespace KeeKee.World.LL {
     /// This uses the OpenMetaverse connection to the server to load the
     /// asset (texture) into the filesystem.
     /// </summary>
-    public sealed class LLAssetContext : AssetContextBase, IDisplayable {
+    public sealed class LLAssetContext : IAssetContext, IDisplayable {
 
         private SemaphoreSlim m_textureThrottle;
         private StatNumber m_queuedTextureRequests = new StatNumber("QueuedTextureRequests", "Number of texture requests waiting to be sent");
@@ -109,7 +110,7 @@ namespace KeeKee.World.LL {
                     m_log.Log(KLogLevel.DTEXTUREDETAIL, "DoTextureLoad: Texture file already exists for " + worldID);
                     byte[] data = File.ReadAllBytes(textureFilename);
                     OMV.Assets.AssetTexture assetTexture = new OMV.Assets.AssetTexture(OMV.UUID.Zero, data);
-                    bool hasTransparancy = AssetContextBase.CheckAssetTextureForTransparancy(assetTexture);
+                    bool hasTransparancy = IAssetContext.CheckAssetTextureForTransparancy(assetTexture);
 
                     return new IAssetContext.AssetLoadInfo(textureEntityName, typ,
                                                             OMV.TextureRequestState.Finished,
@@ -125,7 +126,7 @@ namespace KeeKee.World.LL {
         // NEW ======================================
         private async Task<IAssetContext.AssetLoadInfo> DoTextureLoadInternal(OMV.UUID binID,
                             EntityName pTextureEntityName,
-                            AssetType typ,
+                            OMV.AssetType typ,
                             string pTextureFilename) {
 
             m_queuedTextureRequests.Increment();
@@ -173,7 +174,7 @@ namespace KeeKee.World.LL {
                 if (m_waiting.TryGetValue(binID, out IAssetContext.WaitingInfo? wi)) {
                     m_log.Log(KLogLevel.DTEXTUREDETAIL, "OnACDownloadFinished: Unknown texture download finished: " + binID.ToString());
                     // TODO: should this text for transparancy be in the caller?
-                    bool hasTransparancy = AssetContextBase.CheckAssetTextureForTransparancy(assetTexture);
+                    bool hasTransparancy = IAssetContext.CheckAssetTextureForTransparancy(assetTexture);
                     var result = new IAssetContext.AssetLoadInfo(
                                         ConvertToEntityName(this, binID.ToString()),
                                         wi.type,

@@ -11,10 +11,12 @@
 
 using System;
 using System.Collections.Generic;
+using KeeKee.Contexts;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
     public class LLSpecialRenderType : ISpecialRender {
+        public IEntity ContainingEntity => throw new NotImplementedException();
         private SpecialRenderTypes m_type;
         public SpecialRenderTypes Type { get { return m_type; } set { m_type = value; } }
 
@@ -24,5 +26,9 @@ namespace KeeKee.World.LL {
         public OMV.Tree TreeType { get { return m_treeType; } set { m_treeType = value; } }
         private OMV.Grass m_grassType;
         public OMV.Grass GrassType { get { return m_grassType; } set { m_grassType = value; } }
+
+        public void Dispose() {
+            return;
+        }
     }
 }

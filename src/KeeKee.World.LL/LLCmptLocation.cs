@@ -9,6 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
@@ -18,7 +20,7 @@ namespace KeeKee.World.LL {
 
         private IKLogger m_log;
         private OMV.GridClient m_client;
-        public IEntity ContainingEntity { get { return ContainingLLEntity; } }
+        public IEntity ContainingEntity { get { return ContainingEntity; } }
         public LLEntity ContainingLLEntity { get; private set; }
 
         public LLCmptLocation(IKLogger pLog,

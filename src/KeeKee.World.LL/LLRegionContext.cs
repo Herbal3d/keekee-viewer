@@ -9,12 +9,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
+
 using OpenMetaverse;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public sealed class LLRegionContext : RegionContextBase {
+    public sealed class LLRegionContext : IRegionContext {
         private KLogger<LLRegionContext> m_log;
         public OMV.Simulator Simulator { get; private set; }
 
@@ -102,7 +104,7 @@ namespace KeeKee.World.LL {
         /// <param name="ent"></param>
         /// <param name="createIt"></param>
         /// <returns>true if we created a new entry</returns>
-        public bool TryGetCreateEntityLocalID(uint localID, out IEntity? ent, RegionCreateEntityCallback createIt) {
+        public bool TryGetCreateEntityLocalID(uint localID, out IEntity? ent, CreateEntityCallback createIt) {
             try {
                 IEntity newEntity = null;
                 lock (Entities) {

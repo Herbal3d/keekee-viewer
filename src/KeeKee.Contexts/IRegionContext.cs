@@ -9,23 +9,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
 
-namespace KeeKee.World {
-    public abstract class RegionContextBase : EntityBase, IRegionContext, IDisposable {
+namespace KeeKee.Contexts {
+    public abstract class IRegionContext : IEntity, IDisposable {
 
         #region Events
+        public delegate void RegionRegionStateChangedCallback(IRegionContext pRegion, RegionStateCode code);
+        public delegate void RegionRegionUpdatedCallback(IRegionContext pRegion, UpdateCodes what);
 #pragma warning disable 0067   // disable unused event warning
         // when the underlying simulator is changing.
-        public event RegionRegionStateChangeCallback? OnRegionStateChange;
+        public event RegionRegionStateChangedCallback? OnRegionStateChange;
         public event RegionRegionUpdatedCallback? OnRegionUpdated;
-
 #pragma warning restore 0067
         #endregion
 
@@ -37,13 +34,13 @@ namespace KeeKee.World {
 
         public IEntityCollection Entities { get; private set; }
 
-        public RegionContextBase(IKLogger pLog,
+        public IRegionContext(IKLogger pLog,
                                 IWorld pWorld,
                                 IEntityCollection pEntityCollection,
                                 RegionState pRegionState,
                                 IRegionContext? pRContext,  // null only for creating the region context itself
                                 IAssetContext pAcontext)
-                    : base(pLog, pWorld, pRContext, pAcontext) {
+                    : base(pLog, pWorld, pRContext, pAcontext, EntityClassifications.RegionContext) {
 
             State = pRegionState;
             Entities = pEntityCollection;
@@ -54,7 +51,7 @@ namespace KeeKee.World {
         }
 
         private void State_OnChange(RegionStateCode newState) {
-            if (OnRegionStateChange != null) OnRegionStateChange(this, newState);
+            OnRegionStateChange?.Invoke(this, newState);
         }
 
         protected OMV.Vector3 m_size = new OMV.Vector3(256f, 256f, 8000f);
@@ -73,7 +70,7 @@ namespace KeeKee.World {
         }
 
         // information on terrain for this region
-        public ITerrainInfo TerrainInfo { get; protected set; }
+        public ITerrainInfo? TerrainInfo { get; protected set; }
 
         // try and get an entity from the entity collection in this region
         public virtual bool TryGetEntity(EntityName entName, out IEntity? foundEnt) {
@@ -82,7 +79,7 @@ namespace KeeKee.World {
 
         public override void Update(UpdateCodes what) {
             base.Update(what);      // this sends an EntityUpdate for the region
-            if (OnRegionUpdated != null) OnRegionUpdated(this, what);
+            OnRegionUpdated?.Invoke(this, what);
         }
 
         public override void Dispose() {

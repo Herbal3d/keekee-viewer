@@ -9,8 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using Microsoft.Extensions.Hosting;
-
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
@@ -86,7 +85,7 @@ namespace KeeKee.World {
                     coll.OnEntityRemoved += Region_OnRemovedEntityCallback;
 
                     if (Region_OnRegionUpdatedCallback == null) {
-                        Region_OnRegionUpdatedCallback = new RegionRegionUpdatedCallback(Region_OnRegionUpdated);
+                        Region_OnRegionUpdatedCallback = new IRegionContext.RegionRegionUpdatedCallback(Region_OnRegionUpdated);
                     }
                     rcontext.OnRegionUpdated += Region_OnRegionUpdatedCallback;
                 }
@@ -98,27 +97,27 @@ namespace KeeKee.World {
         }
 
         #region REGION EVENT PROCESSING
-        private EntityNewCallback Region_OnNewEntityCallback = null;
+        private EntityNewCallback? Region_OnNewEntityCallback = null;
         private void Region_OnNewEntity(IEntity ent) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Region_OnNewEntity: {0}", ent.Name.Name);
             OnWorldEntityNew?.Invoke(ent);
             return;
         }
 
-        private EntityUpdateCallback Region_OnUpdateEntityCallback = null;
+        private EntityUpdateCallback? Region_OnUpdateEntityCallback = null;
         private void Region_OnUpdateEntity(IEntity ent, UpdateCodes what) {
             OnWorldEntityUpdate?.Invoke(ent, what);
             return;
         }
 
-        private EntityRemovedCallback Region_OnRemovedEntityCallback = null;
+        private EntityRemovedCallback? Region_OnRemovedEntityCallback = null;
         private void Region_OnRemovedEntity(IEntity ent) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Region_OnRemovedEntity: {0}", ent.Name.Name);
             OnWorldEntityRemoved?.Invoke(ent);
             return;
         }
 
-        private RegionRegionUpdatedCallback Region_OnRegionUpdatedCallback = null;
+        private IRegionContext.RegionRegionUpdatedCallback? Region_OnRegionUpdatedCallback = null;
         private void Region_OnRegionUpdated(IRegionContext rcontext, UpdateCodes what) {
             OnWorldRegionUpdated?.Invoke(rcontext, what);
             return;

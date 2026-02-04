@@ -9,13 +9,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Contexts;
+using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
 
-    public class LLEntity : EntityBase {
+    public class LLEntity : IEntity {
 
         public OMV.Primitive? Prim { get; set; }
 
@@ -32,9 +34,10 @@ namespace KeeKee.World.LL {
                         IWorld pWorld,
                         IRegionContext pRContext,
                         IAssetContext pAContext,
-                        OMV.Primitive? pPrim
+                        OMV.Primitive? pPrim,
+                        EntityClassifications pClassification
                         )
-                    : base(pLog, pWorld, pRContext, pAContext) {
+                    : base(pLog, pWorld, pRContext, pAContext, pClassification) {
             this.Prim = pPrim;
             this.Sim = pRContext is LLRegionContext rcontext ? rcontext.Simulator : null;
             this.LocalID = pPrim != null ? pPrim.LocalID : LLEntity.NOLOCALID;
