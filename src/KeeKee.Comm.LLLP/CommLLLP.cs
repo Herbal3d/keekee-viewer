@@ -206,6 +206,7 @@ namespace KeeKee.Comm.LLLP {
                         m_log.Log(KLogLevel.DCOMM, "OMV Logger not enabled");
                     }
                     OMV.Logger.Log("OMV Logger debug enabled from config", Microsoft.Extensions.Logging.LogLevel.Debug);
+                    m_log.Log(KLogLevel.DCOMM, "OMV Logger debug enabled from config");
                 }
                 // END DEBUG DEBUG
 

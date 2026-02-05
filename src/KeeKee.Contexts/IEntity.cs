@@ -84,9 +84,36 @@ namespace KeeKee.Contexts {
             }
         }
 
+        /// <summary>
+        /// Try to get a component of the given type. This will look for exact
+        /// matches first, then will look for derived types.
+        /// This allows adding LLCmptLocation and looking it up as ICmptLocation.
+        /// </summary>
+        /// <param name="pType"></param>
+        /// <param name="pComponent"></param>
+        /// <returns></returns>
+        private bool TryGetComponent(Type pType, out IEntityComponent pComponent) {
+            lock (m_components) {
+                if (m_components.TryGetValue(pType, out IEntityComponent? found)) {
+                    pComponent = found;
+                    return true;
+                }
+
+                foreach (var kvp in m_components) {
+                    Type componentType = kvp.Value.GetType();
+                    if (pType.IsAssignableFrom(componentType)) {
+                        pComponent = kvp.Value;
+                        return true;
+                    }
+                }
+            }
+
+            pComponent = null;
+            return false;
+        }
+
         public T Cmpt<T>() where T : class, IEntityComponent {
-            if (m_components.ContainsKey(typeof(T))) {
-                IEntityComponent cmpt = m_components[typeof(T)];
+            if (TryGetComponent(typeof(T), out IEntityComponent cmpt)) {
                 return (T)cmpt;
             }
             EntityLogger.Log(KLogLevel.DBADERROR, "EntityBase.Cmpt: No component of type {0}", typeof(T).ToString());
@@ -94,19 +121,16 @@ namespace KeeKee.Contexts {
         }
 
         public bool HasComponent<T>() where T : class, IEntityComponent {
-            return m_components.ContainsKey(typeof(T));
+            return TryGetComponent(typeof(T), out _);
         }
         // Test and return component if it exists
         public bool HasComponent<T>(out T? component) where T : class, IEntityComponent {
-            bool ret = false;
-            if (m_components.ContainsKey(typeof(T))) {
-                IEntityComponent cmpt = m_components[typeof(T)];
+            if (TryGetComponent(typeof(T), out IEntityComponent? cmpt)) {
                 component = (T)cmpt;
-                ret = true;
-            } else {
-                component = null;
+                return true;
             }
-            return ret;
+            component = null;
+            return false;
         }
         #endregion Component Management
 

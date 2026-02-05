@@ -19,8 +19,8 @@ namespace KeeKee.World.LL {
 
         private IKLogger m_log;
 
-        protected OMV.Simulator m_simulator;
-        public OMV.Simulator Simulator { get { return m_simulator; } }
+        protected OMV.Simulator? m_simulator;
+        public OMV.Simulator? Simulator { get { return m_simulator; } }
 
         public LLTerrainInfo(IKLogger pLog,
                             IWorld pWorld,
@@ -51,8 +51,7 @@ namespace KeeKee.World.LL {
 
                 if ((reg == null) || !(reg is LLRegionContext)) {
                     // things are not set up so create a default, flat heightmap
-                    m_log.Log(KLogLevel.DWORLDDETAIL,
-                            "LLTerrainInfo: Building default zero terrain");
+                    m_log.Log(KLogLevel.DWORLDDETAIL, "LLTerrainInfo: Building default zero terrain");
                     CreateZeroHeight(ref newHM);
                     minHeight = maxHeight = 0f;
                 } else {
