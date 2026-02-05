@@ -22,7 +22,7 @@ namespace KeeKee.World.LL {
         protected OMV.Simulator m_simulator;
         public OMV.Simulator Simulator { get { return m_simulator; } }
 
-        public LLTerrainInfo(KLogger<LLTerrainInfo> pLog,
+        public LLTerrainInfo(IKLogger pLog,
                             IWorld pWorld,
                             IRegionContext pRContext,
                             IAssetContext pAContext)

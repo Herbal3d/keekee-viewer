@@ -24,14 +24,7 @@ namespace KeeKee.World.LL {
     /// To use, add InstanceFactory to the class creation invocation
     /// and then do a "_factory.Create<TheClassYouWant>()".
     /// </summary>
-    public interface ILLInstanceFactory {
-        T Create<T>(params object[] parameters) where T : class;
-        LLEntity CreateLLEntity(OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext, EntityClassifications pClassification);
-        LLEntity CreateLLAvatar(OMV.GridClient pClient, IRegionContext pRContext, IAssetContext pAContext);
-        LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive? pPrim, IRegionContext pRContext, IAssetContext pAContext);
-        public LLRegionContext CreateLLRegionContext(OMV.GridClient pGridClient, OMV.Simulator pSim, IAssetContext pAContext);
-    }
-    public class LLInstanceFactory : ILLInstanceFactory {
+    public class LLInstanceFactory {
 
         private readonly IServiceProvider _provider;
         public LLInstanceFactory(IServiceProvider pProvider) {
@@ -80,7 +73,6 @@ namespace KeeKee.World.LL {
                 pAContext,
                 _provider.GetRequiredService<IEntityCollection>(),
                 _provider.GetRequiredService<RegionState>(),
-                _provider.GetRequiredService<LLTerrainInfo>(),
                 pGridClient,
                 pSim);
         }

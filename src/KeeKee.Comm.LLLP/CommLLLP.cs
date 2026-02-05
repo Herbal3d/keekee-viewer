@@ -45,7 +45,7 @@ namespace KeeKee.Comm.LLLP {
         // ICommProvider.Name
         public string Name { get { return "CommLLLP"; } }
 
-        public ILLInstanceFactory InstanceFactory { get; private set; }
+        public LLInstanceFactory InstanceFactory { get; private set; }
 
         public IAssetContext LLLPAssetContext { get; private set; }
 
@@ -123,7 +123,7 @@ namespace KeeKee.Comm.LLLP {
                         UserPersistantParams pUserParams,
                         LLGridClient pGridClient,
                         Grids pGrids,
-                        ILLInstanceFactory pInstanceFactory,
+                        LLInstanceFactory pInstanceFactory,
                         WorkQueueManager pQueueManager,
                         IWorld pWorld) {
             m_log = pLog;

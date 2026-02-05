@@ -265,7 +265,7 @@ All source files require MPL 2.0 header (see [copyrightInclude.txt](copyrightInc
 | Add new config | [src/KeeKee.Config/](src/KeeKee.Config/) + `appsettings.json` |
 | Add REST endpoint | Subclass `RestHandler` in appropriate module |
 | Custom logging | Inject `KLogger<YourClass>`, use `KLogLevel` enums |
-| Create entities | Use `IInstanceFactory` or `ILLInstanceFactory` |
+| Create entities | Use `IInstanceFactory` |
 | Provider interfaces | Search `I*Provider` in [src/](src/) |
 | Work queues | Inject `BasicWorkQueue` or `OnDemandWorkQueue` |
 

@@ -1,12 +1,3 @@
 {
-    "dotnet.msbuild.commandLineArguments": [
-        "/p:LibreMetaverseLocalDir=/mnt/f/Robert/dev/libremetaverse-mb/bin/Debug/net9.0"
-    ],
-    "dotnet.server.extraMSBuildArguments": [
-        "/p:LibreMetaverseLocalDir=/mnt/f/Robert/dev/libremetaverse-mb/bin/Debug/net9.0"
-    ],
-    "omnisharp.msbuildCommandLineArguments": [
-        "/p:LibreMetaverseLocalDir=/mnt/f/Robert/dev/libremetaverse-mb/bin/Debug/net9.0"
-    ],
     "dotnet.defaultSolution": "keekee-viewer.sln"
 }

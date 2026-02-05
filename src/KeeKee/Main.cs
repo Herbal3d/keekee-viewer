@@ -139,11 +139,11 @@ namespace KeeKee {
                      services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
                      services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
                      services.Configure<AssetConfig>(context.Configuration.GetSection(AssetConfig.subSectionName));
-                     services.AddTransient<ILLInstanceFactory, LLInstanceFactory>();
                      services.AddTransient<IEntity, LLEntity>();
+                     services.AddTransient<IEntityCollection, EntityCollection>();
                      services.AddTransient<IRegionContext, LLRegionContext>();
                      services.AddTransient<IAssetContext, LLAssetContext>();
-                     services.AddTransient<ITerrainInfo, LLTerrainInfo>();
+                     services.AddTransient<LLInstanceFactory>();
 
                      // services.AddTransient<IAnimation, LLAnimation>();
                      services.AddSingleton<IWorld, World.World>();

@@ -31,7 +31,6 @@ namespace KeeKee.World.LL {
                                 IAssetContext pAContext,
                                 IEntityCollection pEntityCollection,
                                 RegionState pState,
-                                LLTerrainInfo pTerrainInfo,
                                 OMV.GridClient pGridComm,
                                 OMV.Simulator pSim)
                             : base(pLog, pWorld, pEntityCollection, pState, null, pAContext) {
@@ -41,7 +40,11 @@ namespace KeeKee.World.LL {
 
             RegionContext = this;
 
-            TerrainInfo = pTerrainInfo;
+            TerrainInfo = new LLTerrainInfo(
+                                m_log,
+                                pWorld,
+                                this,
+                                pAContext);
 
             // until we have a better protocol, we know the sims are a fixed size
             m_size = new OMV.Vector3(256f, 256f, 8000f);
