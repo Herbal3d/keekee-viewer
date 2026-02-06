@@ -1,0 +1,59 @@
+{
+    "KeeKeeViewer": {
+        "AppTitle": "KeeKee Viewer",
+        "AppVersion": "0.2.0",
+        "AppName": "KeeKeeViewer"
+    },
+    "RestManager": {
+        "Port": 9144,
+        "BaseURL": "http://localhost",
+        "CSSLocalUrl": "/std/KeeKee.css",
+        "APIBase": "/api",
+        "Skin": "Default"
+    },
+    "Comm": {
+        "ShouldHoldChildren": true,
+        "MultipleSims": false,
+        "MovementUpdateInterval": 100,
+        "ApplicationName": "KeeKee Viewer",
+        "Version": "0.1.0",
+        "EnableLowLevelCommDebugging": true
+    },
+    "World": {
+        "MaxObjectsPerRequest": 100,
+        "ObjectRequestRetries": 3,
+        "ObjectRequestRetryDelayMS": 500
+    },
+    "Assets": {
+        "CacheDir": "",
+        "EnableCaps": true,
+        "MaxTextureRequests": 10,
+        "OMVResources": "./KeeKeeResources/openmetaverse_data",
+        "NoTextureFilename": "./KeeKeeResources/NoTexture.png",
+        "NoKculptyFilename": "./KeeKeeResources/NoSculpty.png",
+        "ConvertPNG": true
+    },
+    "LLAgent": {
+        "SitCloseEnough": 1.5,
+        "PreMoveAvatar": true,
+        "PreMoveRotFudge": 3.0,
+        "PreMoveFlyFudge": 2.5,
+        "PreMoveRunFudge": 1.5,
+        "PreMoveFudge": 0.4
+    },
+    "Renderer": {
+        "RenderProvider": "OGL"
+    },
+    "RendererOGL": {
+        "CamaraFar": 2048.0, // camera far clip
+        "GlobalAmbient": "<0.4,0.4,0.4>",
+        "SunAmbient": "<0.4,0.4,0.4>",
+        "SunSpecular": "<0.8,0.8,0.8>",
+        "SunDiffuse": "<1.0,1.0,1.0>",
+        "MoonAmbient": "<0.2,0.2,0.2>",
+        "MoonSpecular": "<0.5,0.5,0.5>",
+        "MoonDiffuse": "<0.5,0.5,0.5>",
+        "AvatarColor": "<0.4,0.4,0.4>", // Color of avatar shape
+        "AvatarTransparancy": 0.6 // Transparacy of avatar shape
+    }
+}

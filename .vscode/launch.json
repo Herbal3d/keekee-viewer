@@ -9,6 +9,10 @@
             "program": "${workspaceFolder}/dist/KeeKee.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
+            "env": {
+                "DOTNET_ENVIRONMENT": "Debug",
+                "ASPNETCORE_ENVIRONMENT": "Debug"
+            },
             "stopAtEntry": false,
             "console": "internalConsole",
             "internalConsoleOptions": "openOnSessionStart"
