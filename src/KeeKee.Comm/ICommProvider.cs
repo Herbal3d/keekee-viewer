@@ -23,6 +23,10 @@ namespace KeeKee.Comm {
     public interface ICommProvider {
         string Name { get; }
 
+        Task StartAsync(CancellationToken cancellationToken);
+
+        Task StopAsync(CancellationToken cancellationToken);
+
         bool IsConnected { get; }
 
         bool IsLoggedIn { get; }

@@ -24,6 +24,6 @@ namespace KeeKee.Framework {
         /// Return values about this class
         /// </summary>
         /// <returns></returns>
-        OMVSD.OSDMap? GetDisplayable();
+        OMVSD.OSD? GetDisplayable();
     }
 }

@@ -37,7 +37,7 @@ namespace KeeKee.Rest {
         private string m_prefix = NOPREFIX;
         public string Prefix {
             get { return m_prefix; }
-            set { SetPrefix(value); }
+            set { SetPrefix(value, null); }
         }
 
         public IDisplayable? DisplayableSource { get; set; } = null;
@@ -59,13 +59,14 @@ namespace KeeKee.Rest {
         /// This allows construction before knowing the prefix.
         /// </summary>
         /// <param name="pPrefix"></param>
-        public void SetPrefix(string pPrefix) {
+        public void SetPrefix(string pPrefix, IDisplayable? pDisplayableSource) {
             if (m_prefix == NOPREFIX) {
                 m_log.Log(KLogLevel.RestDetail, "Setting Prefix to {0}", pPrefix);
                 m_prefix = pPrefix;
                 m_RestManager.RegisterListener(this);
             }
             m_prefix = pPrefix;
+            DisplayableSource = pDisplayableSource;
         }
 
         public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
@@ -85,7 +86,7 @@ namespace KeeKee.Rest {
 
                 try {
                     if (DisplayableSource != null) {
-                        OMVSD.OSDMap? displayMap = DisplayableSource.GetDisplayable();
+                        OMVSD.OSD? displayMap = DisplayableSource.GetDisplayable();
                         if (displayMap != null) {
                             m_RestManager.DoSimpleResponse(pResponse, "application/json", () => {
                                 return Utilities.StringToBytes(OMVSD.OSDParser.SerializeJsonString(displayMap));
@@ -108,12 +109,6 @@ namespace KeeKee.Rest {
         public void Dispose() {
             // m_RestManager.UnregisterListener(this);
         }
-
-        // Optional displayable interface to get parameters from. Not used here.
-        public OMVSD.OSDMap? GetDisplayable() {
-            return null;
-        }
     }
-
 }
 

@@ -188,7 +188,7 @@ namespace KeeKee.World.LL {
             }
         }
 
-        public OMVSD.OSDMap GetDisplayable() {
+        public OMVSD.OSD GetDisplayable() {
             return m_stats.GetDisplayable();
         }
 

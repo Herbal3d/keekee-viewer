@@ -14,7 +14,7 @@ using KeeKee.Framework;
 
 namespace KeeKee.Rest {
 
-    public interface IRestHandler : IDisposable, IDisplayable {
+    public interface IRestHandler : IDisposable {
 
         // The prefix string for this handler. The stuff after the 'api/' in the URL
         // Usually constructed with:

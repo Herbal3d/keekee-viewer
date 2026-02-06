@@ -257,13 +257,13 @@ namespace KeeKee.Framework.WorkQueue {
             }
         }
 
-        public OMVSD.OSDMap GetDisplayable() {
+        public OMVSD.OSD GetDisplayable() {
             OMVSD.OSDMap aMap = new OMVSD.OSDMap();
-            aMap.Add("Name", new OMVSD.OSDString(this.Name));
-            aMap.Add("Total", new OMVSD.OSDInteger((int)this.TotalQueued));
-            aMap.Add("Current", new OMVSD.OSDInteger((int)this.CurrentQueued));
-            aMap.Add("Later", new OMVSD.OSDInteger(m_doEvenLater.Count));
-            aMap.Add("Active", new OMVSD.OSDInteger(this.ActiveWorkProcessors));
+            aMap.Add("Name", this.Name);
+            aMap.Add("Total", (int)this.TotalQueued);
+            aMap.Add("Current", (int)this.CurrentQueued);
+            aMap.Add("Later", m_doEvenLater.Count);
+            aMap.Add("Active", ActiveWorkProcessors);
             // Logging.LogManager.Log.Log(LogLevel.DRESTDETAIL, "BasicWorkQueue: GetDisplayable: out={0}", aMap.ToString());
             return aMap;
         }

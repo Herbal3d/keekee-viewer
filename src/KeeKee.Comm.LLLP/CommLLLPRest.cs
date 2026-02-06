@@ -44,15 +44,12 @@ namespace KeeKee.Comm.LLLP {
         IRestHandler? m_exitHandler = null;
         IRestHandler? m_chatHandler = null;
         IRestHandler? m_statusHandler = null;
-        IRestHandler? m_paramGetHandler = null;
 
         public CommLLLPRest(KLogger<CommLLLPRest> pLog,
                         RestHandlerFactory pRestFactory,
-                        CommLLLP pComm,
                         IOptions<CommConfig> pConnectionParams) {
             m_log = pLog;
             m_restFactory = pRestFactory;
-            m_comm = pComm;
             ConnectionParams = pConnectionParams;
         }
 

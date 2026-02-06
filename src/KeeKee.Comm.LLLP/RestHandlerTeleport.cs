@@ -108,10 +108,5 @@ namespace KeeKee.Rest {
         public void Dispose() {
             // m_RestManager.UnregisterListener(this);
         }
-
-        // Optional displayable interface to get parameters from. Not used here.
-        public OMVSD.OSDMap? GetDisplayable() {
-            return null;
-        }
     }
 }

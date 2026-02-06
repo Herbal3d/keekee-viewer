@@ -60,7 +60,7 @@ namespace KeeKee.Framework.Statistics {
         public abstract void Event();
         public abstract void Event(int pCount);
 
-        public abstract OMVSD.OSDMap GetDisplayable();
+        public abstract OMVSD.OSD GetDisplayable();
 
         public Stat(string pName, string pDescription, string pUnit = "") {
             Name = pName;

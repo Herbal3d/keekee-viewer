@@ -10,9 +10,9 @@
 // limitations under the License.
 
 using KeeKee.Framework;
-using KeeKee.Framework.Logging;
 using KeeKee.Framework.Statistics;
-using OpenMetaverse.StructuredData;
+
+using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Comm.LLLP {
     public class CommLLLPStats : IDisplayable {
@@ -53,7 +53,7 @@ namespace KeeKee.Comm.LLLP {
             CommStatistics.AddStat(RequestLocalID);
         }
 
-        public OSDMap? GetDisplayable() {
+        public OMVSD.OSD? GetDisplayable() {
             return CommStatistics.GetDisplayable();
         }
     }

@@ -121,20 +121,18 @@ namespace KeeKee {
                      services.AddSingleton<RestManager>();
                      services.AddHostedService(sp => sp.GetRequiredService<RestManager>());
 
-                     // Communication services
+                     // Communication services. Set up for LLLP.
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
+                     services.AddHostedService<CommService>();
+                     services.AddSingleton<LoadWorldObjects>();
+                     services.AddSingleton<AssetFetcher>();
+                     services.AddSingleton<ICommProvider, CommLLLP>();
                      services.AddTransient<RestHandlerLogin>();
                      services.AddTransient<RestHandlerLogout>();
                      services.AddTransient<RestHandlerTeleport>();
                      services.AddTransient<RestHandlerExit>();
                      services.AddTransient<RestHandlerChat>();
-                     services.AddSingleton<LoadWorldObjects>();
-                     services.AddSingleton<AssetFetcher>();
-                     services.AddSingleton<LLGridClient>();
-                     services.AddSingleton<ICommProvider, CommLLLP>();
-                     services.AddSingleton<CommLLLP>();
                      services.AddSingleton<CommLLLPRest>();
-                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLP>());
                      services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
 
                      // World services
@@ -146,6 +144,7 @@ namespace KeeKee {
 
                      // World services using LL implementations
                      services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
+                     services.AddSingleton<LLGridClient>();
                      services.AddTransient<IEntity, LLEntity>();
                      services.AddTransient<IRegionContext, LLRegionContext>();
                      services.AddTransient<IAssetContext, LLAssetContext>();

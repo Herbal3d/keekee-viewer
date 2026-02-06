@@ -15,9 +15,9 @@ using System.Text;
 using KeeKee.Comm;
 using KeeKee.Comm.LLLP;
 using KeeKee.Config;
-using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
+using KeeKee.Framework.WorkQueue;
 using KeeKee.World;
 using KeeKee.World.LL;
 using Microsoft.Extensions.Options;
@@ -37,6 +37,7 @@ namespace KeeKee.Rest {
         private readonly IOptions<CommConfig> m_commConfig;
         private readonly IOptions<GridConfig> m_gridConfig;
         private readonly Grids m_grids;
+        private readonly WorkQueueManager m_workQueueManager;
 
         /// <summary>
         /// </summary>
@@ -50,6 +51,7 @@ namespace KeeKee.Rest {
                                 IOptions<GridConfig> pGridConfig,
                                 Grids p_grids,
                                 RestManager pRestManager,
+                                WorkQueueManager pWorkQueueManager,
                                 ICommProvider pCommProvider
                                 ) {
             m_log = pLogger;
@@ -57,6 +59,7 @@ namespace KeeKee.Rest {
             m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_grids = p_grids;
+            m_workQueueManager = pWorkQueueManager;
             // Since we're LLLP specific, get the underlying CommLLLP
             m_commLLLP = pCommProvider as CommLLLP;
             m_commConfig = pCommConfig;
@@ -80,34 +83,47 @@ namespace KeeKee.Rest {
                     ["isconnected"] = m_commProvider.IsConnected,
                     ["isloggedin"] = m_commProvider.IsLoggedIn
                 };
-                var avatarInfo = m_commLLLP?.MainAgent?.Cmpt<LLCmptAvatar>();
-                if (avatarInfo != null) {
-                    responseMap["first"] = avatarInfo.First;
-                    responseMap["last"] = avatarInfo.Last;
-                    responseMap["displayname"] = avatarInfo.DisplayName;
-                } else {
-                    responseMap["avatarinfo"] = "no avatar info available";
+                OMVSD.OSDMap avatarInfo = new OMVSD.OSDMap();
+                var cmptAvatar = m_commLLLP?.MainAgent?.Cmpt<LLCmptAvatar>();
+                if (cmptAvatar != null) {
+                    avatarInfo["first"] = cmptAvatar.First;
+                    avatarInfo["last"] = cmptAvatar.Last;
+                    avatarInfo["displayname"] = cmptAvatar.DisplayName;
                 }
-                var avatarLoc = m_commLLLP?.MainAgent?.Cmpt<LLCmptLocation>();
-                if (avatarLoc != null) {
-                    responseMap["avatarpositionx"] = avatarLoc.GlobalPosition.X;
-                    responseMap["avatarpositiony"] = avatarLoc.GlobalPosition.Y;
-                    responseMap["avatarpositionz"] = avatarLoc.GlobalPosition.Z;
-                } else {
-                    responseMap["avatarlocation"] = "no avatar location info available";
+                var cmptAvatarLoc = m_commLLLP?.MainAgent?.Cmpt<LLCmptLocation>();
+                if (cmptAvatarLoc != null) {
+                    var globalPos = cmptAvatarLoc.GlobalPosition;
+                    var localPos = cmptAvatarLoc.LocalPosition;
+                    avatarInfo["globalPos"] = globalPos.ToString();
+                    avatarInfo["globalx"] = globalPos.X;
+                    avatarInfo["globaly"] = globalPos.Y;
+                    avatarInfo["globalz"] = globalPos.Z;
+                    avatarInfo["localPos"] = localPos.ToString();
+                    avatarInfo["x"] = localPos.X;
+                    avatarInfo["y"] = localPos.Y;
+                    avatarInfo["z"] = localPos.Z;
                 }
+                responseMap["avatar"] = avatarInfo;
+
                 if (m_commLLLP != null) {
                     responseMap["currentgrid"] = m_commLLLP?.LoggedInGridName ?? "unknown";
-                    responseMap["currentsim"] = "Add more fields as needed";
+                    responseMap["currentsim"] = m_commLLLP?.GridClient?.Network?.CurrentSim?.Name ?? "unknown";
                 }
 
+                responseMap["workqueues"] = m_workQueueManager.GetDisplayable();
+
                 // Add in the comm config parameters
+                OMVSD.OSDMap commConfig = new OMVSD.OSDMap();
                 foreach (var param in m_commConfig.Value.GetType().GetProperties()) {
                     var val = param.GetValue(m_commConfig.Value);
                     if (val != null) {
-                        responseMap[$"config_{param.Name.ToLower()}"] = val.ToString() ?? "";
+                        commConfig[param.Name.ToLower()] = val.ToString() ?? "";
                     }
                 }
+                responseMap["commconfig"] = commConfig;
+
+                responseMap["commstats"] = m_commProvider.CommStatistics.GetDisplayable();
+
                 // Add in the grid info
                 OMVSD.OSDArray possibleGrids = new OMVSD.OSDArray();
                 m_grids.ForEach((gd) => {
@@ -136,11 +152,6 @@ namespace KeeKee.Rest {
 
         public void Dispose() {
             // m_RestManager.UnregisterListener(this);
-        }
-
-        // Optional displayable interface to get parameters from. Not used here.
-        public OMVSD.OSDMap? GetDisplayable() {
-            return null;
         }
     }
 }

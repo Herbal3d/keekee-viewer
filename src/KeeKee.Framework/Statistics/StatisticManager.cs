@@ -18,7 +18,7 @@ namespace KeeKee.Framework.Statistics {
     /// Manages a group of counters and presents one REST interface to read
     /// this group of counters.
     /// </summary>
-    public class StatisticManager(ILogger<StatisticManager> Log) : IDisplayable {
+    public class StatisticManager(ILogger<StatisticManager> pLog) : IDisplayable {
 
         /// <summary>
         /// A statistics collection returns an OSD structure which is a map
@@ -26,7 +26,7 @@ namespace KeeKee.Framework.Statistics {
         /// their value is a map of the variables that make up the counter.
         /// </summary>
         /// <returns></returns>
-        public OMVSD.OSDMap GetDisplayable() {
+        public OMVSD.OSD GetDisplayable() {
             OMVSD.OSDMap values = new OMVSD.OSDMap();
             /*
             foreach (ICounter cntr in m_counters) {

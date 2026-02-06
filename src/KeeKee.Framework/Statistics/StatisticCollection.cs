@@ -29,13 +29,16 @@ namespace KeeKee.Framework.Statistics {
             Stats.Add(pStat);
         }
 
-        public OMVSD.OSDMap GetDisplayable() {
-            OMVSD.OSDMap map = new OMVSD.OSDMap();
+        /// <summary>
+        /// Return an OSDArray of  the collection of statistics
+        /// </summary>
+        /// <returns></returns>
+        public OMVSD.OSD GetDisplayable() {
+            OMVSD.OSDArray map = new OMVSD.OSDArray();
             foreach (IDisplayable stat in Stats) {
-                OMVSD.OSDMap? statMap = stat.GetDisplayable();
-                if (statMap != null) {
-                    string name = statMap["Name"].AsString();
-                    map[name] = statMap;
+                OMVSD.OSD? statValues = stat.GetDisplayable();
+                if (statValues != null) {
+                    map.Add(statValues);
                 }
             }
             return map;

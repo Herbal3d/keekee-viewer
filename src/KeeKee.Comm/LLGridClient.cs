@@ -16,6 +16,9 @@ namespace KeeKee.Comm {
 
     /// <summary>
     /// Singleton class to hold the creation and instance of GridClient for LLLP communication.
+    /// 
+    /// TODO: This is a bit of a kludge to get around circular references between CommLLLP and WorldLL.
+    /// Need to refactor to eliminate the circular reference and then eliminate this class.
     /// </summary>
     public sealed class LLGridClient {
         private KLogger<LLGridClient> m_Log;

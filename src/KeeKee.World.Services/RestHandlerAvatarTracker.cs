@@ -184,11 +184,6 @@ namespace KeeKee.World.Services {
             m_world.OnWorldEntityUpdate -= new WorldEntityUpdateCallback(World_OnWorldEntityUpdate);
             m_world.OnWorldEntityRemoved -= new WorldEntityRemovedCallback(World_OnWorldEntityRemoved);
         }
-
-        // Optional displayable interface to get parameters from. Not used here.
-        public OMVSD.OSDMap? GetDisplayable() {
-            return null;
-        }
     }
 
 }

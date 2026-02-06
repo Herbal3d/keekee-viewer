@@ -15,10 +15,12 @@ using System.Text;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
+using KeeKee.Framework;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
 
 using OMVSD = OpenMetaverse.StructuredData;
+using KeeKee.Framework.Statistics;
 
 namespace KeeKee.Rest {
 
@@ -41,7 +43,7 @@ namespace KeeKee.Rest {
     /// where 'service' is the name of teh service and 'xxx' is whatever it wants.
     /// These implement GET and POST operations of JSON formatted data.
     /// </summary>
-    public class RestManager : BackgroundService {
+    public class RestManager : BackgroundService, IDisplayable {
 
         private readonly KLogger<RestManager> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
@@ -54,6 +56,9 @@ namespace KeeKee.Rest {
         List<IRestHandler> m_handlers = new List<IRestHandler>();
 
         private readonly RestHandlerFactory m_RestHandlerFactory;
+
+        private StatCounter m_statRequests = new StatCounter("RestManager.Requests", "Number of REST requests processed");
+        private StatCounter m_statNoHandlers = new StatCounter("RestManager.NoHandlers", "Number of REST requests with no handler");
 
         // General reference to the base API URL prefix
         public string APIBase {
@@ -101,6 +106,8 @@ namespace KeeKee.Rest {
                 while (cancellationToken.IsCancellationRequested == false) {
                     await m_listener.GetContextAsync().ContinueWith(async (task) => {
                         try {
+                            m_statRequests.Event();
+
                             HttpListenerContext context = task.Result;
                             HttpListenerRequest request = context.Request;
                             HttpListenerResponse response = context.Response;
@@ -114,6 +121,7 @@ namespace KeeKee.Rest {
                                 string afterString = absURL.Substring(thisHandler.Prefix.Length);
                                 await thisHandler.ProcessGetOrPostRequest(context, request, response, cancellationToken);
                             } else {
+                                m_statNoHandlers.Event();
                                 m_log.Log(KLogLevel.Warning, "Request not processed because no matching handler, URL={0}", absURL);
                                 DoErrorResponse(response, HttpStatusCode.NotFound, null);
                             }
@@ -275,7 +283,14 @@ namespace KeeKee.Rest {
             return retMap;
         }
 
-
+        public OMVSD.OSD? GetDisplayable() {
+            var stats = new OMVSD.OSDMap();
+            stats["handlers"] = m_handlers.Count.ToString();
+            stats["port"] = Port.ToString();
+            stats["requests"] = m_statRequests.GetDisplayable();
+            stats["nohandlers"] = m_statNoHandlers.GetDisplayable();
+            return stats;
+        }
 
         #endregion HTML Helper Routines
 

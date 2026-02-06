@@ -186,11 +186,11 @@ namespace KeeKee.Framework.WorkQueue {
             }
         }
 
-        public OMVSD.OSDMap GetDisplayable() {
+        public OMVSD.OSD GetDisplayable() {
             OMVSD.OSDMap aMap = new OMVSD.OSDMap();
-            aMap.Add("Name", new OMVSD.OSDString(this.Name));
-            aMap.Add("Total", new OMVSD.OSDInteger((int)this.TotalQueued));
-            aMap.Add("Current", new OMVSD.OSDInteger((int)this.CurrentQueued));
+            aMap.Add("Name", this.Name);
+            aMap.Add("Total", (int)this.TotalQueued);
+            aMap.Add("Current", (int)this.CurrentQueued);
             return aMap;
         }
     }

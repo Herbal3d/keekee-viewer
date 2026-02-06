@@ -24,12 +24,12 @@ namespace KeeKee.Framework.Statistics {
             InternalValue = InternalValue + pCount;
         }
 
-        public override OMVSD.OSDMap GetDisplayable() {
+        public override OMVSD.OSD GetDisplayable() {
             OMVSD.OSDMap map = new OMVSD.OSDMap();
             map["Name"] = OMVSD.OSD.FromString(Name);
             map["Description"] = OMVSD.OSD.FromString(Description);
             map["Unit"] = OMVSD.OSD.FromString(Unit);
-            map["Value"] = OMVSD.OSD.FromLong(InternalValue);
+            map["Value"] = OMVSD.OSD.FromInteger((int)InternalValue);
             return map;
         }
     }

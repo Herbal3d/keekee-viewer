@@ -29,7 +29,7 @@ namespace KeeKee.Comm.LLLP {
     /// <summary>
     /// Communication handler for Linden Lab Legacy Protocol
     /// </summary>
-    public class CommLLLP : BackgroundService, ICommProvider {
+    public class CommLLLP : ICommProvider {
         private KLogger<CommLLLP> m_log;
 
         private IOptions<KeeKeeConfig> m_KeeKeeConfig { get; set; }
@@ -141,7 +141,7 @@ namespace KeeKee.Comm.LLLP {
             GridClient = pGridClient.GridClient;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+        public async Task StartAsync(CancellationToken cancellationToken) {
             m_log.Log(KLogLevel.RestDetail, "CommLLLP ExecuteAsync entered");
             m_cancellationToken = cancellationToken;
 
@@ -163,17 +163,9 @@ namespace KeeKee.Comm.LLLP {
                         break;
                     case LoginStateCode.ShouldLogOut:
                         // Someone requested a logout
-                        switch (m_loginState) {
-                            case LoginStateCode.LoggedIn:
-                                m_loginState = LoginStateCode.LoggingOut;
-                                m_log.Log(KLogLevel.DCOMM, "ShouldLogOut request. Logging out from LoggedIn state");
-                                GridClient.Network.Logout();
-                                break;
-                            default:
-                                m_log.Log(KLogLevel.DCOMM, "ShouldLogOut request. Logging out from {0} state", m_loginState.ToString());
-                                m_loginState = LoginStateCode.LoggingOut;
-                                break;
-                        }
+                        m_loginState = LoginStateCode.LoggingOut;
+                        m_log.Log(KLogLevel.DCOMM, "ShouldLogOut request. Logging out from LoggedIn state");
+                        GridClient.Network.Logout();
                         break;
                     case LoginStateCode.LoggingOut:
                         break;
@@ -189,6 +181,11 @@ namespace KeeKee.Comm.LLLP {
             DisconnectConnectionFramework();
 
             m_log.Log(KLogLevel.DCOMM, "KeepLoggingIn: exiting keep loggin in thread");
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) {
+            m_log.Log(KLogLevel.DCOMM, "CommLLLP StopAsync called");
+            return Task.CompletedTask;
         }
 
         protected void InitConnectionFramework() {
@@ -440,32 +437,23 @@ namespace KeeKee.Comm.LLLP {
         }
 
         public virtual void Network_Disconnected(object? sender, OMV.DisconnectedEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Network_Disconnected: Disconnected from simulator");
             m_stats.NetDisconnected.Event();
             m_log.Log(KLogLevel.DCOMM, "Disconnected");
             m_loginState = LoginStateCode.NotLoggedIn;
             IsConnected = false;
         }
 
-        /*
-        public virtual void Network_EventQueueRunning(object? sender, OMV.EventQueueRunningEventArgs args) {
-               this.m_statNetDisconnected.Event();
-            m_log.Log(KLogLevel.DCOMM, "Event queue running on {0}", args.Simulator.Name);
-            if (args.Simulator == GridClient.Network.CurrentSim) {
-                m_SwitchingSims = false;
-            }
-            // Now seems like a good time to start requesting parcel information
-            GridClient.Parcels.RequestAllSimParcels(GridClient.Network.CurrentSim, false, 100);
-        }
-        */
-
         // ===============================================================
         public virtual void Network_SimConnected(object? sender, OMV.SimConnectedEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Network_SimConnected: Simulator connected");
             m_stats.NetSimConnected.Event();
             m_log.Log(KLogLevel.DWORLD, "Network_SimConnected: Simulator connected {0}", args.Simulator.Name);
         }
 
         // ===============================================================
         public virtual void Network_EventQueueRunning(Object? sender, OMV.EventQueueRunningEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Network_EventQueueRunning: Event queue running");
             LLRegionContext regionContext;
             lock (m_opLock) {
                 // the sim isn't really up until the caps queue is running
@@ -495,17 +483,18 @@ namespace KeeKee.Comm.LLLP {
 
             // if we'd queued up actions, do them now that it's online
             DoAnyWaitingEvents(args.Simulator);
-            // });
 
             // this is needed to make the avatar appear
             // TODO: figure out if the linking between agent and appearance is right
             // GridClient.Appearance.SetPreviousAppearance(true);
             GridClient.Appearance.RequestSetAppearance(true);
             GridClient.Self.Movement.UpdateFromHeading(0.0, true);
+            GridClient.Parcels.RequestAllSimParcelsAsync(GridClient.Network.CurrentSim, false, new TimeSpan(0, 0, 30), m_cancellationToken);
         }
 
         // ===============================================================
         public virtual void Network_SimChanged(object? sender, OMV.SimChangedEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Network_SimChanged: Simulator changed");
             // disable teleports until we have a good connection to the simulator (event queue working)
             m_stats.NetSimChanged.Event();
             if (!GridClient.Network.CurrentSim.Caps.IsEventQueueRunning) {
@@ -521,6 +510,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Terrain_LandPatchReceived(object? sender, OMV.LandPatchReceivedEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Terrain_LandPatchReceived: Land patch received");
             // m_log.Log(KLogLevel.DWORLDDETAIL, "Land patch for {0}: {1}, {2}, {3}", 
             //             args.Simulator.Name, args.X, args.Y, args.PatchSize);
             LLRegionContext regionContext = FindRegion(args.Simulator);
@@ -536,11 +526,13 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public void Objects_ObjectDataBlockUpdate(object? sender, OMV.ObjectDataBlockUpdateEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectDataBlockUpdate: Object data block update received");
             return;
         }
 
         // ===============================================================
         public void Objects_ObjectUpdate(object? sender, OMV.PrimEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectUpdate: Object update received");
             if (args.IsAttachment) {
                 Objects_AttachmentUpdate(sender, args);
                 return;
@@ -659,6 +651,7 @@ namespace KeeKee.Comm.LLLP {
         // This needs to get the attachment loaded into the world
         public void Objects_AttachmentUpdate(object? sender, OMV.PrimEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAttachmentUpdate, sender, args)) return;
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_AttachmentUpdate: Attachment update received");
             lock (m_opLock) {
                 LLRegionContext? rcontext = FindRegion(args.Simulator);
                 if (rcontext == null) return;
@@ -708,7 +701,12 @@ namespace KeeKee.Comm.LLLP {
         }
         // ===============================================================
         private void Objects_TerseObjectUpdate(object? sender, OMV.TerseObjectUpdateEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_TerseObjectUpdate: Terse object update received");
             if (QueueTilOnline(args.Simulator, CommActionCode.TerseObjectUpdate, sender, args)) return;
+            if (args.Simulator == null) {
+                m_log.Log(KLogLevel.DBADERROR, "TerseObjectUpdate: Simulator is null");
+                return;
+            }
             LLRegionContext rcontext = FindRegion(args.Simulator);
             OMV.ObjectMovementUpdate update = args.Update;
             m_stats.ObjTerseUpdate.Event();
@@ -762,16 +760,18 @@ namespace KeeKee.Comm.LLLP {
         }
         // ===============================================================
         private void Objects_ObjectProperties(object? sender, OMV.ObjectPropertiesEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectProperties: Object properties received");
             m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectProperties:");
             m_stats.ObjObjectProperties.Event();
         }
         // ===============================================================
         private void Objects_ObjectPropertiesUpdated(object? sender, OMV.ObjectPropertiesUpdatedEventArgs args) {
-            m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectPropertiesUpdated:");
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectPropertiesUpdated: Object properties updated received");
             m_stats.ObjObjectPropertiesUpdate.Event();
         }
         // ===============================================================
         public void Objects_AvatarUpdate(object? sender, OMV.AvatarUpdateEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_AvatarUpdate: Avatar update received");
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAvatarUpdate, sender, args)) return;
             lock (m_opLock) {
                 LLRegionContext? rcontext = FindRegion(args.Simulator);
@@ -824,6 +824,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Objects_KillObject(object? sender, OMV.KillObjectEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_KillObject: Object kill received");
             if (QueueTilOnline(args.Simulator, CommActionCode.KillObject, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
             if (rcontext == null) return;
@@ -842,6 +843,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Avatars_AvatarAppearance(object? sender, OMV.AvatarAppearanceEventArgs args) {
+            m_log.Log(KLogLevel.DCOMM, "EVENT Avatars_AvatarAppearance: Avatar appearance received");
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAvatarAppearance, sender, args)) return;
             LLRegionContext? rcontext = FindRegion(args.Simulator);
             if (rcontext == null) return;

@@ -150,7 +150,7 @@ namespace KeeKee.Contexts {
 
         // Tell the entity that something about it changed
         virtual public void Update(UpdateCodes what) {
-            EntityLogger.Log(KLogLevel.DUPDATEDETAIL, "EntityBase.Update calling RegionContext.UpdateEntity. w={0}", what);
+            EntityLogger.Log(KLogLevel.DUPDATEDETAIL, "IEntity.Update. what={0}", what);
         }
     }
 }

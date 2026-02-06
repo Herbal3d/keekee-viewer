@@ -28,6 +28,9 @@ Array.from(document.getElementsByClassName('k-clickable')).forEach( nn => {
     });
 });
 
+// Keep calling the update stats function every 500ms to keep the display updated
+const timerIdStats = setInterval(() => UpdateAllStats(), 500);
+
 // Diagnostic test button
 ClickableOps['diagTest'] = function(pTarget: EventTarget) {
     LogDebug('Diagnostic test operation invoked');
@@ -120,7 +123,7 @@ interface GridsInfo {
 }
 
 // Fetch the list of grids from the viewer and populate the grid select box
-function FetchGridInfo() {
+function FetchGridInfo() : void{
     fetch( BASEURL + '/api/LLLP/login', { method: 'GET', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
@@ -145,6 +148,47 @@ function FetchGridInfo() {
     });
 }
 
+function UpdateAllStats() : void {
+    UpdateCommStats();
+    // Add more as needed
+}
+
+function UpdateCommStats() : void {
+    fetch( BASEURL + '/api/LLLP/status', { method: 'GET', cache: 'no-cache' } )
+    .then( response => {
+        if (!response.ok) {
+            var displayArea = document.getElementById('k-statsComm');
+            if (displayArea) {
+                displayArea.appendChild(MakeTextElement("No stats"));
+        }
+        }
+        return response.json();
+    })
+    .then( data => {
+        var preArea = MakeElement('pre');
+        preArea.textContent = JSON.stringify(data, null, 2);
+        var displayArea = document.getElementById('k-statsComm');
+        if (displayArea) {
+            displayArea.innerHTML = '';
+            displayArea.appendChild(preArea);
+        }
+    })
+    .catch( error => {
+        LogDebug('Fetch Comm stats exception error: ' + error.message);
+    });
+}
+
+function MakeElement(tag: string, text?: string, className?: string): HTMLElement {
+    const elem = document.createElement(tag);
+    if (text) elem.textContent = text;
+    if (className) elem.className = className;
+    return elem;
+}
+function MakeTextElement(text: string): HTMLElement {
+    const elem = document.createTextNode(text) as unknown as HTMLElement;
+    elem.textContent = text;
+    return elem;
+}   
 /*
 <script type="text/javascript">
 $(document).ready(function() {

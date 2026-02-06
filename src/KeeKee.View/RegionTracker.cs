@@ -98,7 +98,7 @@ namespace KeeKee.View {
             public RegionInformation(RegionTracker regTrack) {
                 m_tracker = regTrack;
             }
-            public OMVSD.OSDMap GetDisplayable() {
+            public OMVSD.OSD GetDisplayable() {
                 return new OMVSD.OSDMap();
             }
         }

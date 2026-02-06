@@ -72,15 +72,15 @@ namespace KeeKee.Framework.WorkQueue {
             }
         }
 
-        public OMVSD.OSDMap GetDisplayable() {
-            OMVSD.OSDMap aMap = new OMVSD.OSDMap();
+        /// <summary>
+        /// Return an OSDArray of  the collection of work queues and their statistics
+        /// </summary>
+        /// <returns></returns>
+        public OMVSD.OSD GetDisplayable() {
+            OMVSD.OSDArray aMap = new OMVSD.OSDArray();
             lock (m_queues) {
                 foreach (IWorkQueue wq in m_queues) {
-                    try {
-                        aMap.Add(wq.Name, wq.GetDisplayable());
-                    } catch {
-                        m_log.Log(KLogLevel.DBADERROR, "WorkQueueManager.GetDisplayable: duplicate symbol: {0}", wq.Name);
-                    }
+                    aMap.Add(wq.GetDisplayable());
                 }
             }
             return aMap;
