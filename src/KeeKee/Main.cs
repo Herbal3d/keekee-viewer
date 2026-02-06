@@ -96,7 +96,6 @@ namespace KeeKee {
                  })
                  .ConfigureServices((context, services) => {
                      services.Configure<KeeKeeConfig>(context.Configuration.GetSection(KeeKeeConfig.subSectionName));
-                     services.AddSingleton<IInstanceFactory, InstanceFactory>();
                      services.Configure<GridConfig>(context.Configuration.GetSection(GridConfig.subSectionName));
 
                      // The global cancellation token source that can be used to signal shutdown across the app.
