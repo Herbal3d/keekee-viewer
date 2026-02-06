@@ -78,9 +78,9 @@ namespace KeeKee.Comm.LLLP {
         }
         public LoginStateCode m_loginState = LoginStateCode.NotLoggedIn;
 
-        public bool IsConnected { get; private set; } = false;
+        public bool IsConnected { get; protected set; } = false;
 
-        public bool IsLoggedIn { get; private set; } = false;
+        public bool IsLoggedIn { get { return m_loginState == LoginStateCode.LoggedIn; } }
 
         /// <summary>
         /// Flag saying we're switching simulator connections. This would suppress things like teleport
@@ -151,8 +151,6 @@ namespace KeeKee.Comm.LLLP {
                 switch (m_loginState) {
                     case LoginStateCode.NotLoggedIn:
                         // we are not logged in and are idle
-                        IsConnected = false;
-                        IsLoggedIn = false;
                         break;
                     case LoginStateCode.LoggingIn:
                         // we are in the process of logging in
@@ -162,16 +160,12 @@ namespace KeeKee.Comm.LLLP {
                         break;
                     case LoginStateCode.LoggedIn:
                         // we are logged in and active
-                        IsConnected = true;
-                        IsLoggedIn = true;
                         break;
                     case LoginStateCode.ShouldLogOut:
                         // Someone requested a logout
                         switch (m_loginState) {
                             case LoginStateCode.LoggedIn:
                                 m_loginState = LoginStateCode.LoggingOut;
-                                IsConnected = false;
-                                IsLoggedIn = false;
                                 m_log.Log(KLogLevel.DCOMM, "ShouldLogOut request. Logging out from LoggedIn state");
                                 GridClient.Network.Logout();
                                 break;
@@ -182,12 +176,15 @@ namespace KeeKee.Comm.LLLP {
                         }
                         break;
                     case LoginStateCode.LoggingOut:
-                        IsConnected = false;
-                        IsLoggedIn = false;
                         break;
                 }
 
-                await Task.Delay(500, cancellationToken);
+                try {
+                    await Task.Delay(500, cancellationToken);
+                } catch (TaskCanceledException) {
+                    m_log.Log(KLogLevel.Information, "CommLLLP ExecuteAsync cancellation requested");
+                    // expected when we're shutting down
+                }
             }
             DisconnectConnectionFramework();
 
@@ -295,6 +292,7 @@ namespace KeeKee.Comm.LLLP {
                 return null;
             }
 
+            m_loginState = LoginStateCode.LoggingIn;
             var loginResponse = await DoLogin(pLoginParams);
 
             return loginResponse;
@@ -423,7 +421,6 @@ namespace KeeKee.Comm.LLLP {
                         if (response.Success) {
                             m_log.Log(KLogLevel.DCOMM, "Login successful: {0}", response.Message);
                             // m_isConnected = true;
-                            IsLoggedIn = true;
                             m_loginState = LoginStateCode.LoggedIn;
                             m_loginMsg = response.Message;
                             Comm_OnLoggedIn();

@@ -99,6 +99,9 @@ namespace KeeKee {
                      services.AddSingleton<IInstanceFactory, InstanceFactory>();
                      services.Configure<GridConfig>(context.Configuration.GetSection(GridConfig.subSectionName));
 
+                     // The global cancellation token source that can be used to signal shutdown across the app.
+                     services.AddSingleton(GlobalCTS);
+
                      // Collections and collection managers available for services
                      services.AddSingleton<Grids>();
                      services.AddSingleton<UserPersistantParams>();
@@ -135,19 +138,19 @@ namespace KeeKee {
                      services.AddHostedService(sp => sp.GetRequiredService<CommLLLP>());
                      services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
 
-                     // World services using LL implementations
+                     // World services
                      services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
-                     services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
                      services.Configure<AssetConfig>(context.Configuration.GetSection(AssetConfig.subSectionName));
-                     services.AddTransient<IEntity, LLEntity>();
+                     services.AddSingleton<IWorld, World.World>();
                      services.AddTransient<IEntityCollection, EntityCollection>();
+                     services.AddTransient<RegionState>();
+
+                     // World services using LL implementations
+                     services.Configure<LLAgentConfig>(context.Configuration.GetSection(LLAgentConfig.subSectionName));
+                     services.AddTransient<IEntity, LLEntity>();
                      services.AddTransient<IRegionContext, LLRegionContext>();
                      services.AddTransient<IAssetContext, LLAssetContext>();
                      services.AddTransient<LLInstanceFactory>();
-
-                     // services.AddTransient<IAnimation, LLAnimation>();
-                     services.AddSingleton<IWorld, World.World>();
-                     services.AddTransient<RegionState>();
 
                      // Renderer services
                      services.Configure<RendererConfig>(context.Configuration.GetSection(RendererConfig.subSectionName));

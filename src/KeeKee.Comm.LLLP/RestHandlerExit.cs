@@ -11,6 +11,8 @@
 
 using System.Net;
 using System.Text;
+
+using KeeKee;
 using KeeKee.Comm;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
@@ -29,6 +31,7 @@ namespace KeeKee.Rest {
         private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
+        private readonly CancellationTokenSource m_cancelToken;
 
         /// <summary>
         /// </summary>
@@ -40,13 +43,15 @@ namespace KeeKee.Rest {
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
-                                ICommProvider pCommProvider
+                                ICommProvider pCommProvider,
+                                CancellationTokenSource pCancelToken
                                 ) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
+            m_cancelToken = pCancelToken;
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/exit");
 
@@ -54,9 +59,9 @@ namespace KeeKee.Rest {
         }
 
         public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
-                                           HttpListenerRequest pRequest,
-                                           HttpListenerResponse pResponse,
-                                           CancellationToken pCancelToken) {
+                                            HttpListenerRequest pRequest,
+                                            HttpListenerResponse pResponse,
+                                            CancellationToken pCancelToken) {
 
             if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
                 // TODO: Implement GET handling if needed
@@ -66,8 +71,12 @@ namespace KeeKee.Rest {
                 m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 try {
+                    // try a logout
                     m_commProvider.StartLogout();
+                    // Send a simple response back to the client before exiting.
                     m_RestManager.DoSimpleResponse(pResponse, null, null);
+                    // Also force the main loop to exit, which will cause the app to close.
+                    m_cancelToken.Cancel();
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.RestDetail, "Exit exception: " + e.ToString());
                     m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError,
@@ -83,6 +92,7 @@ namespace KeeKee.Rest {
         public OMVSD.OSDMap? GetDisplayable() {
             return null;
         }
+
     }
 
 }

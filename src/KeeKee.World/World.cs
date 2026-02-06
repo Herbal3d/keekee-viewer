@@ -60,7 +60,7 @@ namespace KeeKee.World {
         #region IWorld methods
         #region Region Management
         public void AddRegion(IRegionContext rcontext) {
-            m_log.Log(KLogLevel.DWORLD, "Simulator connected " + rcontext.Name);
+            m_log.Log(KLogLevel.DWORLD, $@"Simulator connected {rcontext.Name}");
             IRegionContext? foundRegion = null;
             lock (m_regionList) {
                 foundRegion = GetRegion(rcontext.Name);

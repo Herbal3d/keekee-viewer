@@ -81,6 +81,34 @@ ClickableOps['gridLogin'] = function(pTarget: EventTarget) {
         LogDebug('Login exception error: ' + error.message);
     });
 };
+// button to do the logout
+ClickableOps['gridLogout'] = function(pTarget: EventTarget) {
+    LogDebug('Do the logout');
+    fetch( BASEURL + '/api/LLLP/logout', { method: 'POST', cache: 'no-cache' } )
+    .then( response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .catch( error => {
+        LogDebug('Logout exception error: ' + error.message);
+    });
+};
+// button to force exit
+ClickableOps['gridExit'] = function(pTarget: EventTarget) {
+    LogDebug('Do the exit');
+    fetch( BASEURL + '/api/LLLP/exit', { method: 'POST', cache: 'no-cache' } )
+    .then( response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .catch( error => {
+        LogDebug('Exit exception error: ' + error.message);
+    });
+};
 
 interface GridInfo {
     GridNick: string;

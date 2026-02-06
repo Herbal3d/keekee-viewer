@@ -21,7 +21,7 @@ public class RestManagerConfig {
     public string CSSLocalURL { get; set; } = "/static/KeeKee.css";
     // Directory for static HTML content
     public string UIContentDir { get; set; } =
-            Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "web");
+            Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "KeeKeeResources/web");
     public string APIBase { get; set; } = "/api";
     public string Skin { get; set; } = "Default";
 }
