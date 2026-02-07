@@ -146,7 +146,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         public async Task StartAsync(CancellationToken cancellationToken) {
-            m_log.Log(KLogLevel.RestDetail, "CommLLLP ExecuteAsync entered");
+            m_log.Log(KLogLevel.DRESTDETAIL, "CommLLLP ExecuteAsync entered");
             m_cancellationToken = cancellationToken;
 
             InitConnectionFramework();

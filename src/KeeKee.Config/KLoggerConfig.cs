@@ -17,14 +17,17 @@ namespace KeeKee.Config {
 
         public string LogLevel { get; set; } = "Information";
 
-        // Detailed logging from the REST manager
-        public bool RestDetail { get; set; } = false;
-        // Detailed logging from the Work Queue manager
-        public bool WorkQueueDetail { get; set; } = false;
-        public bool UIDetail { get; set; } = false;
         // Detailed initialization logging
         public bool DINIT { get; set; } = false;
         public bool DINITDETAIL { get; set; } = false;
+        public bool DREST { get; set; } = false;
+        // Detailed logging from the REST manager
+        public bool DRESTDETAIL { get; set; } = false;
+        // Detailed logging from the Work Queue manager
+        public bool DWORKQUEUE { get; set; } = false;
+        public bool DWORKQUEUEDETAIL { get; set; } = false;
+        public bool DUI { get; set; } = false;
+        public bool DUIDETAIL { get; set; } = false;
         public bool DCOMM { get; set; } = false;
         public bool DCOMMDETAIL { get; set; } = false;
         public bool DWORLD { get; set; } = false;

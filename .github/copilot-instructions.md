@@ -98,7 +98,7 @@ m_log.Log(KLogLevel.DWORLDDETAIL, "World update detail");
 - `DCOMM`, `DCOMMDETAIL`: Communication layer
 - `DWORLD`, `DWORLDDETAIL`: World/entity updates
 - `DRENDER`, `DRENDERDETAIL`: Rendering
-- `RestDetail`, `WorkQueueDetail`, `UIDetail`
+- `DRESTDETAIL`, `DWORKQUEUEDETAIL`, `DUIDETAIL`
 
 Backed by NLog (configuration in `appsettings.json` → `NLog` section). Logs to `logs/log-{date}.log`.
 

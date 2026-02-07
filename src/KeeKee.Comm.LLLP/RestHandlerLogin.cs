@@ -91,12 +91,12 @@ namespace KeeKee.Rest {
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
                 // POST handling does the login
-                m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 string strBody = "";
                 using (StreamReader rdr = new StreamReader(pRequest.InputStream)) {
                     strBody = rdr.ReadToEnd();
-                    // m_log.Log(KLogLevel.RestDetail, "APIPostHandler: Body: '" + strBody + "'");
+                    // m_log.Log(KLogLevel.DRESTDETAIL, "APIPostHandler: Body: '" + strBody + "'");
                 }
                 try {
                     OMVSD.OSD body = m_RestManager.MapizeTheBody(strBody);

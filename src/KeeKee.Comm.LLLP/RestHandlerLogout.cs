@@ -64,12 +64,12 @@ namespace KeeKee.Rest {
                 m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 try {
                     m_commProvider.StartLogout();
                 } catch (Exception e) {
-                    m_log.Log(KLogLevel.RestDetail, "Logout exception: " + e.ToString());
+                    m_log.Log(KLogLevel.DRESTDETAIL, "Logout exception: " + e.ToString());
                 }
             }
         }

@@ -75,14 +75,6 @@ namespace KeeKee.Framework.Logging {
                 case KLogLevel.None:
                     // Do nothing
                     break;
-                case KLogLevel.UIDetail:
-                    if (_options.Value.UIDetail)
-                        _innerLogger.Log(LLDetail, message, args);
-                    break;
-                case KLogLevel.RestDetail:
-                    if (_options.Value.RestDetail)
-                        _innerLogger.Log(LLDetail, message, args);
-                    break;
                 case KLogLevel.DINIT:
                     if (_options.Value.DINIT)
                         _innerLogger.Log(LLDetail, message, args);
@@ -93,6 +85,30 @@ namespace KeeKee.Framework.Logging {
                     break;
                 case KLogLevel.DBADERROR:
                     _innerLogger.Log(LogLevel.Error, message, args);
+                    break;
+                case KLogLevel.DUI:
+                    if (_options.Value.DUI)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DUIDETAIL:
+                    if (_options.Value.DUIDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DREST:
+                    if (_options.Value.DREST)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DRESTDETAIL:
+                    if (_options.Value.DRESTDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DWORKQUEUE:
+                    if (_options.Value.DWORKQUEUE)
+                        _innerLogger.Log(LLDetail, message, args);
+                    break;
+                case KLogLevel.DWORKQUEUEDETAIL:
+                    if (_options.Value.DWORKQUEUEDETAIL)
+                        _innerLogger.Log(LLDetail, message, args);
                     break;
                 case KLogLevel.DCOMM:
                     if (_options.Value.DCOMM)

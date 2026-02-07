@@ -263,7 +263,7 @@ namespace KeeKee.Framework.WorkQueue {
             aMap.Add("Current", (int)this.CurrentQueued);
             aMap.Add("Later", m_doEvenLater.Count);
             aMap.Add("Active", ActiveWorkProcessors);
-            // Logging.LogManager.Log.Log(LogLevel.DRESTDETAIL, "BasicWorkQueue: GetDisplayable: out={0}", aMap.ToString());
+            // Logging.LogManager.Log.Log(LogLevel.DDRESTDETAIL, "BasicWorkQueue: GetDisplayable: out={0}", aMap.ToString());
             return aMap;
         }
     }

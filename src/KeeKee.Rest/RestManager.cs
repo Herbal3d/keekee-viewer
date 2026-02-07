@@ -85,11 +85,11 @@ namespace KeeKee.Rest {
             BaseURL = pConfig.Value.BaseURL + ":" + pConfig.Value.Port.ToString();
             Port = pConfig.Value.Port;
 
-            m_log.Log(KLogLevel.RestDetail, "RestManager constructor");
+            m_log.Log(KLogLevel.DREST, "RestManager constructor");
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
-            m_log.Log(KLogLevel.RestDetail, "RestManager ExecuteAsync entered");
+            m_log.Log(KLogLevel.DREST, "RestManager ExecuteAsync entered");
 
             m_listener = new HttpListener();
             m_listener.Prefixes.Add(BaseURL + "/");
@@ -100,7 +100,7 @@ namespace KeeKee.Rest {
             // m_workQueueHandler = m_RestHandlerFactory.CreateHandler<RestHandlerWorkQueueStats>();
 
             try {
-                m_log.Log(KLogLevel.RestDetail, "Start(). Starting listening");
+                m_log.Log(KLogLevel.DRESTDETAIL, "Start(). Starting listening");
                 m_listener.Start();
 
                 while (cancellationToken.IsCancellationRequested == false) {
@@ -113,7 +113,7 @@ namespace KeeKee.Rest {
                             HttpListenerResponse response = context.Response;
 
                             string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
-                            m_log.Log(KLogLevel.RestDetail, "HTTP request for {0}", absURL);
+                            m_log.Log(KLogLevel.DRESTDETAIL, "HTTP request for {0}", absURL);
 
                             IRestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
 
@@ -136,12 +136,12 @@ namespace KeeKee.Rest {
             }
 
             // TODO: cleanup on exit
-            m_log.Log(KLogLevel.RestDetail, "RestManager ExecuteAsync exiting");
+            m_log.Log(KLogLevel.DRESTDETAIL, "RestManager ExecuteAsync exiting");
             return;
         }
 
         public void RegisterListener(IRestHandler handler) {
-            m_log.Log(KLogLevel.RestDetail, "Registering prefix {0}", handler.Prefix);
+            m_log.Log(KLogLevel.DREST, "Registering prefix {0}", handler.Prefix);
             m_handlers.Add(handler);
         }
 
@@ -263,7 +263,7 @@ namespace KeeKee.Rest {
                 try {
                     retMap = (OMVSD.OSDMap)OMVSD.OSDParser.DeserializeJson(body);
                 } catch (Exception e) {
-                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of JSON body: " + e.ToString());
+                    m_log.Log(KLogLevel.DRESTDETAIL, "Failed parsing of JSON body: " + e.ToString());
                 }
             } else {
                 try {
@@ -277,7 +277,7 @@ namespace KeeKee.Rest {
                         }
                     }
                 } catch (Exception e) {
-                    m_log.Log(KLogLevel.RestDetail, "Failed parsing of query body: " + e.ToString());
+                    m_log.Log(KLogLevel.DRESTDETAIL, "Failed parsing of query body: " + e.ToString());
                 }
             }
             return retMap;

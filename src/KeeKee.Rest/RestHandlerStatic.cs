@@ -54,7 +54,7 @@ namespace KeeKee.Rest {
             StaticDir = Utilities.JoinFilePieces(BaseUIDir, Prefix);
             if (!StaticDir.EndsWith("/")) StaticDir += "/";
 
-            m_log.Log(KLogLevel.RestDetail, "baseUIDir={0}, staticDir={1}, Prefix={2}",
+            m_log.Log(KLogLevel.DRESTDETAIL, "baseUIDir={0}, staticDir={1}, Prefix={2}",
                      BaseUIDir, StaticDir, Prefix);
 
             m_RestManager.RegisterListener(this);
@@ -79,12 +79,12 @@ namespace KeeKee.Rest {
 
                 try {
                     if (File.Exists(filePath)) {
-                        m_log.Log(KLogLevel.RestDetail, "Serving file {0}", filePath);
+                        m_log.Log(KLogLevel.DRESTDETAIL, "Serving file {0}", filePath);
                         m_RestManager.DoSimpleResponse(pResponse, Utilities.GetMimeTypeFromFileName(filePath), () => {
                             return File.ReadAllBytes(filePath);
                         });
                     } else {
-                        m_log.Log(KLogLevel.RestDetail, "File not found {0}", filePath);
+                        m_log.Log(KLogLevel.DRESTDETAIL, "File not found {0}", filePath);
                         m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotFound, null);
                     }
                 } catch (Exception e) {

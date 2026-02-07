@@ -61,7 +61,7 @@ namespace KeeKee.Rest {
         /// <param name="pPrefix"></param>
         public void SetPrefix(string pPrefix, IDisplayable? pDisplayableSource) {
             if (m_prefix == NOPREFIX) {
-                m_log.Log(KLogLevel.RestDetail, "Setting Prefix to {0}", pPrefix);
+                m_log.Log(KLogLevel.DRESTDETAIL, "Setting Prefix to {0}", pPrefix);
                 m_prefix = pPrefix;
                 m_RestManager.RegisterListener(this);
             }
@@ -92,11 +92,11 @@ namespace KeeKee.Rest {
                                 return Utilities.StringToBytes(OMVSD.OSDParser.SerializeJsonString(displayMap));
                             });
                         } else {
-                            m_log.Log(KLogLevel.RestDetail, "No displayable data from source");
+                            m_log.Log(KLogLevel.DRESTDETAIL, "No displayable data from source");
                             m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NoContent, null);
                         }
                     } else {
-                        m_log.Log(KLogLevel.RestDetail, "No displayable source set");
+                        m_log.Log(KLogLevel.DRESTDETAIL, "No displayable source set");
                         m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NoContent, null);
                     }
                 } catch (Exception e) {

@@ -129,7 +129,7 @@ namespace KeeKee.Rest {
                                            CancellationToken pCancelToken) {
 
             if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "GET: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "GET: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 OMVSD.OSDMap ret = new OMVSD.OSDMap();
                 string lastDate = "xx";
@@ -160,12 +160,12 @@ namespace KeeKee.Rest {
                 return;
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 string strBody = "";
                 using (StreamReader rdr = new StreamReader(pRequest.InputStream)) {
                     strBody = rdr.ReadToEnd();
-                    // m_log.Log(KLogLevel.RestDetail, "APIPostHandler: Body: '" + strBody + "'");
+                    // m_log.Log(KLogLevel.DRESTDETAIL, "APIPostHandler: Body: '" + strBody + "'");
                 }
 
                 try {

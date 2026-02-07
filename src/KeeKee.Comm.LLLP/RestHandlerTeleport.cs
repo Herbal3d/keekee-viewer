@@ -66,19 +66,19 @@ namespace KeeKee.Rest {
                 m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 string strBody = "";
                 using (StreamReader rdr = new StreamReader(pRequest.InputStream)) {
                     strBody = rdr.ReadToEnd();
-                    // m_log.Log(KLogLevel.RestDetail, "APIPostHandler: Body: '" + strBody + "'");
+                    // m_log.Log(KLogLevel.DRESTDETAIL, "APIPostHandler: Body: '" + strBody + "'");
                 }
                 try {
                     OMVSD.OSDMap body = m_RestManager.MapizeTheBody(strBody);
 
                     if (body.ContainsKey("DESTINATION")) {
                         string destination = body["DESTINATION"].AsString();
-                        m_log.Log(KLogLevel.RestDetail, "Teleport request to " + destination);
+                        m_log.Log(KLogLevel.DRESTDETAIL, "Teleport request to " + destination);
 
                         bool result = m_commProvider.StartTeleport(destination);
 

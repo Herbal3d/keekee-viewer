@@ -62,7 +62,7 @@ namespace KeeKee.World.Services {
                                            CancellationToken pCancelToken) {
 
             if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "GET: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "GET: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
 
                 OMVSD.OSDMap ret = new OMVSD.OSDMap();
@@ -126,7 +126,7 @@ namespace KeeKee.World.Services {
                 return;
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
             }
         }
 

@@ -68,7 +68,7 @@ namespace KeeKee.Rest {
                 m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
             }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 try {
                     // try a logout
@@ -78,7 +78,7 @@ namespace KeeKee.Rest {
                     // Also force the main loop to exit, which will cause the app to close.
                     m_cancelToken.Cancel();
                 } catch (Exception e) {
-                    m_log.Log(KLogLevel.RestDetail, "Exit exception: " + e.ToString());
+                    m_log.Log(KLogLevel.DRESTDETAIL, "Exit exception: " + e.ToString());
                     m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError,
                                         () => Encoding.UTF8.GetBytes(e.Message));
                 }

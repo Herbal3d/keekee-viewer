@@ -147,7 +147,7 @@ namespace KeeKee.Rest {
                 });
 
                 if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                    m_log.Log(KLogLevel.RestDetail, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                    m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
                     m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
 
                 }
