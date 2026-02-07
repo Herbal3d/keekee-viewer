@@ -24,6 +24,7 @@ using KeeKee.World.LL;
 
 using OMV = OpenMetaverse;
 using OpenMetaverse.Packets;
+using OpenMetaverse;
 
 namespace KeeKee.Comm.LLLP {
     /// <summary>
@@ -344,10 +345,17 @@ namespace KeeKee.Comm.LLLP {
             return ret;
         }
 
-        public async Task<OMV.LoginResponseData?> DoLogin(LoginParams pLoginParams) {
+        public async Task<OMV.LoginResponseData> DoLogin(LoginParams pLoginParams) {
+            // Make a dummy response so the caller has something to work with
+            OMV.LoginResponseData? errLoginResponse = new OMV.LoginResponseData() {
+                Login = LoginState.False,
+                Message = "Not logged in"
+            };
+
             if (pLoginParams == null) {
                 m_log.Log(KLogLevel.DBADERROR, "StartLogin: no login parameters");
-                return null;
+                errLoginResponse.Message = "No login parameters";
+                return errLoginResponse;
             }
             m_log.Log(KLogLevel.DCOMM, "Starting login of {0} {1}", pLoginParams.FirstName, pLoginParams.LastName);
             OMV.LoginParams loginParams = GridClient.Network.DefaultLoginParams(
@@ -417,7 +425,8 @@ namespace KeeKee.Comm.LLLP {
                     if (response == null) {
                         m_log.Log(KLogLevel.DBADERROR, "Login response is null");
                         m_loginState = LoginStateCode.LogInFailed;
-                        return null;
+                        errLoginResponse.Message = "Login response was null";
+                        return errLoginResponse;
                     } else {
                         if (response.Success) {
                             m_log.Log(KLogLevel.DCOMM, "Login successful: {0}", response.Message);
@@ -433,11 +442,14 @@ namespace KeeKee.Comm.LLLP {
                     }
                     return response;
                 } catch (Exception e) {
-                    m_log.Log(KLogLevel.DBADERROR, "BeginLogin exception: " + e.ToString());
+                    var errMsg = $@"BeginLogin exception: {e.Message ?? "No exception message"}";
+                    m_log.Log(KLogLevel.DBADERROR, errMsg);
                     m_loginState = LoginStateCode.LogInFailed;
+                    errLoginResponse.Message = errMsg;
+                    return errLoginResponse;
                 }
             }
-            return null;
+            return errLoginResponse;
         }
 
         public virtual void Network_Disconnected(object? sender, OMV.DisconnectedEventArgs args) {

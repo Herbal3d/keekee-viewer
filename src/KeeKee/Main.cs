@@ -23,8 +23,6 @@ using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 using KeeKee.Renderer;
-// using KeeKee.Renderer.OGL;
-using KeeKee.Renderer.Map;
 using KeeKee.Framework;
 using KeeKee.World;
 using KeeKee.World.LL;
@@ -154,14 +152,16 @@ namespace KeeKee {
                      // Renderer services
                      services.Configure<RendererConfig>(context.Configuration.GetSection(RendererConfig.subSectionName));
                      services.Configure<RendererOGLConfig>(context.Configuration.GetSection(RendererOGLConfig.subSectionName));
-                     // services.AddSingleton<RendererOGL>();
-                     services.AddSingleton<RendererMap>();
+                     // services.AddSingleton<KeeKee.Renderer.OGL.RendererOGL>();
+                     services.AddSingleton<Renderer.Map.RendererMap>();
+                     services.AddSingleton<Renderer.Null.RendererNull>();
                      // Select the render provider based on configuration
                      services.AddSingleton<IRenderProvider>(sp => {
                          var provider = context.Configuration.GetValue<string>("Renderer:RenderProvider") ?? "OGL";
                          return provider.ToLowerInvariant() switch {
-                             // "ogl" => sp.GetRequiredService<RendererOGL>(),
-                             "map" => sp.GetRequiredService<RendererMap>(),
+                             // "ogl" => sp.GetRequiredService<Renderer.OGL.RendererOGL>(),
+                             "null" => sp.GetRequiredService<Renderer.Null.RendererNull>(),
+                             "map" => sp.GetRequiredService<Renderer.Map.RendererMap>(),
                              _ => throw new ApplicationException($"Unknown RenderProvider provider '{provider}'.")
                          };
                      });

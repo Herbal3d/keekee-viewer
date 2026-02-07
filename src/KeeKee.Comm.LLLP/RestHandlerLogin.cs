@@ -119,7 +119,10 @@ namespace KeeKee.Rest {
                     m_RestManager.DoSimpleResponse(pResponse, "application/json", () => respBytes);
                 } catch (Exception e) {
                     m_log.Log(KLogLevel.Error, "RestHandlerLogin: Exception {0} trying to do login", e.Message);
-                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
+                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, () => {
+                        byte[] respBytes = Encoding.UTF8.GetBytes("Internal Server Error: " + e.Message);
+                        return respBytes;
+                    });
                 }
             }
         }

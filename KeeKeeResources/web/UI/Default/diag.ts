@@ -32,24 +32,23 @@ Array.from(document.getElementsByClassName('k-clickable')).forEach( nn => {
 const timerIdStats = setInterval(() => UpdateAllStats(), 500);
 
 // Diagnostic test button
-ClickableOps['diagTest'] = function(pTarget: EventTarget) {
+ClickableOps['diagTest'] = function(pTarget: EventTarget) : void {
     LogDebug('Diagnostic test operation invoked');
 };
 // Button to refetch the grid list from the viewer
-ClickableOps['refetchGrids'] = function(pTarget: EventTarget) {
+ClickableOps['refetchGrids'] = function(pTarget: EventTarget) : void {
     LogDebug('Refetch grids operation invoked');
     FetchGridInfo();
 };
 // Button to do the login based on the form entries
-ClickableOps['gridLogin'] = function(pTarget: EventTarget) {
-    LogDebug('Do the login');
+ClickableOps['gridLogin'] = function(pTarget: EventTarget) : void {
     var first = (document.getElementById('k-gridLogin-first') as HTMLInputElement).value;
     var last = (document.getElementById('k-gridLogin-last') as HTMLInputElement).value;
     var password = (document.getElementById('k-gridLogin-password') as HTMLInputElement).value;
     var startLoc = (document.getElementById('k-gridLogin-startLoc') as HTMLInputElement).value;
     var grid = (document.getElementById('k-gridLogin-gridSelect') as HTMLSelectElement).value;
     
-    LogDebug(`Logging in user ${first} ${last} to grid ${grid} with password ${password}`);
+    LogDebug(`Logging in user ${first} ${last} to grid ${grid} with password`);
 
     var loginData = {
         FirstName: first,
@@ -67,7 +66,7 @@ ClickableOps['gridLogin'] = function(pTarget: EventTarget) {
     } )
     .then( response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            LogDebug('Login failed: Network response was not ok');
         }
         return response.json();
     })

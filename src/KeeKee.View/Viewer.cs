@@ -136,7 +136,7 @@ namespace KeeKee.View {
         }
 
         private void World_OnEntityUpdate(IEntity ent, UpdateCodes what) {
-            if (ent.HasComponent<ICmptAgentMovement>()) {
+            if (ent.Classification == EntityClassifications.AvatarEntity) {
                 m_log.Log(KLogLevel.DUPDATEDETAIL | KLogLevel.DVIEWDETAIL, "OnEntityUpdate: Avatar: {0}", ent.Name.Name);
                 this.Renderer.RenderUpdate(ent, what);
             } else {
