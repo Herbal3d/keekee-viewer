@@ -19,7 +19,7 @@ namespace KeeKee.World.LL {
     public class LLCmptAnimation : ICmptAnimation {
 
         public IEntity ContainingEntity { get; private set; }
-        private IKLogger m_log;
+        private KLogger<LLCmptAnimation> m_log;
         private OMV.GridClient m_client;
 
         // for the moment, there is not much to an animation
@@ -29,12 +29,12 @@ namespace KeeKee.World.LL {
         public OMV.Vector3 StaticRotationAxis { get; set; } = OMV.Vector3.Zero;
         public float StaticRotationRotPerSec { get; set; } = 0f;
 
-        public LLCmptAnimation(IKLogger pLog,
+        public LLCmptAnimation(KLogger<LLCmptAnimation> pLog,
                                 IEntity pContainingEntity,
-                                OMV.GridClient pClient
+                                LLGridClient pClient
                                 ) {
             m_log = pLog;
-            m_client = pClient;
+            m_client = pClient.GridClient;
             ContainingEntity = pContainingEntity;
         }
 

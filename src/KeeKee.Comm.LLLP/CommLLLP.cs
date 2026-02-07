@@ -45,7 +45,8 @@ namespace KeeKee.Comm.LLLP {
         // ICommProvider.Name
         public string Name { get { return "CommLLLP"; } }
 
-        public LLInstanceFactory InstanceFactory { get; private set; }
+        private LLInstanceFactory m_InstanceFactory { get; set; }
+        private LLComponentFactory m_ComponentFactory { get; set; }
 
         public IAssetContext LLLPAssetContext { get; private set; }
 
@@ -53,7 +54,8 @@ namespace KeeKee.Comm.LLLP {
         public Grids GridList;
 
         // ICommProvider.GridClient
-        public OMV.GridClient GridClient { get; private set; }
+        public OMV.GridClient GridClient { get { return m_LLGridClient.GridClient; } }
+        private LLGridClient m_LLGridClient { get; set; }
 
         // list of the region information build for the simulator
         protected Dictionary<OMV.UUID, LLRegionContext> m_regionList = new Dictionary<OMV.UUID, LLRegionContext>();
@@ -124,6 +126,7 @@ namespace KeeKee.Comm.LLLP {
                         LLGridClient pGridClient,
                         Grids pGrids,
                         LLInstanceFactory pInstanceFactory,
+                        LLComponentFactory pComponentFactory,
                         WorkQueueManager pQueueManager,
                         IWorld pWorld) {
             m_log = pLog;
@@ -133,12 +136,13 @@ namespace KeeKee.Comm.LLLP {
             m_LLAgentConfig = pm_LLAgentConfig;
             LLLPAssetContext = pAssetContext;
             m_userPersistantParams = pUserParams;
+            m_LLGridClient = pGridClient;
             GridList = pGrids;
-            InstanceFactory = pInstanceFactory;
+            m_InstanceFactory = pInstanceFactory;
+            m_ComponentFactory = pComponentFactory;
             m_waitTilLater = pQueueManager.CreateBasicWorkQueue("CommLLLP WaitTilLater");
             m_World = pWorld;
 
-            GridClient = pGridClient.GridClient;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken) {
@@ -561,7 +565,7 @@ namespace KeeKee.Comm.LLLP {
                         // code called to create the entry if it's not found
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        return m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -569,7 +573,7 @@ namespace KeeKee.Comm.LLLP {
                         if (args.Prim.PrimData.PCode == OpenMetaverse.PCode.Grass
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.Tree
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.NewTree) {
-                            LLCmptSpecialRenderType srt = new LLCmptSpecialRenderType(m_log, updatedEntity, GridClient, rcontext);
+                            LLCmptSpecialRenderType srt = m_ComponentFactory.CreateComponent<LLCmptSpecialRenderType>(GridClient, args.Prim, rcontext);
                             srt.Type = SpecialRenderTypes.Foliage;
                             srt.FoliageType = args.Prim.PrimData.PCode;
                             srt.TreeType = args.Prim.TreeSpecies;
@@ -610,7 +614,7 @@ namespace KeeKee.Comm.LLLP {
                     OMV.Vector3 axis = angularVelocity;
                     axis.Normalize();
                     if (!ent.HasComponent<LLCmptAnimation>()) {
-                        var newAnim = new LLCmptAnimation(m_log, ent, GridClient);
+                        var newAnim = m_ComponentFactory.CreateComponent<LLCmptAnimation>(ent, m_LLGridClient);
                         ent.AddComponent<ICmptAnimation>(newAnim);
                         m_log.Log(KLogLevel.DUPDATEDETAIL, "Created prim animation on {0}", ent.Name);
                     }
@@ -671,7 +675,7 @@ namespace KeeKee.Comm.LLLP {
                     UpdateCodes updateFlags = UpdateCodes.FullUpdate;
                     IEntity ent;
                     if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out ent, () => {
-                        LLEntity newEnt = InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        LLEntity newEnt = m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
                         updateFlags |= UpdateCodes.New;
                         string? attachmentID = "1"; // default attachment ID
                         if (args.Prim.NameValues != null) {
@@ -683,7 +687,7 @@ namespace KeeKee.Comm.LLLP {
                                 }
                             }
                         }
-                        LLCmptAttachment att = new LLCmptAttachment(m_log, newEnt, GridClient);
+                        LLCmptAttachment att = m_ComponentFactory.CreateComponent<LLCmptAttachment>(newEnt, m_LLGridClient);
                         newEnt.AddComponent<LLCmptAttachment>(att);
                         att.AttachmentID = attachmentID ?? "";
                         att.AttachmentPoint = args.Prim.PrimData.AttachmentPoint;
@@ -732,7 +736,7 @@ namespace KeeKee.Comm.LLLP {
                         // code called to create the entry if it's not found
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        return m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -740,7 +744,7 @@ namespace KeeKee.Comm.LLLP {
                         if (args.Prim.PrimData.PCode == OpenMetaverse.PCode.Grass
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.Tree
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.NewTree) {
-                            LLCmptSpecialRenderType srt = new LLCmptSpecialRenderType(m_log, updatedEntity, GridClient, rcontext);
+                            LLCmptSpecialRenderType srt = m_ComponentFactory.CreateComponent<LLCmptSpecialRenderType>(updatedEntity, m_LLGridClient);
                             srt.Type = SpecialRenderTypes.Foliage;
                             srt.FoliageType = args.Prim.PrimData.PCode;
                             srt.TreeType = args.Prim.TreeSpecies;
@@ -800,7 +804,7 @@ namespace KeeKee.Comm.LLLP {
                 if (!rcontext.Entities.TryGetEntity(avatarEntityName, out updatedEntity)) {
                     m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: creating avatar {0} {1} ({2})",
                         args.Avatar.FirstName, args.Avatar.LastName, args.Avatar.ID);
-                    updatedEntity = InstanceFactory.CreateLLAvatar(GridClient, rcontext, LLLPAssetContext);
+                    updatedEntity = m_InstanceFactory.CreateLLAvatar(rcontext, LLLPAssetContext);
                     updateFlags |= UpdateCodes.New;
                 }
                 if (updatedEntity != null) {
@@ -894,7 +898,7 @@ namespace KeeKee.Comm.LLLP {
                     if (!m_regionList.TryGetValue(sim.ID, out foundRegion)) {
                         // we are connected but doen't have a regionContext for this simulator. Build one.
 
-                        foundRegion = InstanceFactory.CreateLLRegionContext(GridClient, sim, LLLPAssetContext);
+                        foundRegion = m_InstanceFactory.CreateLLRegionContext(m_LLGridClient, sim, LLLPAssetContext);
                         // foundRegion.Name = new EntityNameLL(LoggedInGridName + "/Region/" + sim.Name.Trim());
                         foundRegion.Name = new EntityNameLL(LoggedInGridName + "/" + sim.Name.Trim());
 

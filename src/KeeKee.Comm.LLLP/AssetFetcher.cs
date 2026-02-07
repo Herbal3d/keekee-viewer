@@ -9,13 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading;
-
-using KeeKee.Framework;
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Statistics;
 
@@ -67,9 +61,9 @@ namespace KeeKee.Comm.LLLP {
         private OMV.GridClient m_client;
 
         public AssetFetcher(KLogger<AssetFetcher> pLog,
-                            OMV.GridClient pGrid) {
+                            LLGridClient pGrid) {
             m_log = pLog;
-            m_client = pGrid;
+            m_client = pGrid.GridClient;
 
             // m_client.Assets.OnAssetReceived += new OMV.AssetManager.AssetReceivedCallback(Assets_OnAssetReceived);
             m_requests = new Dictionary<string, TRequest>();

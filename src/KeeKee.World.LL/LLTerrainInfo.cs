@@ -17,12 +17,12 @@ using OMV = OpenMetaverse;
 namespace KeeKee.World.LL {
     public class LLTerrainInfo : TerrainInfoBase {
 
-        private IKLogger m_log;
+        private KLogger<LLTerrainInfo> m_log;
 
         protected OMV.Simulator? m_simulator;
         public OMV.Simulator? Simulator { get { return m_simulator; } }
 
-        public LLTerrainInfo(IKLogger pLog,
+        public LLTerrainInfo(KLogger<LLTerrainInfo> pLog,
                             IWorld pWorld,
                             IRegionContext pRContext,
                             IAssetContext pAContext)

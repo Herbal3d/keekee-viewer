@@ -18,18 +18,18 @@ namespace KeeKee.World.LL {
     public class LLCmptSpecialRenderType : IEntityComponent, ISpecialRender {
         public IEntity ContainingEntity { get; private set; }
 
-        private IKLogger m_log;
+        private KLogger<LLCmptSpecialRenderType> m_log;
 
         private OMV.GridClient m_client;
         private IRegionContext m_regionContext;
 
-        public LLCmptSpecialRenderType(IKLogger pLog,
+        public LLCmptSpecialRenderType(KLogger<LLCmptSpecialRenderType> pLog,
                                 IEntity pContainingEntity,
-                                OMV.GridClient pClient,
+                                LLGridClient pClient,
                                 IRegionContext pRegionContext) {
             m_log = pLog;
             ContainingEntity = pContainingEntity;
-            m_client = pClient;
+            m_client = pClient.GridClient;
             m_regionContext = pRegionContext;
         }
         public SpecialRenderTypes Type { get; set; }

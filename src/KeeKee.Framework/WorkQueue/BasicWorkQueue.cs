@@ -49,7 +49,6 @@ namespace KeeKee.Framework.WorkQueue {
 
             m_workItems = new Queue<DoLaterJob>();
             m_totalRequests = 0;
-            m_manager.Register(this);
 
             MaxWorkProcessors = pWorldConfig.Value.MaxWorkQueueItems;
 

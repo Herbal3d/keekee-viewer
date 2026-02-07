@@ -14,7 +14,7 @@ using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 
 namespace KeeKee.World {
-    public class TerrainInfoBase : IEntity, ITerrainInfo {
+    public abstract class TerrainInfoBase : IEntity, ITerrainInfo {
         public float[,] HeightMap { get; protected set; } = new float[256, 256];
 
         public int HeightMapWidth { get; protected set; } = 256;
@@ -46,7 +46,7 @@ namespace KeeKee.World {
         }
 
         public override void Dispose() {
-            throw new NotImplementedException();
+            return;
         }
     }
 }

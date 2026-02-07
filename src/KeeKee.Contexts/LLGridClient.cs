@@ -12,7 +12,7 @@
 using KeeKee.Framework.Logging;
 using OMV = OpenMetaverse;
 
-namespace KeeKee.Comm {
+namespace KeeKee.Contexts {
 
     /// <summary>
     /// Singleton class to hold the creation and instance of GridClient for LLLP communication.

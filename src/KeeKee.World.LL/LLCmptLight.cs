@@ -20,7 +20,7 @@ namespace KeeKee.World.LL {
     /// lighting is done by the entities themselves.
     /// </summary>
     public class LLCmptLight : ICmptLight {
-        protected IKLogger m_log;
+        protected KLogger<LLCmptLight> m_log;
         private OMV.GridClient m_client;
         public IEntity ContainingEntity { get; private set; }
         public bool Visible { get; set; }
@@ -30,13 +30,13 @@ namespace KeeKee.World.LL {
         public OMV.Vector3 Position { get; set; }
         public OMV.Vector3 Target { get; set; }
 
-        public LLCmptLight(IKLogger pLog,
+        public LLCmptLight(KLogger<LLCmptLight> pLog,
                             IEntity pContainingEntity,
-                            OMV.GridClient pClient
+                            LLGridClient pClient
                             ) {
             m_log = pLog;
             ContainingEntity = pContainingEntity;
-            m_client = pClient;
+            m_client = pClient.GridClient;
 
             Visible = false;
             Color = new OMV.Color4(1.0f, 1.0f, 1.0f, 1.0f);

@@ -148,7 +148,8 @@ namespace KeeKee {
                      services.AddTransient<IEntity, LLEntity>();
                      services.AddTransient<IRegionContext, LLRegionContext>();
                      services.AddTransient<IAssetContext, LLAssetContext>();
-                     services.AddTransient<LLInstanceFactory>();
+                     services.AddSingleton<LLInstanceFactory>();
+                     services.AddSingleton<LLComponentFactory>();
 
                      // Renderer services
                      services.Configure<RendererConfig>(context.Configuration.GetSection(RendererConfig.subSectionName));

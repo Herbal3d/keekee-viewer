@@ -112,14 +112,30 @@ namespace KeeKee.Contexts {
             return false;
         }
 
+        /// <summary>
+        /// Get a component of the given type. This will look for exact
+        /// matches first, then will look for derived types.
+        /// This allows adding LLCmptLocation and looking it up as ICmptLocation.
+        /// If no component of the given type is found, an exception is thrown.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="KeyNotFoundException"></exception>
         public T Cmpt<T>() where T : class, IEntityComponent {
             if (TryGetComponent(typeof(T), out IEntityComponent cmpt)) {
                 return (T)cmpt;
             }
             EntityLogger.Log(KLogLevel.DBADERROR, "EntityBase.Cmpt: No component of type {0}", typeof(T).ToString());
-            throw new KeyNotFoundException("EntityBase.Cmpt: No component of type " + typeof(T).ToString());
+            throw new KeyNotFoundException($@"EntityBase.Cmpt: EntID={m_LGID} No component of type {typeof(T).ToString()}");
         }
 
+        /// <summary>
+        ///  Check if the entity has a component of the given type. This will look for exact
+        /// matches first, then will look for derived types.
+        /// This allows adding LLCmptLocation and looking it up as ICmptLocation.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public bool HasComponent<T>() where T : class, IEntityComponent {
             return TryGetComponent(typeof(T), out _);
         }

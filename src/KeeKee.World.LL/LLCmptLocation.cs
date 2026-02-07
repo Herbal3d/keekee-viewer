@@ -18,16 +18,16 @@ using OMV = OpenMetaverse;
 namespace KeeKee.World.LL {
     public class LLCmptLocation : ICmptLocation {
 
-        private IKLogger m_log;
+        private KLogger<LLCmptLocation> m_log;
         private OMV.GridClient m_client;
         public IEntity ContainingEntity { get { return ContainingEntity; } }
         public LLEntity ContainingLLEntity { get; private set; }
 
-        public LLCmptLocation(IKLogger pLog,
+        public LLCmptLocation(KLogger<LLCmptLocation> pLog,
                             LLEntity pContainingLLEntity,
-                            OMV.GridClient theClient) {
+                            LLGridClient theClient) {
             m_log = pLog;
-            m_client = theClient;
+            m_client = theClient.GridClient;
             ContainingLLEntity = pContainingLLEntity;
         }
 

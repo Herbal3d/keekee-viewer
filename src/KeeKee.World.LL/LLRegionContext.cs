@@ -20,7 +20,7 @@ namespace KeeKee.World.LL {
         private KLogger<LLRegionContext> m_log;
         public OMV.Simulator Simulator { get; private set; }
 
-        private OMV.GridClient GridComm { get; set; }
+        private LLGridClient m_LLGridClient { get; set; }
 
         private Dictionary<uint, int> m_recentLocalIDRequests = new Dictionary<uint, int>();
         private LLInstanceFactory m_llInstanceFactory;
@@ -31,20 +31,16 @@ namespace KeeKee.World.LL {
                                 IAssetContext pAContext,
                                 IEntityCollection pEntityCollection,
                                 RegionState pState,
-                                OMV.GridClient pGridComm,
+                                LLGridClient pGridClient,
                                 OMV.Simulator pSim)
                             : base(pLog, pWorld, pEntityCollection, pState, null, pAContext) {
             m_log = pLog;
             m_llInstanceFactory = pFactory;
-            GridComm = pGridComm;
+            m_LLGridClient = pGridClient;
 
             RegionContext = this;
 
-            TerrainInfo = new LLTerrainInfo(
-                                m_log,
-                                pWorld,
-                                this,
-                                pAContext);
+            TerrainInfo = m_llInstanceFactory.Create<LLTerrainInfo>(this, pAContext, pWorld);
 
             // until we have a better protocol, we know the sims are a fixed size
             m_size = new OMV.Vector3(256f, 256f, 8000f);
@@ -89,7 +85,7 @@ namespace KeeKee.World.LL {
             if (requestID != 0) {
                 // send the packet outside the lock
                 m_log.Log(KLogLevel.DCOMMDETAIL, "LLRegionContext.RequestLocalID: asking for {0}/{1}", this.Name, localID);
-                GridComm.Objects.RequestObject(this.Simulator, localID);
+                m_LLGridClient.GridClient.Objects.RequestObject(this.Simulator, localID);
             }
         }
 

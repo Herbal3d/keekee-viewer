@@ -21,7 +21,7 @@ namespace KeeKee.World.LL {
 
         public IEntity ContainingEntity { get; private set; }
 
-        private IKLogger m_log;
+        private KLogger<LLCmptCamera> m_log;
         private OMV.GridClient m_client;
 
         public OMV.Vector3 InitDirection { get; set; }
@@ -73,12 +73,12 @@ namespace KeeKee.World.LL {
 
         public double Far { get; set; }
 
-        public LLCmptCamera(IKLogger pLog,
+        public LLCmptCamera(KLogger<LLCmptCamera> pLog,
                             IEntity pContainingEntity,
-                            OMV.GridClient pClient
+                            LLGridClient pClient
                             ) {
             m_log = pLog;
-            m_client = pClient;
+            m_client = pClient.GridClient;
             ContainingEntity = pContainingEntity;
 
             InitDirection = new OMV.Vector3(0f, 1f, 0f);

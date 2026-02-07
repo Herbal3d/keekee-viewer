@@ -18,7 +18,7 @@ using OMV = OpenMetaverse;
 namespace KeeKee.World.LL {
     public class LLCmptAvatar : ICmptAvatar {
 
-        private IKLogger m_log;
+        private KLogger<LLCmptAvatar> m_log;
         public IEntity ContainingEntity { get; private set; }
         private OMV.GridClient m_client;
 
@@ -27,12 +27,12 @@ namespace KeeKee.World.LL {
         public string DisplayName { get; set; } = "";
         public string ActivityFlags { get; set; } = ""; // e.g. "Sitting, AFK"
 
-        public LLCmptAvatar(IKLogger pLog,
+        public LLCmptAvatar(KLogger<LLCmptAvatar> pLog,
                                 IEntity pContainingEntity,
-                                OMV.GridClient pClient
+                                LLGridClient pClient
                                 ) {
             m_log = pLog;
-            m_client = pClient;
+            m_client = pClient.GridClient;
             ContainingEntity = pContainingEntity;
         }
 

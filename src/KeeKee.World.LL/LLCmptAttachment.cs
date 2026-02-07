@@ -16,20 +16,20 @@ using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
     public class LLCmptAttachment : IEntityComponent {
-        private IKLogger m_log;
+        private KLogger<LLCmptAttachment> m_log;
 
         public IEntity ContainingEntity { get; private set; }
 
         private OMV.GridClient m_client;
         public string AttachmentID;
         public OMV.AttachmentPoint AttachmentPoint;
-        public LLCmptAttachment(IKLogger pLog,
+        public LLCmptAttachment(KLogger<LLCmptAttachment> pLog,
                         IEntity pContainingEntity,
-                        OMV.GridClient pClient
+                        LLGridClient pClient
                         ) {
             m_log = pLog;
             ContainingEntity = pContainingEntity;
-            m_client = pClient;
+            m_client = pClient.GridClient;
         }
 
         public void Dispose() {

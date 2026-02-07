@@ -21,7 +21,7 @@ using OMV = OpenMetaverse;
 namespace KeeKee.World.LL {
 
     public class LLCmptAgentMovement : ICmptAgentMovement {
-        private IKLogger m_log;
+        private KLogger<LLCmptAgentMovement> m_log;
 
         public IEntity ContainingEntity { get; private set; }
 
@@ -35,13 +35,13 @@ namespace KeeKee.World.LL {
         private float m_flyFudge = 2.5f;      // meters moved per movement
         private float m_runFudge = 0.8f;      // meters moved per movement
 
-        public LLCmptAgentMovement(IKLogger pLog,
+        public LLCmptAgentMovement(KLogger<LLCmptAgentMovement> pLog,
                         IEntity pContainingEntity,
-                        OMV.GridClient pClient,
+                        LLGridClient pClient,
                         IOptions<LLAgentConfig> pConfig) {
             m_log = pLog;
             ContainingEntity = pContainingEntity;
-            m_client = pClient;
+            m_client = pClient.GridClient;
             m_config = pConfig;
 
             m_shouldPreMoveAvatar = pConfig.Value.PreMoveAvatar;

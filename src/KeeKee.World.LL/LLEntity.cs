@@ -19,7 +19,9 @@ namespace KeeKee.World.LL {
 
     public class LLEntity : IEntity {
 
-        public OMV.Primitive? Prim { get; set; }
+        public OMV.Primitive Prim { get; set; }
+        // A null prim to use when we don't have a real one. Avoids null checks.
+        public static readonly OMV.Primitive NullPrim = new OMV.Primitive();
 
         public const ulong NOREGION = 0xffffffff;
         public OMV.Simulator? Sim { get; set; }
@@ -34,13 +36,13 @@ namespace KeeKee.World.LL {
                         IWorld pWorld,
                         IRegionContext pRContext,
                         IAssetContext pAContext,
-                        OMV.Primitive? pPrim,
+                        OMV.Primitive pPrim,
                         EntityClassifications pClassification
                         )
                     : base(pLog, pWorld, pRContext, pAContext, pClassification) {
             this.Prim = pPrim;
             this.Sim = pRContext is LLRegionContext rcontext ? rcontext.Simulator : null;
-            this.LocalID = pPrim != null ? pPrim.LocalID : LLEntity.NOLOCALID;
+            this.LocalID = pPrim != NullPrim ? pPrim.LocalID : LLEntity.NOLOCALID;
         }
 
         /// <summary>
@@ -53,7 +55,7 @@ namespace KeeKee.World.LL {
             /*
             // Make sure parenting is correct (we're in our parent's collection)
             try {
-                if (this.Prim != null) {    // if no prim, no parent possible
+                if (this.Prim != NullPrim) {    // if no prim, no parent possible
                     uint parentID = this.Prim.ParentID;
                     if (parentID != 0 && this.ContainingEntity == null) {
                         what |= UpdateCodes.ParentID;

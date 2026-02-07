@@ -9,29 +9,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using KeeKee.Framework;
+using Microsoft.Extensions.DependencyInjection;
+
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
-using KeeKee.World;
 
 namespace KeeKee.Entity {
 
     /// <summary>
-    /// EntityName class to hold the name of an entity.
-    /// 
-    /// The name is to be an URI style name with a host and entity ID.
-    /// Names will have components and parts and conversion methods
-    /// to convert between forms. This is where they all hide.
-    /// The goal is to have this class hold the details of the name
-    /// thus allowing recreation of the name.
-    /// 
-    /// The basic name is available with the toString() method or
-    /// the .Name property.
-    /// 
-    /// At the moment this is a simple wrapper around a string.
-    /// More complex parsing and handling will be added as needed.
-    /// 
+    /// The class that manages the creation of components.
+    /// This is used to track what types of components are being created
+    /// and to allow for future features like component pooling.
     /// </summary>
-    public class ComponentFactory {
+    public abstract class ComponentFactory {
+
+        protected readonly IKLogger _log;
+        protected readonly IServiceProvider _provider;
+
+        protected Dictionary<Type, List<IEntityComponent>> _componentTypes = new Dictionary<Type, List<IEntityComponent>>();
+
+        public ComponentFactory(IKLogger pLog,
+                                IServiceProvider pProvider) {
+            _log = pLog;
+            _provider = pProvider;
+        }
+
+        public virtual T CreateComponent<T>(params object[] parameters) where T : class, IEntityComponent {
+            var cmpt = ActivatorUtilities.CreateInstance<T>(_provider, parameters);
+
+            // Keep track of the types of components being created. This is used for future features like component pooling.
+            this.AddComponent<T>(cmpt);
+
+            return cmpt;
+        }
+
+        public virtual void AddComponent<T>(IEntityComponent cmpt) where T : class, IEntityComponent {
+            Type interfaceType = typeof(T);
+            if (!_componentTypes.ContainsKey(interfaceType)) {
+                _componentTypes[interfaceType] = new List<IEntityComponent>();
+            }
+            _componentTypes[interfaceType].Add(cmpt);
+        }
+
+        /// <summary>
+        /// Get the types of components that have been created for a given component interface.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public virtual List<IEntityComponent> GetComponentTypes<T>() where T : class, IEntityComponent {
+            Type cmptType = typeof(T);
+            if (_componentTypes.ContainsKey(cmptType)) {
+                return _componentTypes[cmptType];
+            }
+            foreach (var kvp in _componentTypes) {
+                if (cmptType.IsAssignableFrom(kvp.Key)) {
+                    return kvp.Value;
+                }
+            }
+            return new List<IEntityComponent>();
+        }
     }
 }
 
