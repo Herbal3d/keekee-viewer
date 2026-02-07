@@ -83,6 +83,7 @@ namespace KeeKee.Rest {
                     ["isconnected"] = m_commProvider.IsConnected,
                     ["isloggedin"] = m_commProvider.IsLoggedIn
                 };
+
                 OMVSD.OSDMap avatarInfo = new OMVSD.OSDMap();
                 var cmptAvatar = m_commLLLP?.MainAgent?.Cmpt<LLCmptAvatar>();
                 if (cmptAvatar != null) {
@@ -103,7 +104,10 @@ namespace KeeKee.Rest {
                     avatarInfo["y"] = localPos.Y;
                     avatarInfo["z"] = localPos.Z;
                 }
-                responseMap["avatar"] = avatarInfo;
+                OMVSD.OSDArray avatarArray = new OMVSD.OSDArray();
+                avatarArray.Add(avatarInfo);
+
+                responseMap["avatar"] = avatarArray;
 
                 if (m_commLLLP != null) {
                     responseMap["currentgrid"] = m_commLLLP?.LoggedInGridName ?? "unknown";
