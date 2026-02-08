@@ -11,7 +11,7 @@
 
 using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
-
+using OpenMetaverse.StructuredData;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World {
@@ -24,7 +24,6 @@ namespace KeeKee.World {
         // list of the region information build for the simulator
         List<IRegionContext> m_regionList;
 
-        #region Events
         // A new region has been added to the world
         public event WorldRegionNewCallback OnWorldRegionNew;
         // A known region has changed it's state (terrain, location, ...)
@@ -45,7 +44,6 @@ namespace KeeKee.World {
         public event WorldAgentUpdateCallback OnAgentUpdate;
         // When an agent is removed from the world
         public event WorldAgentRemovedCallback OnAgentRemoved;
-        #endregion
 
         /// <summary>
         /// Constructor called in instance of main and not in own thread. This is only
@@ -57,8 +55,6 @@ namespace KeeKee.World {
             m_regionList = new List<IRegionContext>();
         }
 
-        #region IWorld methods
-        #region Region Management
         public void AddRegion(IRegionContext rcontext) {
             m_log.Log(KLogLevel.DWORLD, $@"Simulator connected {rcontext.Name}");
             IRegionContext? foundRegion = null;
@@ -96,7 +92,6 @@ namespace KeeKee.World {
             }
         }
 
-        #region REGION EVENT PROCESSING
         private EntityNewCallback? Region_OnNewEntityCallback = null;
         private void Region_OnNewEntity(IEntity ent) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Region_OnNewEntity: {0}", ent.Name.Name);
@@ -122,7 +117,6 @@ namespace KeeKee.World {
             OnWorldRegionUpdated?.Invoke(rcontext, what);
             return;
         }
-        #endregion REGION EVENT PROCESSING
 
         public IRegionContext? GetRegion(EntityName name) {
             IRegionContext? ret = null;
@@ -180,7 +174,6 @@ namespace KeeKee.World {
             }
         }
 
-        #endregion Region Management
 
         /// <summary>
         /// A global call to find an entity. We ask all the regions if they have it.
@@ -203,7 +196,6 @@ namespace KeeKee.World {
             return (ret != null);
         }
 
-        #region AGENT MANAGEMENT
         // the "agent" is the avatar we are controlling
         public IEntity? Agent { get { return m_agent; } }
 
@@ -231,8 +223,26 @@ namespace KeeKee.World {
         void UpdateAgentCamera(IEntity agnt, OMV.Vector3 position, OMV.Quaternion direction) {
             return;
         }
-        #endregion AGENT MANAGEMENT
-        #endregion IWorld methods
+
+        public OSD? GetDisplayable() {
+            OSDMap ret = new OSDMap();
+            ret["RegionCount"] = m_regionList.Count;
+
+            OSDArray regions = new OSDArray();
+            lock (m_regionList) {
+                foreach (IRegionContext rc in m_regionList) {
+                    regions.Add(rc.GetDisplayable());
+                }
+            }
+            ret["Regions"] = regions;
+
+            return ret;
+        }
+
+        public void Dispose() {
+            // TODO: there is probably a lot to do here.
+            return;
+        }
 
 
     }

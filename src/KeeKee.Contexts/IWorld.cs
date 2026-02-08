@@ -9,6 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Framework;
+
 namespace KeeKee.Contexts {
 
     public delegate void WorldRegionNewCallback(IRegionContext rcontext);
@@ -73,7 +75,7 @@ namespace KeeKee.Contexts {
     /// The world is the central repository of objects that are received from
     /// the communcation stacks and that are displayed by the viewers.
     /// </summary>
-    public interface IWorld {
+    public interface IWorld : IDisplayable, IDisposable {
 
         #region Events
         // when a new region is being added to the world

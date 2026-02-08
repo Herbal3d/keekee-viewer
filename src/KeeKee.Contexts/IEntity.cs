@@ -11,7 +11,7 @@
 
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
-
+using OpenMetaverse.StructuredData;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.Contexts {
@@ -20,7 +20,7 @@ namespace KeeKee.Contexts {
     /// the management of the additional objects that subsystems can hang
     /// on an entity.
     /// </summary>
-    public abstract class IEntity {
+    public abstract class IEntity : IDisplayable, IDisposable {
 
         public IKLogger EntityLogger { get; protected set; }
 
@@ -167,6 +167,21 @@ namespace KeeKee.Contexts {
         // Tell the entity that something about it changed
         virtual public void Update(UpdateCodes what) {
             EntityLogger.Log(KLogLevel.DUPDATEDETAIL, "IEntity.Update. what={0}", what);
+        }
+
+        // Default implementation of IDisplayable. Override if you want to be displayable.
+        public virtual OSD? GetDisplayable() {
+            OSDMap ret = new OSDMap();
+            ret["Name"] = Name.ToString();
+            ret["LGID"] = LGID.ToString();
+            ret["Classification"] = Classification.ToString();
+            ret["ContainingEntity"] = ContainingEntity != null ? ContainingEntity.Name.Name : "--none--";
+            OSDArray components = new OSDArray();
+            foreach (var kvp in m_components) {
+                components.Add(kvp.Key.ToString());
+            }
+            ret["Components"] = components;
+            return ret;
         }
     }
 }

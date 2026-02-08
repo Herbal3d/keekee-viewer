@@ -9,8 +9,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Framework;
 using KeeKee.Framework.Logging;
-
+using OpenMetaverse.StructuredData;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.Contexts {
@@ -88,6 +89,22 @@ namespace KeeKee.Contexts {
                 State.OnStateChanged -= m_regionStateChangedCallback;
             }
             return;
+        }
+
+        public override OSD? GetDisplayable() {
+            OSDMap ret = new OSDMap();
+            ret["Name"] = Name.ToString();
+            ret["WorldGroup"] = WorldGroup.ToString();
+            ret["State"] = State.ToString();
+            ret["EntityCount"] = Entities.Count;
+
+            OSDArray ents = new OSDArray();
+            Entities.ForEach(ent => {
+                ents.Add(ent.GetDisplayable());
+            });
+            ret["Entities"] = ents;
+
+            return ret;
         }
     }
 }

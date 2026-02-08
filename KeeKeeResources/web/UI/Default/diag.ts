@@ -219,14 +219,39 @@ function FormatStatsData(data: StatsData) : HTMLElement {
     tbl.appendChild(MakeStatInfoRow("Is Connected", data.isconnected ? "Yes" : "No"));
     tbl.appendChild(MakeStatInfoRow("Is Logged In", data.isloggedin ? "Yes" : "No"));
     allStats.appendChild(tbl);
+    allStats.appendChild(MakeStatsWorld(data.world));
+    allStats.appendChild(MakeSectionHeader("Work Queues"));
     allStats.appendChild(MakeStatsWorkQueue(data.workqueues));
     return allStats;
     // var preArea = MakeElement('pre');
     // preArea.textContent = JSON.stringify(data, null, 2);
     // return preArea;
 }
+function MakeStatsWorld(world: WorldInfo) : HTMLElement {
+    var worldDiv = MakeElement('div', 'div-stats-world');
+    worldDiv.appendChild(MakeSectionHeader(`World - ${world.RegionCount} regions`));
+    for (let region in world.Regions) {
+        let info = world.Regions[region];
+        var regionDiv = MakeElement('div', 'div-stats-region');
+        regionDiv.appendChild(MakeSectionHeader(`Region: ${info.Name} - ${info.EntityCount} entities`));
+        var entityTable = MakeElement('table', 'table-stats-entities');
+        entityTable.appendChild(MakeHeaderRow(['Name', 'LGID', 'Classification', 'Containing Entity', 'Components']));
+        for (let entity of info.Entities) {
+            var row = MakeElement('tr');
+            row.appendChild(MakeTDElement(entity.Name));
+            row.appendChild(MakeTDElement(entity.LGID));
+            row.appendChild(MakeTDElement(entity.Classification));
+            row.appendChild(MakeTDElement(entity.ContainingEntity));
+            row.appendChild(MakeTDElement(entity.Components.join(", ")));
+            entityTable.appendChild(row);
+        }
+        regionDiv.appendChild(entityTable);
+        worldDiv.appendChild(regionDiv);
+    }
+    return worldDiv;
+}
 function MakeStatsWorkQueue(workQueues: { [index: number]: WorkQueueInfo }) : HTMLElement {
-    var wqTable = MakeElement('table');
+    var wqTable = MakeElement('table', 'table-stats-workqueue');
     wqTable.appendChild(MakeHeaderRow(['Name', 'Total', 'Current', 'Later', 'Active']));
     for (let wq in workQueues) {
         let info = workQueues[wq];
@@ -243,6 +268,7 @@ function MakeStatsWorkQueue(workQueues: { [index: number]: WorkQueueInfo }) : HT
 // ============================================================
 function FormatLLLPStatsData(data: LLLPStatsData) : HTMLElement {
     var allStats = MakeElement('div', 'div-lllp-stats-all');
+    allStats.appendChild(MakeSectionHeader("LLLP Communication Stats"));
     allStats.appendChild(MakeLLLPStatsHeader(data));
     allStats.appendChild(MakeLLLPStatsComm(data.commstats));
     allStats.appendChild(MakeLLLPStatsAvatar(data.avatar));
@@ -308,6 +334,11 @@ function MakeTextElement(text: string): HTMLElement {
     elem.textContent = text;
     return elem;
 }   
+function MakeSectionHeader(text: string): HTMLElement {
+    const header = MakeElement('h3');
+    header.textContent = text;
+    return header;
+}
 // Create a td element containing text with an optional class name
 function MakeTDElement(text: string, className?: string): HTMLElement {
     const elem = document.createElement('td');
@@ -333,12 +364,36 @@ interface WorkQueueInfo {
     "Later": number;
     "Active": number;
 }
+interface EntityInfo {
+    "Name": string;
+    "LGID": string;
+    "Classification": string;
+    "ContainingEntity": string;
+    "Components": string[];
+}
+interface RegionInfo {
+    "Name": string;
+    "WorldGroup": string;
+    "State": string;
+    "EntityCount": number;
+    "Entities": EntityInfo[];
+}
+interface WorldInfo {
+    "RegionCount": number;
+    "Regions": {
+        [index: number]: RegionInfo;
+    },
+    "OtherStats": {
+        [key: string]: string | number | boolean;
+    }
+}
 interface StatsData {
     "status": string;
     "timestamp": string;
     "commprovider": string;
     "isconnected": boolean;
     "isloggedin": boolean;
+    "world": WorldInfo;
     "workqueues": {
         [ index: number]: WorkQueueInfo
     },

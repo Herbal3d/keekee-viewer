@@ -14,6 +14,7 @@ using System.Text;
 
 using KeeKee.Comm;
 using KeeKee.Config;
+using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
 using KeeKee.Framework.WorkQueue;
@@ -34,6 +35,7 @@ namespace KeeKee.Rest {
         private readonly IOptions<CommConfig> m_commConfig;
         private readonly IOptions<GridConfig> m_gridConfig;
         private readonly WorkQueueManager m_workQueueManager;
+        private readonly IWorld m_world;
 
         /// <summary>
         /// </summary>
@@ -47,15 +49,17 @@ namespace KeeKee.Rest {
                                 IOptions<GridConfig> pGridConfig,
                                 RestManager pRestManager,
                                 WorkQueueManager pWorkQueueManager,
-                                ICommProvider pCommProvider
+                                ICommProvider pCommProvider,
+                                IWorld pWorld
                                 ) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-            m_RestManager = pRestManager;
-            m_commProvider = pCommProvider;
-            m_workQueueManager = pWorkQueueManager;
             m_commConfig = pCommConfig;
             m_gridConfig = pGridConfig;
+            m_RestManager = pRestManager;
+            m_workQueueManager = pWorkQueueManager;
+            m_commProvider = pCommProvider;
+            m_world = pWorld;
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "stats");
 
@@ -79,6 +83,8 @@ namespace KeeKee.Rest {
                 };
 
                 responseMap["workqueues"] = m_workQueueManager.GetDisplayable();
+
+                responseMap["world"] = m_world.GetDisplayable();
 
                 /* Sample code on how configuration parameters can be added to the response.
                 // Add in the comm config parameters
