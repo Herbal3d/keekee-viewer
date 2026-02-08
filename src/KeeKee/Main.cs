@@ -22,6 +22,7 @@ using KeeKee.Contexts;
 using KeeKee.Entity;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
+using KeeKee.Rest.LLLP;
 using KeeKee.Renderer;
 using KeeKee.Framework;
 using KeeKee.View;
@@ -114,11 +115,18 @@ namespace KeeKee {
 
                      // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
                      services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subSectionName));
-                     services.AddTransient<RestHandlerFactory, RestHandlerFactory>();
+                     services.AddTransient<RestHandlerFactory>();
                      services.AddTransient<RestHandlerUI, RestHandlerUI>();
                      services.AddTransient<RestHandlerStatic, RestHandlerStatic>();
+                     services.AddTransient<RestHandlerLogin>();
+                     services.AddTransient<RestHandlerLogout>();
+                     services.AddTransient<RestHandlerTeleport>();
+                     services.AddTransient<RestHandlerExit>();
+                     services.AddTransient<RestHandlerChat>();
                      services.AddSingleton<RestManager>();
                      services.AddHostedService(sp => sp.GetRequiredService<RestManager>());
+                     services.AddSingleton<CommLLLPRest>();
+                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
 
                      // Communication services. Set up for LLLP.
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
@@ -126,13 +134,6 @@ namespace KeeKee {
                      services.AddSingleton<LoadWorldObjects>();
                      services.AddSingleton<AssetFetcher>();
                      services.AddSingleton<ICommProvider, CommLLLP>();
-                     services.AddTransient<RestHandlerLogin>();
-                     services.AddTransient<RestHandlerLogout>();
-                     services.AddTransient<RestHandlerTeleport>();
-                     services.AddTransient<RestHandlerExit>();
-                     services.AddTransient<RestHandlerChat>();
-                     services.AddSingleton<CommLLLPRest>();
-                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
 
                      // World services
                      services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
@@ -156,11 +157,13 @@ namespace KeeKee {
                      // services.AddSingleton<KeeKee.Renderer.OGL.RendererOGL>();
                      services.AddSingleton<Renderer.Map.RendererMap>();
                      services.AddSingleton<Renderer.Null.RendererNull>();
+                     services.AddSingleton<Renderer.Godot.RendererGodot>();
                      // Select the render provider based on configuration
                      services.AddSingleton<IRenderProvider>(sp => {
                          var provider = context.Configuration.GetValue<string>("Renderer:RenderProvider") ?? "OGL";
                          return provider.ToLowerInvariant() switch {
                              // "ogl" => sp.GetRequiredService<Renderer.OGL.RendererOGL>(),
+                             "godot" => sp.GetRequiredService<Renderer.Godot.RendererGodot>(),
                              "null" => sp.GetRequiredService<Renderer.Null.RendererNull>(),
                              "map" => sp.GetRequiredService<Renderer.Map.RendererMap>(),
                              _ => throw new ApplicationException($"Unknown RenderProvider provider '{provider}'.")

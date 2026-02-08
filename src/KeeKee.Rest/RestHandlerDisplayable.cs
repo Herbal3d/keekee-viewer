@@ -63,7 +63,12 @@ namespace KeeKee.Rest {
             if (m_prefix == NOPREFIX) {
                 m_log.Log(KLogLevel.DRESTDETAIL, "Setting Prefix to {0}", pPrefix);
                 m_prefix = pPrefix;
-                m_RestManager.RegisterListener(this);
+                if (!m_restConfig.Value.Enable) {
+                    m_log.Log(KLogLevel.DRESTDETAIL, "RestHandlerDisplayable not enabled by config");
+                    return;
+                } else {
+                    m_RestManager.RegisterListener(this);
+                }
             }
             m_prefix = pPrefix;
             DisplayableSource = pDisplayableSource;

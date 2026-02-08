@@ -33,7 +33,9 @@
     <ProjectReference Include="..\KeeKee.Renderer\KeeKee.Renderer.csproj" />
     <ProjectReference Include="..\KeeKee.Renderer.Map\KeeKee.Renderer.Map.csproj" />
     <ProjectReference Include="..\KeeKee.Renderer.Null\KeeKee.Renderer.Null.csproj" />
+    <ProjectReference Include="..\KeeKee.Renderer.Godot\KeeKee.Renderer.Godot.csproj" />
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
+    <ProjectReference Include="..\KeeKee.Rest.LLLP\KeeKee.Rest.LLLP.csproj" />
     <ProjectReference Include="..\KeeKee.View\KeeKee.View.csproj" />
   </ItemGroup>
 

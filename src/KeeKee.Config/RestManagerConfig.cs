@@ -13,6 +13,9 @@ public class RestManagerConfig {
 
     public const string subSectionName = "RestManager";
 
+    // Enable the REST interfaces to control the viewer.
+    public bool Enable { get; set; } = true;
+
     // Local port used for rest interfaces
     public int Port { get; set; } = 9144;
     // Base URL for rest interfaces

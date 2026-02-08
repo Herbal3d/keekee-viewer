@@ -16,7 +16,8 @@ using KeeKee.Rest;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace KeeKee.Comm.LLLP {
+namespace KeeKee.Rest.LLLP
+{
 
     /// <summary>
     /// Provides interface to LLLP communication stack.
@@ -32,9 +33,9 @@ namespace KeeKee.Comm.LLLP {
     ///            parameter is DESTINATION
     /// GET https://127.0..1.1:port/api/LLLP/stats : get operation statistics
     /// </summary>
-    public class CommLLLPRest : BackgroundService {
+    public class CommLLLPRest : BackgroundService
+    {
         private KLogger<CommLLLPRest> m_log;
-        CommLLLP m_comm;
         public IOptions<CommConfig> ConnectionParams { get; private set; }
         RestHandlerFactory m_restFactory;
 
@@ -47,13 +48,15 @@ namespace KeeKee.Comm.LLLP {
 
         public CommLLLPRest(KLogger<CommLLLPRest> pLog,
                         RestHandlerFactory pRestFactory,
-                        IOptions<CommConfig> pConnectionParams) {
+                        IOptions<CommConfig> pConnectionParams)
+        {
             m_log = pLog;
             m_restFactory = pRestFactory;
             ConnectionParams = pConnectionParams;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+        {
             m_log.LogInfo("CommLLLPRest starting.");
 
             m_loginHandler = m_restFactory.CreateHandler<RestHandlerLogin>();

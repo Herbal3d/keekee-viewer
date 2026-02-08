@@ -23,7 +23,7 @@ using Microsoft.Extensions.Options;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest {
+namespace KeeKee.Rest.LLLP {
 
     public class RestHandlerTeleport : IRestHandler {
 
@@ -53,7 +53,9 @@ namespace KeeKee.Rest {
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/teleport");
 
-            m_RestManager.RegisterListener(this);
+            if (m_restConfig.Value.Enable) {
+                m_RestManager.RegisterListener(this);
+            }
         }
 
         public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,

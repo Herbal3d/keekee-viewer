@@ -72,7 +72,9 @@ namespace KeeKee.Rest {
             m_log.Log(KLogLevel.DRESTDETAIL, "baseUIDir={0}, UIDir={1}, Prefix={2}",
                      BaseUIDir, UIDir, Prefix);
 
-            m_RestManager.RegisterListener(this);
+            if (m_restConfig.Value.Enable) {
+                m_RestManager.RegisterListener(this);
+            }
         }
 
         public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,

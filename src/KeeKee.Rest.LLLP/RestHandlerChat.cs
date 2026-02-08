@@ -25,16 +25,19 @@ using OpenMetaverse.StructuredData;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest {
+namespace KeeKee.Rest.LLLP
+{
 
-    public class RestHandlerChat : IRestHandler {
+    public class RestHandlerChat : IRestHandler
+    {
 
         private readonly KLogger<RestHandlerChat> m_log;
         private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
 
-        public enum ChatEntryType {
+        public enum ChatEntryType
+        {
             Normal = 0,
             StatusBlue, StatusDarkBlue, LindenChat, ObjectChat,
             StartupTitle, Error, Alert, OwnerSay, Invisible
@@ -44,7 +47,8 @@ namespace KeeKee.Rest {
             "ChatTypeStatusBlue", "ChatTypeStatusDarkBlue", "ChatTypeLindenChat", "ChatTypeObjectChat",
             "ChatTypeStartupTitle", "ChatTypeError", "ChatTypeAlert", "ChatTypeOwnerSay", "ChatTypeInvisible"
         };
-        protected class ChatEntry {
+        protected class ChatEntry
+        {
             public DateTime time;
             public ChatEntryType chatEntryType;
             public string fromName;
@@ -54,7 +58,8 @@ namespace KeeKee.Rest {
             public OMV.ChatType chatType;
             public string chatTypeString;
             public OMV.UUID ownerID;
-            public ChatEntry() {
+            public ChatEntry()
+            {
                 time = DateTime.Now;
             }
         }
@@ -70,7 +75,8 @@ namespace KeeKee.Rest {
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider
-                                ) {
+                                )
+        {
             m_log = pLogger;
             m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
@@ -85,9 +91,11 @@ namespace KeeKee.Rest {
             m_commProvider.GridClient.Self.ChatFromSimulator += new EventHandler<OpenMetaverse.ChatEventArgs>(Self_ChatFromSimulator);
         }
 
-        void Self_ChatFromSimulator(object sender, OpenMetaverse.ChatEventArgs e) {
+        void Self_ChatFromSimulator(object sender, OpenMetaverse.ChatEventArgs e)
+        {
             m_log.Log(KLogLevel.DCOMMDETAIL, "Self_ChatFromSimulator: {0} says '{1}'", e.FromName, e.Message);
-            if (e.Message.Length == 0) {
+            if (e.Message.Length == 0)
+            {
                 // zero length messages are typing start and end
                 return;
             }
@@ -97,7 +105,8 @@ namespace KeeKee.Rest {
             ce.position = e.Position;
             ce.sourceType = e.SourceType;
             ce.chatType = e.Type;
-            switch (e.Type) {
+            switch (e.Type)
+            {
                 case OMV.ChatType.Normal: ce.chatTypeString = "Normal"; break;
                 case OMV.ChatType.Shout: ce.chatTypeString = "Shout"; break;
                 case OMV.ChatType.Whisper: ce.chatTypeString = "Whisper"; break;
@@ -110,13 +119,18 @@ namespace KeeKee.Rest {
             }
             ce.ownerID = e.OwnerID;
             ce.chatEntryType = ChatEntryType.Normal;
-            if (e.SourceType == OMV.ChatSourceType.Agent && e.FromName.EndsWith("Linden")) {
+            if (e.SourceType == OMV.ChatSourceType.Agent && e.FromName.EndsWith("Linden"))
+            {
                 ce.chatEntryType = ChatEntryType.LindenChat;
             }
-            if (e.SourceType == OMV.ChatSourceType.Object) {
-                if (e.Type == OMV.ChatType.OwnerSay) {
+            if (e.SourceType == OMV.ChatSourceType.Object)
+            {
+                if (e.Type == OMV.ChatType.OwnerSay)
+                {
                     ce.chatEntryType = ChatEntryType.OwnerSay;
-                } else {
+                }
+                else
+                {
                     ce.chatEntryType = ChatEntryType.ObjectChat;
                 }
             }
@@ -126,15 +140,19 @@ namespace KeeKee.Rest {
         public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
-                                           CancellationToken pCancelToken) {
+                                           CancellationToken pCancelToken)
+        {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
+            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false)
+            {
                 m_log.Log(KLogLevel.DRESTDETAIL, "GET: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 OMVSD.OSDMap ret = new OMVSD.OSDMap();
                 string lastDate = "xx";
-                lock (m_chats) {
-                    while (m_chats.Count > 0) {
+                lock (m_chats)
+                {
+                    while (m_chats.Count > 0)
+                    {
                         ChatEntry ce = m_chats.Dequeue();
                         string dateString = ce.time.ToString("yyyyMMddhhmmssfff");
                         OMVSD.OSDMap chat = new OMVSD.OSDMap();
@@ -144,10 +162,12 @@ namespace KeeKee.Rest {
                         chat.Add("Type", new OMVSD.OSDString(ce.chatTypeString));
                         chat.Add("EntryType", new OMVSD.OSDString(ChatEntryTypeString[(int)ce.chatEntryType]));
                         chat.Add("Position", new OMVSD.OSDString(ce.position.ToString()));
-                        if (ce.ownerID != UUID.Zero) {
+                        if (ce.ownerID != UUID.Zero)
+                        {
                             chat.Add("OwnerID", new OMVSD.OSDString(ce.ownerID.ToString()));
                         }
-                        while (ret.ContainsKey(dateString)) {
+                        while (ret.ContainsKey(dateString))
+                        {
                             dateString += "1";
                         }
                         ret.Add(dateString, chat);
@@ -159,16 +179,19 @@ namespace KeeKee.Rest {
 
                 return;
             }
-            if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
+            if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false)
+            {
                 m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
                 string strBody = "";
-                using (StreamReader rdr = new StreamReader(pRequest.InputStream)) {
+                using (StreamReader rdr = new StreamReader(pRequest.InputStream))
+                {
                     strBody = rdr.ReadToEnd();
                     // m_log.Log(KLogLevel.DRESTDETAIL, "APIPostHandler: Body: '" + strBody + "'");
                 }
 
-                try {
+                try
+                {
                     OMVSD.OSDMap mapBody = m_RestManager.MapizeTheBody(strBody);
                     m_log.Log(KLogLevel.DCOMMDETAIL, "PostHandler: received chat '{0}'", mapBody["Message"]);
                     // collect parameters and send it to the simulator
@@ -198,13 +221,16 @@ namespace KeeKee.Rest {
                                     m_comm.GridClient.Self.RelativePosition);
                     this.Self_ChatFromSimulator(this, cea);
                     */
-                } catch (Exception e) {
+                }
+                catch (Exception e)
+                {
                     m_log.Log(KLogLevel.DCOMM, "ERROR PARSING CHAT MESSAGE: {0}", e);
                 }
             }
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             // m_RestManager.UnregisterListener(this);
         }
     }

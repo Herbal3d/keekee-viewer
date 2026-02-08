@@ -91,6 +91,11 @@ namespace KeeKee.Rest {
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
             m_log.Log(KLogLevel.DREST, "RestManager ExecuteAsync entered");
 
+            if (!m_restConfig.Value.Enable) {
+                m_log.Log(KLogLevel.DREST, "RestManager not enabled by config");
+                return;
+            }
+
             m_listener = new HttpListener();
             m_listener.Prefixes.Add(BaseURL + "/");
 
