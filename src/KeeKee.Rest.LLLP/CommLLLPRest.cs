@@ -9,6 +9,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using KeeKee.Comm;
+using KeeKee.Comm.LLLP;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Rest;
@@ -16,8 +18,7 @@ using KeeKee.Rest;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace KeeKee.Rest.LLLP
-{
+namespace KeeKee.Rest.LLLP {
 
     /// <summary>
     /// Provides interface to LLLP communication stack.
@@ -25,19 +26,19 @@ namespace KeeKee.Rest.LLLP
     /// values as well as the current state of the connection.
     /// This handles the following REST operations:
     /// GET http://127.0.0.0:port/api/LLLP/ : returns the JSON of the comm parameter block
-    /// POST http://127.0.0.1:port/api/LLLP/connection/login    : take JSON body as parameters to use to login
+    /// POST http://127.0.0.1:port/api/LLLP/login    : take JSON body as parameters to use to login
     ///            parameters are: LOGINFIRST, LOGINLAST, LOGINPASS, LOGINGRID, LOGINSIM
-    /// POST http://127.0.0.1:port/api/LLLP/connection/logout   : perform a logout
-    /// POST http://127.0.0.1:port/api/LLLP/connection/exit     : exit the application
-    /// POST http://127.0.0.1:port/api/LLLP/connection/teleport : teleport the user
+    /// POST http://127.0.0.1:port/api/LLLP/logout   : perform a logout
+    /// POST http://127.0.0.1:port/api/LLLP/exit     : exit the application
+    /// POST http://127.0.0.1:port/api/LLLP/teleport : teleport the user
     ///            parameter is DESTINATION
     /// GET https://127.0..1.1:port/api/LLLP/stats : get operation statistics
     /// </summary>
-    public class CommLLLPRest : BackgroundService
-    {
+    public class CommLLLPRest : BackgroundService {
         private KLogger<CommLLLPRest> m_log;
-        public IOptions<CommConfig> ConnectionParams { get; private set; }
-        RestHandlerFactory m_restFactory;
+        private IOptions<RestManagerConfig> m_RestParams { get; set; }
+        private RestHandlerFactory m_restFactory { get; set; }
+        private ICommProvider m_commProvider { get; set; }
 
         IRestHandler? m_loginHandler = null;
         IRestHandler? m_logoutHandler = null;
@@ -48,26 +49,35 @@ namespace KeeKee.Rest.LLLP
 
         public CommLLLPRest(KLogger<CommLLLPRest> pLog,
                         RestHandlerFactory pRestFactory,
-                        IOptions<CommConfig> pConnectionParams)
-        {
+                        ICommProvider pCommProvider,
+                        IOptions<RestManagerConfig> pRestParams) {
             m_log = pLog;
             m_restFactory = pRestFactory;
-            ConnectionParams = pConnectionParams;
+            m_commProvider = pCommProvider;
+            m_RestParams = pRestParams;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
-        {
-            m_log.LogInfo("CommLLLPRest starting.");
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+            if (!m_RestParams.Value.Enable) {
+                m_log.Log(KLogLevel.DREST, "CommLLLPRest not enabled by config");
+                return;
+            }
+            if (m_commProvider is CommLLLP) {
+                // The LLLP comm provider is being used to start it's REST interface.
+                m_log.LogInfo("CommLLLPRest starting.");
 
-            m_loginHandler = m_restFactory.CreateHandler<RestHandlerLogin>();
-            m_logoutHandler = m_restFactory.CreateHandler<RestHandlerLogout>();
-            m_teleportHandler = m_restFactory.CreateHandler<RestHandlerTeleport>();
-            m_exitHandler = m_restFactory.CreateHandler<RestHandlerExit>();
-            m_chatHandler = m_restFactory.CreateHandler<RestHandlerChat>();
-            m_statusHandler = m_restFactory.CreateHandler<RestHandlerStatus>();
+                m_loginHandler = m_restFactory.CreateHandler<RestHandlerLogin>();
+                m_logoutHandler = m_restFactory.CreateHandler<RestHandlerLogout>();
+                m_teleportHandler = m_restFactory.CreateHandler<RestHandlerTeleport>();
+                m_exitHandler = m_restFactory.CreateHandler<RestHandlerExit>();
+                m_chatHandler = m_restFactory.CreateHandler<RestHandlerChat>();
+                m_statusHandler = m_restFactory.CreateHandler<RestHandlerStatus>();
 
-            // m_paramGetHandler = m_restFactory.Create("/LLLP/status", ref connParams);
-            // m_statHandler = m_restFactory.Create("/LLLP/stats", m_comm.CommStatistics);
+                // m_paramGetHandler = m_restFactory.Create("/LLLP/status", ref connParams);
+                // m_statHandler = m_restFactory.Create("/LLLP/stats", m_comm.CommStatistics);
+            } else {
+                m_log.Log(KLogLevel.DREST, "Comm provider is not LLLP, not starting REST interface.");
+            }
 
             await Task.CompletedTask;
         }

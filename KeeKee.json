@@ -5,6 +5,7 @@
         "AppName": "KeeKeeViewer"
     },
     "RestManager": {
+        "Enable": true,
         "Port": 9144,
         "BaseURL": "http://localhost",
         "CSSLocalUrl": "/std/KeeKee.css",

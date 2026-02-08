@@ -453,7 +453,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         public virtual void Network_Disconnected(object? sender, OMV.DisconnectedEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Network_Disconnected: Disconnected from simulator");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Network_Disconnected: Disconnected from simulator");
             m_stats.NetDisconnected.Event();
             m_log.Log(KLogLevel.DCOMM, "Disconnected");
             m_loginState = LoginStateCode.NotLoggedIn;
@@ -462,14 +462,14 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Network_SimConnected(object? sender, OMV.SimConnectedEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Network_SimConnected: Simulator connected");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Network_SimConnected: Simulator connected");
             m_stats.NetSimConnected.Event();
             m_log.Log(KLogLevel.DWORLD, "Network_SimConnected: Simulator connected {0}", args.Simulator.Name);
         }
 
         // ===============================================================
         public virtual void Network_EventQueueRunning(Object? sender, OMV.EventQueueRunningEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Network_EventQueueRunning: Event queue running");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Network_EventQueueRunning: Event queue running");
             LLRegionContext regionContext;
             lock (m_opLock) {
                 // the sim isn't really up until the caps queue is running
@@ -510,7 +510,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Network_SimChanged(object? sender, OMV.SimChangedEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Network_SimChanged: Simulator changed");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Network_SimChanged: Simulator changed");
             // disable teleports until we have a good connection to the simulator (event queue working)
             m_stats.NetSimChanged.Event();
             if (!GridClient.Network.CurrentSim.Caps.IsEventQueueRunning) {
@@ -526,7 +526,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Terrain_LandPatchReceived(object? sender, OMV.LandPatchReceivedEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Terrain_LandPatchReceived: Land patch received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Terrain_LandPatchReceived: Land patch received");
             // m_log.Log(KLogLevel.DWORLDDETAIL, "Land patch for {0}: {1}, {2}, {3}", 
             //             args.Simulator.Name, args.X, args.Y, args.PatchSize);
             LLRegionContext regionContext = FindRegion(args.Simulator);
@@ -542,13 +542,13 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public void Objects_ObjectDataBlockUpdate(object? sender, OMV.ObjectDataBlockUpdateEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectDataBlockUpdate: Object data block update received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_ObjectDataBlockUpdate: Object data block update received");
             return;
         }
 
         // ===============================================================
         public void Objects_ObjectUpdate(object? sender, OMV.PrimEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectUpdate: Object update received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_ObjectUpdate: Object update received");
             if (args.IsAttachment) {
                 Objects_AttachmentUpdate(sender, args);
                 return;
@@ -668,7 +668,7 @@ namespace KeeKee.Comm.LLLP {
         // This needs to get the attachment loaded into the world
         public void Objects_AttachmentUpdate(object? sender, OMV.PrimEventArgs args) {
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAttachmentUpdate, sender, args)) return;
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_AttachmentUpdate: Attachment update received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_AttachmentUpdate: Attachment update received");
             lock (m_opLock) {
                 LLRegionContext? rcontext = FindRegion(args.Simulator);
                 if (rcontext == null) return;
@@ -719,7 +719,7 @@ namespace KeeKee.Comm.LLLP {
         }
         // ===============================================================
         private void Objects_TerseObjectUpdate(object? sender, OMV.TerseObjectUpdateEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_TerseObjectUpdate: Terse object update received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_TerseObjectUpdate: Terse object update received");
             if (QueueTilOnline(args.Simulator, CommActionCode.TerseObjectUpdate, sender, args)) return;
             if (args.Simulator == null) {
                 m_log.Log(KLogLevel.DBADERROR, "TerseObjectUpdate: Simulator is null");
@@ -785,18 +785,17 @@ namespace KeeKee.Comm.LLLP {
         }
         // ===============================================================
         private void Objects_ObjectProperties(object? sender, OMV.ObjectPropertiesEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectProperties: Object properties received");
-            m_log.Log(KLogLevel.DUPDATEDETAIL, "Objects_ObjectProperties:");
+            m_log.Log(KLogLevel.DUPDATEDETAIL, "EVENT Objects_ObjectProperties:");
             m_stats.ObjObjectProperties.Event();
         }
         // ===============================================================
         private void Objects_ObjectPropertiesUpdated(object? sender, OMV.ObjectPropertiesUpdatedEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_ObjectPropertiesUpdated: Object properties updated received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_ObjectPropertiesUpdated: Object properties updated received");
             m_stats.ObjObjectPropertiesUpdate.Event();
         }
         // ===============================================================
         public void Objects_AvatarUpdate(object? sender, OMV.AvatarUpdateEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_AvatarUpdate: Avatar update received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_AvatarUpdate: Avatar update received");
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAvatarUpdate, sender, args)) return;
             lock (m_opLock) {
                 LLRegionContext? rcontext = FindRegion(args.Simulator);
@@ -849,7 +848,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Objects_KillObject(object? sender, OMV.KillObjectEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Objects_KillObject: Object kill received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_KillObject: Object kill received");
             if (QueueTilOnline(args.Simulator, CommActionCode.KillObject, sender, args)) return;
             LLRegionContext rcontext = FindRegion(args.Simulator);
             if (rcontext == null) return;
@@ -868,7 +867,7 @@ namespace KeeKee.Comm.LLLP {
 
         // ===============================================================
         public virtual void Avatars_AvatarAppearance(object? sender, OMV.AvatarAppearanceEventArgs args) {
-            m_log.Log(KLogLevel.DCOMM, "EVENT Avatars_AvatarAppearance: Avatar appearance received");
+            m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Avatars_AvatarAppearance: Avatar appearance received");
             if (QueueTilOnline(args.Simulator, CommActionCode.OnAvatarAppearance, sender, args)) return;
             LLRegionContext? rcontext = FindRegion(args.Simulator);
             if (rcontext == null) return;

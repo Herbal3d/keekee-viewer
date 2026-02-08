@@ -69,6 +69,7 @@ namespace KeeKee.Rest {
 
         private IRestHandler? m_staticHandler;
         private IRestHandler? m_stdHandler;
+        private IRestHandler? m_statsHandler;
 
         // return the full base URL with the port added
         public readonly string BaseURL;
@@ -96,13 +97,15 @@ namespace KeeKee.Rest {
                 return;
             }
 
+            // Create the listener
             m_listener = new HttpListener();
             m_listener.Prefixes.Add(BaseURL + "/");
 
+            // Default handlers for static content and stats
             m_staticHandler = m_RestHandlerFactory.CreateHandler<RestHandlerStatic>();
             m_stdHandler = m_RestHandlerFactory.CreateHandler<RestHandlerUI>();
+            m_statsHandler = m_RestHandlerFactory.CreateHandler<RestHandlerStats>();
             // m_faviconHandler = m_RestHandlerFactory.CreateHandler<RestHandlerFavicon>();
-            // m_workQueueHandler = m_RestHandlerFactory.CreateHandler<RestHandlerWorkQueueStats>();
 
             try {
                 m_log.Log(KLogLevel.DRESTDETAIL, "Start(). Starting listening");

@@ -84,34 +84,35 @@ ClickableOps['gridLogin'] = function(pTarget: EventTarget) : void {
     });
 };
 // button to do the logout
-ClickableOps['gridLogout'] = function(pTarget: EventTarget) {
+ClickableOps['gridLogout'] = function(pTarget: EventTarget) :void {
     LogDebug('Do the logout');
     fetch( BASEURL + '/api/LLLP/logout', { method: 'POST', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        return response.json();
+        return;
     })
     .catch( error => {
         LogDebug('Logout exception error: ' + error.message);
     });
 };
 // button to force exit
-ClickableOps['gridExit'] = function(pTarget: EventTarget) {
+ClickableOps['gridExit'] = function(pTarget: EventTarget) : void {
     LogDebug('Do the exit');
     fetch( BASEURL + '/api/LLLP/exit', { method: 'POST', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        return response.json();
+        return;
     })
     .catch( error => {
         LogDebug('Exit exception error: ' + error.message);
     });
 };
 
+// ============================================================
 interface GridInfo {
     GridNick: string;
     GridName: string;
@@ -147,13 +148,36 @@ function FetchGridInfo() : void{
     });
 }
 
+// ============================================================
 function UpdateAllStats() : void {
+    UpdateStats();
     UpdateCommStats();
     // Add more as needed
 }
 
+function UpdateStats() : void {
+    fetch( BASEURL + '/api/stats', { method: 'GET', cache: 'no-cache' } )
+    .then( response => {
+        if (!response.ok) {
+            DisplayNoStats();
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then( (data: StatsData) => {
+        var displayArea = document.getElementById('k-stats');
+        if (displayArea) {
+            displayArea.innerHTML = '';
+            displayArea.appendChild(FormatStatsData(data));
+        }
+    })
+    .catch( error => {
+        // LogDebug('Fetch Comm stats exception error: ' + error.message);
+        DisplayNoStats();
+    });
+}
 function UpdateCommStats() : void {
-    fetch( BASEURL + '/api/LLLP/status', { method: 'GET', cache: 'no-cache' } )
+    fetch( BASEURL + '/api/LLLP/stats', { method: 'GET', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
             DisplayNoCommStats();
@@ -161,11 +185,11 @@ function UpdateCommStats() : void {
         }
         return response.json();
     })
-    .then( (data: StatsData) => {
-        var displayArea = document.getElementById('k-statistics');
+    .then( (data: LLLPStatsData) => {
+        var displayArea = document.getElementById('k-statsComm');
         if (displayArea) {
             displayArea.innerHTML = '';
-            displayArea.appendChild(FormatStatsData2(data));
+            displayArea.appendChild(FormatLLLPStatsData(data));
         }
     })
     .catch( error => {
@@ -173,74 +197,33 @@ function UpdateCommStats() : void {
         DisplayNoCommStats();
     });
 }
+function DisplayNoStats() : void {
+    var displayArea = document.getElementById('k-stats');
+    if (displayArea) {
+        displayArea.innerHTML = '';
+        displayArea.appendChild(MakeTextElement("No stats"));
+    }
+}
 function DisplayNoCommStats() : void {
-    var displayArea = document.getElementById('k-statistics');
+    var displayArea = document.getElementById('k-statsComm');
     if (displayArea) {
         displayArea.innerHTML = '';
         displayArea.appendChild(MakeTextElement("No comm stats"));
     }
 }
-
-function FormatStatsData(data: any) : HTMLElement {
-    var preArea = MakeElement('pre');
-    preArea.textContent = JSON.stringify(data, null, 2);
-    return preArea;
-}
-function FormatStatsData2(data: StatsData) : HTMLElement {
+// ============================================================
+function FormatStatsData(data: StatsData) : HTMLElement {
     var allStats = MakeElement('div', 'div-stats-all');
-    allStats.appendChild(MakeStatsHeader(data));
-    allStats.appendChild(MakeStatsComm(data.commstats));
-    allStats.appendChild(MakeStatsAvatar(data.avatar));
+    var tbl = MakeElement('table', 'table-stats-header');
+    tbl.appendChild(MakeStatInfoRow("TimeStamp", data.timestamp));
+    tbl.appendChild(MakeStatInfoRow("Is Connected", data.isconnected ? "Yes" : "No"));
+    tbl.appendChild(MakeStatInfoRow("Is Logged In", data.isloggedin ? "Yes" : "No"));
+    allStats.appendChild(tbl);
     allStats.appendChild(MakeStatsWorkQueue(data.workqueues));
     return allStats;
-}
-function MakeStatsHeader(data: StatsData) : HTMLElement {
-    var tbl = MakeElement('table', 'table-stats-header');
-    tbl.appendChild(MakeStatsHeaderRow("TimeStamp", data.timestamp));
-    tbl.appendChild(MakeStatsHeaderRow("Comm Provider", data.commprovider));
-    tbl.appendChild(MakeStatsHeaderRow("Is Connected", data.isconnected ? "Yes" : "No"));
-    tbl.appendChild(MakeStatsHeaderRow("Is Logged In", data.isloggedin ? "Yes" : "No"));
-    tbl.appendChild(MakeStatsHeaderRow("Current Grid", data.currentgrid));
-    tbl.appendChild(MakeStatsHeaderRow("Current Sim", data.currentsim));
-    return tbl;
-}
-function MakeStatsHeaderRow(pDisplayName: string, pDisplayValue: string) : HTMLElement {
-    var row = MakeElement('tr');
-    var cellKey = MakeElement('td');
-    cellKey.textContent = pDisplayName;
-    var cellValue = MakeElement('td');
-    cellValue.textContent = pDisplayValue;
-    row.appendChild(cellKey);
-    row.appendChild(cellValue);
-    return row;
-}
-function MakeStatsComm(commStats: { [index: number]: CommStatInfo }) : HTMLElement {
-    var commTable = MakeElement('table', 'table-stats-comm');
-    commTable.appendChild(MakeHeaderRow(['Name', 'Value', 'Description']));
-    for (let stat in commStats) {
-        let info = commStats[stat];
-        var row = MakeElement('tr');
-        row.appendChild(MakeTDElement(info.Name));
-        row.appendChild(MakeTDElement(`${info.Value} ${info.Unit}`));
-        row.appendChild(MakeTDElement(info.Description));
-        commTable.appendChild(row);
-    }
-    return commTable;
-}
-function MakeStatsAvatar(avatarInfo: { [index: number]: AvatarInfo }) : HTMLElement {
-    var avatarTable = MakeElement('table');
-    avatarTable.appendChild(MakeHeaderRow(['Display Name', 'First Name', 'Last Name', 'Global Pos', 'Local Pos']));
-    for (let av in avatarInfo) {
-        let info = avatarInfo[av];
-        var row = MakeElement('tr');
-        row.appendChild(MakeTDElement(info.displayname));
-        row.appendChild(MakeTDElement(info.first));
-        row.appendChild(MakeTDElement(info.last));
-        row.appendChild(MakeTDElement(info.globalPos));
-        row.appendChild(MakeTDElement(info.localPos));
-        avatarTable.appendChild(row);
-    }
-    return avatarTable;
+    // var preArea = MakeElement('pre');
+    // preArea.textContent = JSON.stringify(data, null, 2);
+    // return preArea;
 }
 function MakeStatsWorkQueue(workQueues: { [index: number]: WorkQueueInfo }) : HTMLElement {
     var wqTable = MakeElement('table');
@@ -257,10 +240,66 @@ function MakeStatsWorkQueue(workQueues: { [index: number]: WorkQueueInfo }) : HT
     }
     return wqTable;
 }
+// ============================================================
+function FormatLLLPStatsData(data: LLLPStatsData) : HTMLElement {
+    var allStats = MakeElement('div', 'div-lllp-stats-all');
+    allStats.appendChild(MakeLLLPStatsHeader(data));
+    allStats.appendChild(MakeLLLPStatsComm(data.commstats));
+    allStats.appendChild(MakeLLLPStatsAvatar(data.avatar));
+    return allStats;
+}
+function MakeLLLPStatsHeader(data: LLLPStatsData) : HTMLElement {
+    var tbl = MakeElement('table', 'table-lllp-stats-header');
+    tbl.appendChild(MakeStatInfoRow("TimeStamp", data.timestamp));
+    tbl.appendChild(MakeStatInfoRow("Comm Provider", data.commprovider));
+    tbl.appendChild(MakeStatInfoRow("Is Connected", data.isconnected ? "Yes" : "No"));
+    tbl.appendChild(MakeStatInfoRow("Is Logged In", data.isloggedin ? "Yes" : "No"));
+    tbl.appendChild(MakeStatInfoRow("Current Grid", data.currentgrid));
+    tbl.appendChild(MakeStatInfoRow("Current Sim", data.currentsim));
+    return tbl;
+}
+function MakeStatInfoRow(pDisplayName: string, pDisplayValue: string) : HTMLElement {
+    var row = MakeElement('tr');
+    var cellKey = MakeElement('td');
+    cellKey.textContent = pDisplayName;
+    var cellValue = MakeElement('td');
+    cellValue.textContent = pDisplayValue;
+    row.appendChild(cellKey);
+    row.appendChild(cellValue);
+    return row;
+}
+function MakeLLLPStatsComm(commStats: { [index: number]: CommStatInfo }) : HTMLElement {
+    var commTable = MakeElement('table', 'table-stats-comm');
+    commTable.appendChild(MakeHeaderRow(['Name', 'Value', 'Description']));
+    for (let stat in commStats) {
+        let info = commStats[stat];
+        var row = MakeElement('tr');
+        row.appendChild(MakeTDElement(info.Name));
+        row.appendChild(MakeTDElement(`${info.Value} ${info.Unit}`));
+        row.appendChild(MakeTDElement(info.Description));
+        commTable.appendChild(row);
+    }
+    return commTable;
+}
+function MakeLLLPStatsAvatar(avatarInfo: { [index: number]: AvatarInfo }) : HTMLElement {
+    var avatarTable = MakeElement('table');
+    avatarTable.appendChild(MakeHeaderRow(['Display Name', 'First Name', 'Last Name', 'Global Pos', 'Local Pos']));
+    for (let av in avatarInfo) {
+        let info = avatarInfo[av];
+        var row = MakeElement('tr');
+        row.appendChild(MakeTDElement(info.displayname));
+        row.appendChild(MakeTDElement(info.first));
+        row.appendChild(MakeTDElement(info.last));
+        row.appendChild(MakeTDElement(info.globalPos));
+        row.appendChild(MakeTDElement(info.localPos));
+        avatarTable.appendChild(row);
+    }
+    return avatarTable;
+}
 
-function MakeElement(tag: string, text?: string, className?: string): HTMLElement {
+// ============================================================
+function MakeElement(tag: string, className?: string): HTMLElement {
     const elem = document.createElement(tag);
-    if (text) elem.textContent = text;
     if (className) elem.classList.add(className);
     return elem;
 }
@@ -286,7 +325,26 @@ function MakeHeaderRow(pHeaders: string[]) : HTMLElement {
     }
     return row;
 }
+// ============================================================
+interface WorkQueueInfo {
+    "Name": string;
+    "Total": number;
+    "Current": number;
+    "Later": number;
+    "Active": number;
+}
+interface StatsData {
+    "status": string;
+    "timestamp": string;
+    "commprovider": string;
+    "isconnected": boolean;
+    "isloggedin": boolean;
+    "workqueues": {
+        [ index: number]: WorkQueueInfo
+    },
+}
 
+// ============================================================
 interface AvatarInfo {
     "first": string;
     "last": string;
@@ -300,22 +358,14 @@ interface AvatarInfo {
     "y": number;
     "z": number;
 }
-interface WorkQueueInfo {
-    "Name": string;
-    "Total": number;
-    "Current": number;
-    "Later": number;
-    "Active": number;
-}
 interface CommStatInfo {
     "Name": string;
     "Description": string;
     "Unit": string;
     "Value": number;
 }
-
 // The data returned by /api/LLLP/status.
-interface StatsData {
+interface LLLPStatsData {
     "status": string;
     "timestamp": string;
     "commprovider": string;
@@ -326,14 +376,14 @@ interface StatsData {
     "avatar": {
         [index: number]: AvatarInfo
     },
-    "workqueues": {
-        [ index: number]: WorkQueueInfo
+    "commconfig": {
+        [key: string]: string;
     },
     "commstats": {
-        [ index: number]: CommStatInfo
+        [index: number]: CommStatInfo
     },
     "possiblegrids": {
-        [ index: number]: string;
+        [index: number]: string;
     },
     [key: string]: any; // Allow for additional properties
 }
