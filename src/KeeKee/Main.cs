@@ -24,6 +24,7 @@ using KeeKee.Framework.Logging;
 using KeeKee.Rest;
 using KeeKee.Renderer;
 using KeeKee.Framework;
+using KeeKee.View;
 using KeeKee.World;
 using KeeKee.World.LL;
 using KeeKee.Framework.WorkQueue;
@@ -169,6 +170,7 @@ namespace KeeKee {
                      // services.AddHostedService<ViewOGL>();
 
                      // The user interface
+                     services.AddHostedService<Viewer>();
                      services.AddSingleton<IUserInterfaceProvider, UserInterfaceCommon>();
 
                      // KeeKee.Rest, IModule

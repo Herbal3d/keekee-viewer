@@ -575,6 +575,7 @@ namespace KeeKee.Comm.LLLP {
                 try {
                     if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out updatedEntity, delegate () {
                         // code called to create the entry if it's not found
+                        m_log.Log(KLogLevel.DUPDATEDETAIL, "ObjectUpdate: creating new entity for local ID {0}", args.Prim.LocalID);
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
                         return m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
@@ -687,6 +688,7 @@ namespace KeeKee.Comm.LLLP {
                     UpdateCodes updateFlags = UpdateCodes.FullUpdate;
                     IEntity ent;
                     if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out ent, () => {
+                        m_log.Log(KLogLevel.DUPDATEDETAIL, "OnNewAttachment: creating new entity for local ID {0}", args.Prim.LocalID);
                         LLEntity newEnt = m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
                         updateFlags |= UpdateCodes.New;
                         string? attachmentID = "1"; // default attachment ID
@@ -724,9 +726,15 @@ namespace KeeKee.Comm.LLLP {
                 return;
             }
             LLRegionContext rcontext = FindRegion(args.Simulator);
+            if (rcontext == null) {
+                m_log.Log(KLogLevel.DBADERROR, "TerseObjectUpdate: no region context for simulator {0}", args.Simulator.Name);
+                return;
+            }
+
             OMV.ObjectMovementUpdate update = args.Update;
             m_stats.ObjTerseUpdate.Event();
-            IEntity? updatedEntity = null;
+
+            // IEntity? updatedEntity = null;
             UpdateCodes updateFlags = 0;
             lock (m_opLock) {
                 if (args.Prim.Acceleration != args.Update.Acceleration) updateFlags |= UpdateCodes.Acceleration;
@@ -744,8 +752,9 @@ namespace KeeKee.Comm.LLLP {
                         m_log.Log(KLogLevel.DBADERROR, "TerseObjectUpdate: received prim with UUID zero");
                         return;
                     }
-                    if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out updatedEntity, delegate () {
+                    if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out var updatedEntity, delegate () {
                         // code called to create the entry if it's not found
+                        m_log.Log(KLogLevel.DUPDATEDETAIL, "TerseObjectUpdate: creating new entity for local ID {0}", args.Prim.LocalID);
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
                         return m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);

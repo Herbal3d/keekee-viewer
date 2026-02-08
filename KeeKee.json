@@ -42,7 +42,7 @@
         "PreMoveFudge": 0.4
     },
     "Renderer": {
-        "RenderProvider": "OGL"
+        "RenderProvider": "Null"
     },
     "RendererOGL": {
         "CamaraFar": 2048.0, // camera far clip

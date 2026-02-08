@@ -34,6 +34,7 @@
     <ProjectReference Include="..\KeeKee.Renderer.Map\KeeKee.Renderer.Map.csproj" />
     <ProjectReference Include="..\KeeKee.Renderer.Null\KeeKee.Renderer.Null.csproj" />
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
+    <ProjectReference Include="..\KeeKee.View\KeeKee.View.csproj" />
   </ItemGroup>
 
   <ItemGroup>

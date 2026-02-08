@@ -26,11 +26,6 @@ namespace KeeKee.World.LL {
         public const ulong NOREGION = 0xffffffff;
         public OMV.Simulator? Sim { get; set; }
 
-
-        // an LL localID is a per sim unique handle for the item
-        public const uint NOLOCALID = 0xffffffff;
-        public uint LocalID { get; set; }
-
         // Created with dependency injection to get the logger and contexts
         public LLEntity(KLogger<LLEntity> pLog,
                         IWorld pWorld,
@@ -42,7 +37,13 @@ namespace KeeKee.World.LL {
                     : base(pLog, pWorld, pRContext, pAContext, pClassification) {
             this.Prim = pPrim;
             this.Sim = pRContext is LLRegionContext rcontext ? rcontext.Simulator : null;
-            this.LocalID = pPrim != NullPrim ? pPrim.LocalID : LLEntity.NOLOCALID;
+
+            if (pPrim != NullPrim) {
+                this.Name = new EntityName(pAContext, "Prim" + pPrim.LocalID.ToString());
+                m_LGID = pPrim.LocalID;
+            } else {
+                this.Name = new EntityName("NullPrim");
+            }
         }
 
         /// <summary>

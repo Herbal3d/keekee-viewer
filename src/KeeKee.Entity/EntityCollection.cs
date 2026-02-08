@@ -48,7 +48,7 @@ namespace KeeKee.Entity {
                     // disconnect this work from the caller -- use another thread
                     m_workQueueEvent.DoLater(DoEventLater, entity);
                 } else {
-                    if (OnEntityNew != null) OnEntityNew(entity);
+                    OnEntityNew?.Invoke(entity);
                 }
             }
         }
@@ -67,7 +67,7 @@ namespace KeeKee.Entity {
                 object[] parms = { entity, detail };
                 m_workQueueEvent.DoLater(DoUpdateLater, parms);
             } else {
-                if (OnEntityUpdate != null) OnEntityUpdate(entity, detail);
+                OnEntityUpdate?.Invoke(entity, detail);
             }
         }
 
@@ -76,9 +76,7 @@ namespace KeeKee.Entity {
             IEntity ent = (IEntity)parms[0];
             UpdateCodes detail = (UpdateCodes)parms[1];
             EntityUpdateCallback? euc = OnEntityUpdate;
-            if (euc != null) {
-                euc.Invoke(ent, detail);
-            }
+            euc?.Invoke(ent, detail);
             return true;
         }
 
@@ -86,7 +84,7 @@ namespace KeeKee.Entity {
             m_log.Log(KLogLevel.DWORLDDETAIL, "RemoveEntity: " + entity.Name);
 
             EntityRemovedCallback? erc = OnEntityRemoved;
-            if (erc != null) erc.Invoke(entity);
+            erc?.Invoke(entity);
 
             lock (this) {
                 m_entityDictionary.Remove(entity.Name.Name);

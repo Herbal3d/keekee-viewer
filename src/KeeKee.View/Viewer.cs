@@ -9,6 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 using KeeKee.Config;
@@ -34,7 +35,7 @@ namespace KeeKee.View {
     /// User input
     ///
     /// </summary>
-    public class Viewer : IViewProvider {
+    public class Viewer : BackgroundService, IViewProvider {
 
         private KLogger<Viewer> m_log;
         private IOptions<ViewConfig> m_ViewConfig;
@@ -77,6 +78,9 @@ namespace KeeKee.View {
             m_workQueue = pQueueManager.CreateBasicWorkQueue("ViewerWorkQueue");
             Renderer = pRenderer;
             TheWorld = pWorld;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
 
             m_log.Log(KLogLevel.DINIT, "entered AfterAllModulesLoaded()");
 
@@ -120,13 +124,14 @@ namespace KeeKee.View {
             // start the renderer
             // ((IModule)Renderer).Start();
 
-            m_log.Log(KLogLevel.DINIT, "exiting Start()");
+            await Task.CompletedTask;
+
             return;
         }
 
 
         private void World_OnEntityNew(IEntity ent) {
-            // m_log.Log(LogLevel.DVIEWDETAIL, "OnEntityNew: Telling renderer about a new entity");
+            m_log.Log(KLogLevel.DVIEWDETAIL, "OnEntityNew: Telling renderer about a new entity");
             Renderer.Render(ent);
         }
 
