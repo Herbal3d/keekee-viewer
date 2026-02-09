@@ -39,10 +39,11 @@ namespace KeeKee.World.LL {
             this.Sim = pRContext is LLRegionContext rcontext ? rcontext.Simulator : null;
 
             if (pPrim != NullPrim) {
-                this.Name = new EntityName(pAContext, "Prim" + pPrim.LocalID.ToString());
+                this.Name = new EntityName(pAContext, $@"{pClassification.ToString()}-{pPrim.LocalID.ToString()}");
                 m_LGID = pPrim.LocalID;
             } else {
-                this.Name = new EntityName("NullPrim");
+                m_LGID = NextLGID();
+                this.Name = new EntityName($@"NullPrim-{m_LGID.ToString()}");
             }
         }
 

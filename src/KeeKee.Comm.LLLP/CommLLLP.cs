@@ -580,7 +580,9 @@ namespace KeeKee.Comm.LLLP {
                         m_log.Log(KLogLevel.DUPDATEDETAIL, "ObjectUpdate: creating new entity for local ID {0}", args.Prim.LocalID);
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        var newEntity = m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        rcontext.Entities.AddEntity(newEntity);
+                        return newEntity;
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -692,6 +694,7 @@ namespace KeeKee.Comm.LLLP {
                     if (rcontext.TryGetCreateEntityLocalID(args.Prim.LocalID, out ent, () => {
                         m_log.Log(KLogLevel.DUPDATEDETAIL, "OnNewAttachment: creating new entity for local ID {0}", args.Prim.LocalID);
                         LLEntity newEnt = m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        rcontext.Entities.AddEntity(newEnt);
                         updateFlags |= UpdateCodes.New;
                         string? attachmentID = "1"; // default attachment ID
                         if (args.Prim.NameValues != null) {
@@ -760,7 +763,9 @@ namespace KeeKee.Comm.LLLP {
                         m_log.Log(KLogLevel.DUPDATEDETAIL, "TerseObjectUpdate: creating new entity for local ID {0}", args.Prim.LocalID);
                         updateFlags |= UpdateCodes.New;
                         updateFlags |= UpdateCodes.Acceleration | UpdateCodes.AngularVelocity | UpdateCodes.Velocity;
-                        return m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        var newEnt = m_InstanceFactory.CreateLLPhysical(GridClient, args.Prim, rcontext, LLLPAssetContext);
+                        rcontext.Entities.AddEntity(newEnt);
+                        return newEnt;
                     })) {
                         // new prim created
                         // If this requires special rendering parameters add those parameters
@@ -827,11 +832,11 @@ namespace KeeKee.Comm.LLLP {
                 if (!rcontext.Entities.TryGetEntity(avatarEntityName, out updatedEntity)) {
                     m_log.Log(KLogLevel.DUPDATEDETAIL, "AvatarUpdate: creating avatar {0} {1} ({2})",
                         args.Avatar.FirstName, args.Avatar.LastName, args.Avatar.ID);
-                    updatedEntity = m_InstanceFactory.CreateLLAvatar(rcontext, LLLPAssetContext);
+                    updatedEntity = m_InstanceFactory.CreateLLAvatar(args.Avatar, rcontext, LLLPAssetContext);
                     updateFlags |= UpdateCodes.New;
+                    rcontext.Entities.AddEntity(updatedEntity);
                 }
                 if (updatedEntity != null) {
-                    // created new entity. 
                     updatedEntity.Cmpt<ICmptLocation>().LocalPosition = args.Avatar.Position;
                     updatedEntity.Cmpt<ICmptLocation>().Heading = args.Avatar.Rotation;
                     // We check here if this avatar goes with the agent in the world

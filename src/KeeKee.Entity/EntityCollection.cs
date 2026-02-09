@@ -61,10 +61,13 @@ namespace KeeKee.Entity {
         }
 
         private bool DoEventLater(DoLaterJob qInstance, object parm) {
-            EntityNewCallback? enc = OnEntityNew;
-            if (enc != null) {
-                enc.Invoke((IEntity)parm);
+            var ent = parm as IEntity;
+            if (ent == null) {
+                m_log.Log(KLogLevel.DBADERROR, "DoEventLater: expected an IEntity but got a {0}", parm.GetType().ToString());
+                return false;
             }
+            EntityNewCallback? enc = OnEntityNew;
+            enc?.Invoke(ent);
             return true;
         }
 

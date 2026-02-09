@@ -173,7 +173,7 @@ function UpdateStats() : void {
         }
     })
     .catch( error => {
-        LogDebug('Fetch stats exception error: ' + error.message);
+        // LogDebug('Fetch stats exception error: ' + error.message);
         DisplayNoStats();
     });
 }

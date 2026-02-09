@@ -40,7 +40,10 @@ namespace KeeKee.World.LL {
 
             RegionContext = this;
 
-            TerrainInfo = m_llInstanceFactory.Create<LLTerrainInfo>(this, pAContext, pWorld);
+            // The LLTerrainInfo is an ITerrainInfo and an IEntity
+            var terrainEntity = m_llInstanceFactory.Create<LLTerrainInfo>(this, pAContext, pWorld);
+            Entities.AddEntity(terrainEntity);
+            TerrainInfo = terrainEntity as ITerrainInfo;
 
             // until we have a better protocol, we know the sims are a fixed size
             m_size = new OMV.Vector3(256f, 256f, 8000f);
@@ -109,7 +112,6 @@ namespace KeeKee.World.LL {
                 lock (Entities) {
                     if (!TryGetEntityLocalID(localID, out ent)) {
                         newEntity = createIt();
-                        Entities.AddEntity(newEntity);
                         ent = newEntity;
                     }
                 }

@@ -42,7 +42,7 @@ namespace KeeKee.World {
         }
 
         public TerrainInfoBase(IKLogger pLog, IWorld pWorld, IRegionContext pRContext, IAssetContext pAContext)
-                        : base(pLog, pWorld, pRContext, pAContext, EntityClassifications.TerrainEntity) {
+                        : base(pLog, pWorld, pRContext, pAContext, EntityClassifications.Terrain) {
         }
 
         public override void Dispose() {

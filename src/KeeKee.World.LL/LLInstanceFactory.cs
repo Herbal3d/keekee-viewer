@@ -46,9 +46,10 @@ namespace KeeKee.World.LL {
             return Create<LLEntity>(pPrim, pRContext, pAContext, pClassification);
         }
 
-        public LLEntity CreateLLAvatar(IRegionContext pRContext, IAssetContext pAContext) {
+        public LLEntity CreateLLAvatar(OMV.Avatar pAvatar, IRegionContext pRContext, IAssetContext pAContext) {
             IOptions<LLAgentConfig> pConfig = _provider.GetRequiredService<IOptions<LLAgentConfig>>();
-            LLEntity ava = CreateLLEntity(LLEntity.NullPrim, pRContext, pAContext, EntityClassifications.AvatarEntity);
+            LLEntity ava = CreateLLEntity(pAvatar, pRContext, pAContext, EntityClassifications.Avatar);
+            ava.Name = new EntityName(pAContext, "Avatar-" + ava.LGID.ToString());
             ava.AddComponent<LLCmptAvatar>(_componentFactory.CreateLLCmptAvatar(ava));
             ava.AddComponent<LLCmptLocation>(_componentFactory.CreateLLCmptLocation(ava));
             ava.AddComponent<LLCmptAgentMovement>(_componentFactory.CreateLLCmptAgentMovement(ava));
@@ -64,7 +65,7 @@ namespace KeeKee.World.LL {
         }
 
         public LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive pPrim, IRegionContext pRContext, IAssetContext pAContext) {
-            LLEntity phy = CreateLLEntity(pPrim, pRContext, pAContext, EntityClassifications.PrimitiveEntity);
+            LLEntity phy = CreateLLEntity(pPrim, pRContext, pAContext, EntityClassifications.Primitive);
             phy.AddComponent<LLCmptLocation>(_componentFactory.CreateLLCmptLocation(phy));
             return phy;
         }

@@ -140,7 +140,7 @@ namespace KeeKee.World.Services {
         }
 
         void World_OnWorldEntityNew(IEntity pEnt) {
-            if (pEnt.Classification == EntityClassifications.AvatarEntity) {
+            if (pEnt.Classification == EntityClassifications.Avatar) {
                 // this new entity is an avatar. If we don't know it already, remember same
                 lock (m_avatars) {
                     if (!m_avatars.ContainsKey(pEnt.Name.Name)) {
@@ -153,7 +153,7 @@ namespace KeeKee.World.Services {
         }
 
         void World_OnWorldEntityUpdate(IEntity pEnt, UpdateCodes what) {
-            if (pEnt.Classification == EntityClassifications.AvatarEntity) {
+            if (pEnt.Classification == EntityClassifications.Avatar) {
                 // this updated entity is an avatar. If we don't know it already, remember same
                 lock (m_avatars) {
                     if (!m_avatars.ContainsKey(pEnt.Name.Name)) {
@@ -166,7 +166,7 @@ namespace KeeKee.World.Services {
         }
 
         void World_OnWorldEntityRemoved(IEntity pEnt) {
-            if (pEnt.Classification == EntityClassifications.AvatarEntity) {
+            if (pEnt.Classification == EntityClassifications.Avatar) {
                 // this entity is an avatar. If we're tracking it, stop that
                 lock (m_avatars) {
                     if (m_avatars.ContainsKey(pEnt.Name.Name)) {
