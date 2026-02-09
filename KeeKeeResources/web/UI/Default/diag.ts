@@ -127,12 +127,13 @@ function FetchGridInfo() : void{
     fetch( BASEURL + '/api/LLLP/login', { method: 'GET', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
+            LogDebug('Fetch grids failed: Network response was not ok');
             throw new Error('Network response was not ok');
         }
         return response.json();
     })
     .then( data => {
-        LogDebug('Grid data: ' + JSON.stringify(data));
+        // LogDebug('Grid data: ' + JSON.stringify(data));
         var selector = (document.getElementById('k-gridLogin-gridSelect') as HTMLSelectElement);
         selector.options.length = 0;
         for (let grid in data.grids) {
@@ -159,8 +160,8 @@ function UpdateStats() : void {
     fetch( BASEURL + '/api/stats', { method: 'GET', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
+            LogDebug('Fetch stats failed: Network response was not ok');
             DisplayNoStats();
-            throw new Error('Network response was not ok');
         }
         return response.json();
     })
@@ -172,7 +173,7 @@ function UpdateStats() : void {
         }
     })
     .catch( error => {
-        // LogDebug('Fetch Comm stats exception error: ' + error.message);
+        LogDebug('Fetch stats exception error: ' + error.message);
         DisplayNoStats();
     });
 }
@@ -180,8 +181,8 @@ function UpdateCommStats() : void {
     fetch( BASEURL + '/api/LLLP/stats', { method: 'GET', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
+            LogDebug('Fetch Comm stats failed: Network response was not ok');
             DisplayNoCommStats();
-            throw new Error('Network response was not ok');
         }
         return response.json();
     })
@@ -222,12 +223,18 @@ function FormatStatsData(data: StatsData) : HTMLElement {
     allStats.appendChild(MakeStatsWorld(data.world));
     allStats.appendChild(MakeSectionHeader("Work Queues"));
     allStats.appendChild(MakeStatsWorkQueue(data.workqueues));
+    allStats.appendChild(MakeStatsComponents(data.components));
     return allStats;
     // var preArea = MakeElement('pre');
     // preArea.textContent = JSON.stringify(data, null, 2);
     // return preArea;
 }
 function MakeStatsWorld(world: WorldInfo) : HTMLElement {
+    if (!world || !world.Regions) {
+        var noDataDiv = MakeElement('div', 'div-stats-world');
+        noDataDiv.appendChild(MakeSectionHeader("World - No data"));
+        return noDataDiv;
+    }
     var worldDiv = MakeElement('div', 'div-stats-world');
     worldDiv.appendChild(MakeSectionHeader(`World - ${world.RegionCount} regions`));
     for (let region in world.Regions) {
@@ -250,7 +257,12 @@ function MakeStatsWorld(world: WorldInfo) : HTMLElement {
     }
     return worldDiv;
 }
-function MakeStatsWorkQueue(workQueues: { [index: number]: WorkQueueInfo }) : HTMLElement {
+function MakeStatsWorkQueue(workQueues: WorkQueueInfo[]) : HTMLElement {
+    if (!workQueues) {
+        var noDataDiv = MakeElement('div', 'div-stats-workqueue');
+        noDataDiv.appendChild(MakeSectionHeader("Work Queues - No data"));
+        return noDataDiv;
+    }
     var wqTable = MakeElement('table', 'table-stats-workqueue');
     wqTable.appendChild(MakeHeaderRow(['Name', 'Total', 'Current', 'Later', 'Active']));
     for (let wq in workQueues) {
@@ -264,6 +276,25 @@ function MakeStatsWorkQueue(workQueues: { [index: number]: WorkQueueInfo }) : HT
         wqTable.appendChild(row);
     }
     return wqTable;
+}
+function MakeStatsComponents(components: ComponentInfo) : HTMLElement {
+    if (!components || !components.ComponentTypes) {
+        var noDataDiv = MakeElement('div', 'div-stats-components');
+        noDataDiv.appendChild(MakeSectionHeader("Components - No data"));
+        return noDataDiv;
+     }
+    var compDiv = MakeElement('div', 'div-stats-components');
+    compDiv.appendChild(MakeSectionHeader(`Components - ${components.ComponentTypes.length} types`));
+    var compTable = MakeElement('table', 'table-stats-components');
+    compTable.appendChild(MakeHeaderRow(['Component Type', 'Count']));
+    for (let type of components.ComponentTypes) {
+        var row = MakeElement('tr');
+        row.appendChild(MakeTDElement(type));
+        row.appendChild(MakeTDElement(components.ComponentCounts[type]?.toString() ?? "0"));
+        compTable.appendChild(row);
+    }
+    compDiv.appendChild(compTable);
+    return compDiv;
 }
 // ============================================================
 function FormatLLLPStatsData(data: LLLPStatsData) : HTMLElement {
@@ -380,12 +411,15 @@ interface RegionInfo {
 }
 interface WorldInfo {
     "RegionCount": number;
-    "Regions": {
-        [index: number]: RegionInfo;
-    },
-    "OtherStats": {
-        [key: string]: string | number | boolean;
+    "Regions": RegionInfo[];
+     [key: string]: any; // Allow for additional properties
+}
+interface ComponentInfo {
+    "ComponentTypes": string[];
+    "ComponentCounts": {
+        [key: string]: number;
     }
+
 }
 interface StatsData {
     "status": string;
@@ -394,9 +428,9 @@ interface StatsData {
     "isconnected": boolean;
     "isloggedin": boolean;
     "world": WorldInfo;
-    "workqueues": {
-        [ index: number]: WorkQueueInfo
-    },
+    "workqueues": WorkQueueInfo[];
+    "components": ComponentInfo;
+     [key: string]: any; // Allow for additional properties
 }
 
 // ============================================================

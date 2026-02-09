@@ -25,9 +25,9 @@ namespace KeeKee.World.LL {
 
         public LLCmptLocation(KLogger<LLCmptLocation> pLog,
                             LLEntity pContainingLLEntity,
-                            LLGridClient theClient) {
+                            LLGridClient pClient) {
             m_log = pLog;
-            m_client = theClient.GridClient;
+            m_client = pClient.GridClient;
             ContainingLLEntity = pContainingLLEntity;
         }
 
@@ -72,6 +72,10 @@ namespace KeeKee.World.LL {
                 return m_client.Self.GlobalPosition;
                 // return AssociatedAvatar.RegionContext.CalculateGlobalPosition(RelativePosition);
             }
+        }
+
+        public void Update(UpdateCodes what) {
+            return;
         }
 
         public void Dispose() {

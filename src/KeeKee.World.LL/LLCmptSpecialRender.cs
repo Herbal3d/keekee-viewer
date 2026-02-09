@@ -15,15 +15,20 @@ using KeeKee.Framework.Logging;
 using OMV = OpenMetaverse;
 
 namespace KeeKee.World.LL {
-    public class LLCmptSpecialRenderType : IEntityComponent, ISpecialRender {
+    public enum SpecialRenderTypes {
+        Foliage,
+        Particles
+    };
+
+    public class LLCmptSpecialRender : IEntityComponent {
         public IEntity ContainingEntity { get; private set; }
 
-        private KLogger<LLCmptSpecialRenderType> m_log;
+        private KLogger<LLCmptSpecialRender> m_log;
 
         private OMV.GridClient m_client;
         private IRegionContext m_regionContext;
 
-        public LLCmptSpecialRenderType(KLogger<LLCmptSpecialRenderType> pLog,
+        public LLCmptSpecialRender(KLogger<LLCmptSpecialRender> pLog,
                                 IEntity pContainingEntity,
                                 LLGridClient pClient,
                                 IRegionContext pRegionContext) {
@@ -37,6 +42,10 @@ namespace KeeKee.World.LL {
         public OMV.PCode FoliageType { get; set; }
         public OMV.Tree TreeType { get; set; }
         public OMV.Grass GrassType { get; set; }
+
+        public void Update(UpdateCodes what) {
+            return;
+        }
         public void Dispose() {
             return;
         }

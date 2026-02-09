@@ -199,6 +199,10 @@ namespace KeeKee.World.LL {
             return m_moveFudge;
         }
 
+        public void Update(UpdateCodes what) {
+            return;
+        }
+
         public void Dispose() {
             return;
         }

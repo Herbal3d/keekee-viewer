@@ -41,8 +41,8 @@ namespace KeeKee.World.LL {
             return this.CreateComponent<LLCmptLocation>(pContainingEntity);
         }
 
-        public LLCmptSpecialRenderType CreateLLCmptSpecialRenderType(IEntity pContainingEntity) {
-            return this.CreateComponent<LLCmptSpecialRenderType>(pContainingEntity);
+        public LLCmptSpecialRender CreateLLCmptSpecialRenderType(IEntity pContainingEntity, IRegionContext pRegionContext) {
+            return this.CreateComponent<LLCmptSpecialRender>(pContainingEntity, pRegionContext);
         }
         public LLCmptAvatar CreateLLCmptAvatar(IEntity pContainingEntity) {
             return this.CreateComponent<LLCmptAvatar>(pContainingEntity);

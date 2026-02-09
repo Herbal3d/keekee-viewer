@@ -41,5 +41,9 @@ namespace KeeKee.World.LL {
         public void Dispose() {
             return;
         }
+
+        public void Update(UpdateCodes what) {
+            return;
+        }
     }
 }

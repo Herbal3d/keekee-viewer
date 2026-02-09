@@ -32,6 +32,10 @@ namespace KeeKee.World.LL {
             m_client = pClient.GridClient;
         }
 
+        public void Update(UpdateCodes what) {
+            return;
+        }
+
         public void Dispose() {
             return;
         }

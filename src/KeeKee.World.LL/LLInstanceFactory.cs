@@ -31,9 +31,11 @@ namespace KeeKee.World.LL {
         private readonly LLComponentFactory _componentFactory;
 
         public LLInstanceFactory(IServiceProvider pProvider,
-                                LLComponentFactory pComponentFactory) {
+                                ComponentFactory pComponentFactory) {
             _provider = pProvider;
-            _componentFactory = pComponentFactory;
+            _componentFactory = pComponentFactory as LLComponentFactory
+                        ?? throw new ArgumentException("LLInstanceFactory requires an LLComponentFactory",
+                            nameof(pComponentFactory));
         }
 
         public T Create<T>(params object[] parameters) where T : class {

@@ -88,13 +88,17 @@ namespace KeeKee.World.LL {
             pContainingEntity.Cmpt<ICmptLocation>().LocalPosition = new OMV.Vector3(40f, 40f, 30f);
             Heading = new OMV.Quaternion(0f, 1f, 0f);
         }
+        public void UpdateCamera(Vector3d position, Quaternion heading, double far) {
+            throw new NotImplementedException();
+        }
+
+        public void Update(UpdateCodes what) {
+            return;
+        }
 
         public void Dispose() {
         }
 
-        public void UpdateCamera(Vector3d position, Quaternion heading, double far) {
-            throw new NotImplementedException();
-        }
     }
 }
 

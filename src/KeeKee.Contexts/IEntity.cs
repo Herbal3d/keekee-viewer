@@ -166,7 +166,18 @@ namespace KeeKee.Contexts {
 
         // Tell the entity that something about it changed
         virtual public void Update(UpdateCodes what) {
-            EntityLogger.Log(KLogLevel.DUPDATEDETAIL, "IEntity.Update. what={0}", what);
+            EntityLogger.Log(KLogLevel.DUPDATEDETAIL, $@"IEntity.Update. what={UpdateCodesUtil.UpdateCodesToString(what)}");
+            // Update all the components. This makes things happen since all logic is hiding in the components.
+            IEntityComponent? cmpt = null;
+            try {
+                foreach (var kvp in m_components) {
+                    cmpt = kvp.Value;
+                    cmpt.Update(what);
+                }
+            } catch (Exception ex) {
+                EntityLogger.Log(KLogLevel.DUPDATE, "Error updating component {0} of entity {1}: {2}",
+                        cmpt?.GetType().ToString() ?? "--unknown--", Name.ToString(), ex.ToString());
+            }
         }
 
         // Default implementation of IDisplayable. Override if you want to be displayable.

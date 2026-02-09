@@ -33,40 +33,6 @@ namespace KeeKee.Contexts {
         OtherWorld,
     }
 
-    public enum UpdateCodes : uint {
-        None = 0,
-        AttachmentPoint = 1 << 0,
-        Material = 1 << 1,
-        ClickAction = 1 << 2,
-        Scale = 1 << 3,
-        ParentID = 1 << 4,
-        PrimFlags = 1 << 5,
-        PrimData = 1 << 6,
-        MediaURL = 1 << 7,
-        ScratchPad = 1 << 8,
-        Textures = 1 << 9,
-        TextureAnim = 1 << 10,
-        NameValue = 1 << 11,
-        Position = 1 << 12,
-        Rotation = 1 << 13,
-        Velocity = 1 << 14,
-        Acceleration = 1 << 15,
-        AngularVelocity = 1 << 16,
-        CollisionPlane = 1 << 17,
-        Text = 1 << 18,
-        Particles = 1 << 19,
-        ExtraData = 1 << 20,
-        Sound = 1 << 21,
-        Joint = 1 << 22,
-        Terrain = 1 << 23,
-        Focus = 1 << 24,
-        Light = 1 << 25,
-        Animation = 1 << 26,
-        Appearance = 1 << 27,
-        New = 1 << 30,  // a new item
-        FullUpdate = 0x0fffffff
-    }
-
     /// <summary>
     /// No one actually uses the IWorld interface other than World and most code
     /// references World directly since there is only one. But this defintiion

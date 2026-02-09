@@ -9,6 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.ComponentModel;
 using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
@@ -23,14 +24,20 @@ namespace KeeKee.Entity {
         public event EntityUpdateCallback? OnEntityUpdate;
         public event EntityRemovedCallback? OnEntityRemoved;
 
-        static bool m_shouldQueueEvent = true;
-        static BasicWorkQueue m_workQueueEvent;
+        private bool m_shouldQueueEvent = true;
+        private BasicWorkQueue m_workQueueEvent;
+
+        // As components are added to an entity, they are put in this dictionary for quick access.
+        // This is used to do by-component updates and lookups.
+        protected ComponentFactory m_componentFactory;
 
         protected OMV.DoubleDictionary<string, ulong, IEntity> m_entityDictionary;
 
         public EntityCollection(KLogger<EntityCollection> pLog,
+                                ComponentFactory pFactory,
                                 WorkQueueManager pQueueManager) {
             m_log = pLog;
+            m_componentFactory = pFactory;
             m_workQueueEvent = pQueueManager.CreateBasicWorkQueue("EntityCollectionWorkQueue");
             m_entityDictionary = new OMV.DoubleDictionary<string, ulong, IEntity>();
         }

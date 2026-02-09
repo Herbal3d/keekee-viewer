@@ -19,6 +19,7 @@ namespace KeeKee.Contexts {
     public interface IEntityComponent : IDisposable {
         // The entity that contains this component
         IEntity ContainingEntity { get; }
+        void Update(UpdateCodes what);
     }
 }
 

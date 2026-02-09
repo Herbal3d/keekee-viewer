@@ -127,7 +127,7 @@ namespace KeeKee.Comm.LLLP {
                         LLGridClient pGridClient,
                         Grids pGrids,
                         LLInstanceFactory pInstanceFactory,
-                        LLComponentFactory pComponentFactory,
+                        ComponentFactory pComponentFactory,
                         WorkQueueManager pQueueManager,
                         IWorld pWorld) {
             m_log = pLog;
@@ -140,7 +140,9 @@ namespace KeeKee.Comm.LLLP {
             m_LLGridClient = pGridClient;
             GridList = pGrids;
             m_InstanceFactory = pInstanceFactory;
-            m_ComponentFactory = pComponentFactory;
+            m_ComponentFactory = pComponentFactory as LLComponentFactory
+                        ?? throw new ArgumentException("CommLLLP requires an LLComponentFactory",
+                            nameof(pComponentFactory));
             m_waitTilLater = pQueueManager.CreateBasicWorkQueue("CommLLLP WaitTilLater");
             m_World = pWorld;
 
@@ -586,11 +588,11 @@ namespace KeeKee.Comm.LLLP {
                         if (args.Prim.PrimData.PCode == OpenMetaverse.PCode.Grass
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.Tree
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.NewTree) {
-                            LLCmptSpecialRenderType srt = m_ComponentFactory.CreateComponent<LLCmptSpecialRenderType>(GridClient, args.Prim, rcontext);
+                            LLCmptSpecialRender srt = m_ComponentFactory.CreateComponent<LLCmptSpecialRender>(updatedEntity, rcontext);
                             srt.Type = SpecialRenderTypes.Foliage;
                             srt.FoliageType = args.Prim.PrimData.PCode;
                             srt.TreeType = args.Prim.TreeSpecies;
-                            updatedEntity.AddComponent<LLCmptSpecialRenderType>(srt);
+                            updatedEntity.AddComponent<LLCmptSpecialRender>(srt);
                         }
                         // if there are animations for this entity
                         ProcessEntityAnimation(updatedEntity, ref updateFlags, args.Prim.AngularVelocity);
@@ -744,8 +746,9 @@ namespace KeeKee.Comm.LLLP {
                 if (args.Prim.Rotation != args.Update.Rotation) updateFlags |= UpdateCodes.Rotation;
                 if (update.Avatar) updateFlags |= UpdateCodes.CollisionPlane;
                 if (update.Textures != null) updateFlags |= UpdateCodes.Textures;
-                m_log.Log(KLogLevel.DUPDATEDETAIL, "Object update: id={0}, p={1}, r={2}",
-                        update.LocalID, update.Position.ToString(), update.Rotation.ToString());
+                m_log.Log(KLogLevel.DUPDATEDETAIL, "Object update: id={0}, p={1}, r={2}, what={3}",
+                        update.LocalID, update.Position.ToString(), update.Rotation.ToString(),
+                        UpdateCodesUtil.UpdateCodesToString(updateFlags));
 
                 try {
                     if (args.Prim.ID == OMV.UUID.Zero) {
@@ -765,11 +768,11 @@ namespace KeeKee.Comm.LLLP {
                         if (args.Prim.PrimData.PCode == OpenMetaverse.PCode.Grass
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.Tree
                                     || args.Prim.PrimData.PCode == OpenMetaverse.PCode.NewTree) {
-                            LLCmptSpecialRenderType srt = m_ComponentFactory.CreateComponent<LLCmptSpecialRenderType>(updatedEntity, m_LLGridClient);
+                            LLCmptSpecialRender srt = m_ComponentFactory.CreateComponent<LLCmptSpecialRender>(updatedEntity, rcontext);
                             srt.Type = SpecialRenderTypes.Foliage;
                             srt.FoliageType = args.Prim.PrimData.PCode;
                             srt.TreeType = args.Prim.TreeSpecies;
-                            updatedEntity.AddComponent<LLCmptSpecialRenderType>(srt);
+                            updatedEntity.AddComponent<LLCmptSpecialRender>(srt);
                         }
                         // if there are animations for this entity
                         ProcessEntityAnimation(updatedEntity, ref updateFlags, args.Prim.AngularVelocity);
