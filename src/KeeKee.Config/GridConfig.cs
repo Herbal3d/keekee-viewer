@@ -10,33 +10,31 @@
 // limitations under the License.
 
 namespace KeeKee.Config {
-    public class GridConfig {
-        public static string subSectionName { get; } = "GridConfig";
+    public class GridConfig : List<GridDefinition> {
+        public static string subSectionName { get; } = "Grids";
+    }
 
-        public class GridDefinition {
-            public string GridName { get; set; } = "SecondLife";
-            public string GridNick { get; set; } = "SecondLife";
-            // URI to use for login. Accepts HTTP POST of login form.
-            public string LoginURI { get; set; } = "https://login.angi.lindenlab.com/cgi-bin/login.cgi";
-            // Helper for support
-            public string? SupportURI { get; set; } = "https://secondlife.com/";
-            // helper for account management
-            public string? AccountURI { get; set; } = "https://secondlife.com/";
-            // Helper for password reset
-            public string? PasswordURI { get; set; } = "https://secondlife.com/";
-            // The main website for the grid
-            public string? WebSite { get; set; } = "https://secondlife.com/";
-            // Name of the platform (SecondLife, OpenSim, etc)
-            public string? Platform { get; set; } = "SecondLife";
-            // Base URL for SLURLs (hop://maps.secondlife.com/secondlife/Region/X/Y/Z)
-            public string? slurl_base { get; set; } = "hop://maps.secondlife.com/secondlife/";
-            // Base URL for app SLURLs (secondlife:///app/...)
-            public string? app_slurl_base { get; set; } = "secondlife:///app";
-            // Base URL for web profiles. May include "[AGENT_NAME]" to be replaced with avatar name.
-            public string? web_profile_url { get; set; } = "https://my.secondlife.com/";
-        }
-
-        public Dictionary<string, GridDefinition> Grids { get; set; } = new Dictionary<string, GridDefinition>();
+    public class GridDefinition {
+        public string GridName { get; set; } = "SecondLife";
+        public string GridNick { get; set; } = "SecondLife";
+        // URI to use for login. Accepts HTTP POST of login form.
+        public string LoginURI { get; set; } = "https://login.angi.lindenlab.com/cgi-bin/login.cgi";
+        // Helper for support
+        public string? SupportURI { get; set; } = "https://secondlife.com/";
+        // helper for account management
+        public string? AccountURI { get; set; } = "https://secondlife.com/";
+        // Helper for password reset
+        public string? PasswordURI { get; set; } = "https://secondlife.com/";
+        // The main website for the grid
+        public string? WebSite { get; set; } = "https://secondlife.com/";
+        // Name of the platform (SecondLife, OpenSim, etc)
+        public string? Platform { get; set; } = "SecondLife";
+        // Base URL for SLURLs (hop://maps.secondlife.com/secondlife/Region/X/Y/Z)
+        public string? slurl_base { get; set; } = "hop://maps.secondlife.com/secondlife/";
+        // Base URL for app SLURLs (secondlife:///app/...)
+        public string? app_slurl_base { get; set; } = "secondlife:///app";
+        // Base URL for web profiles. May include "[AGENT_NAME]" to be replaced with avatar name.
+        public string? web_profile_url { get; set; } = "https://my.secondlife.com/";
     }
 }
 

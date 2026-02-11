@@ -49,8 +49,8 @@ namespace KeeKee.World {
         /// </summary>
         /// <param name="gridName"></param>
         /// <returns></returns>
-        public GridConfig.GridDefinition? GetGridDefinition(string gridName) {
-            GridConfig.GridDefinition? ret = null;
+        public GridDefinition? GetGridDefinition(string gridName) {
+            GridDefinition? ret = null;
             try {
                 ForEach((gd) => {
                     if (gd.GridNick.ToLower() == gridName.ToLower())
@@ -65,10 +65,10 @@ namespace KeeKee.World {
         }
 
         // Performs an action on each map which describes a grid ("Name", "LoginURL", ...)
-        public void ForEach(Action<GridConfig.GridDefinition> act) {
+        public void ForEach(Action<GridDefinition> act) {
             try {
-                foreach (var kvp in m_gridConfig.Value.Grids) {
-                    act(kvp.Value);
+                foreach (var gd in m_gridConfig.Value.ToArray()) {
+                    act(gd);
                 }
                 ;
             } catch (Exception e) {
