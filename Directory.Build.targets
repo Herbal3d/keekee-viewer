@@ -11,6 +11,7 @@
     <LibreMetaversePrimMesherDll>$(LibreMetaverseLocalDirFull)/LibreMetaverse.PrimMesher.dll</LibreMetaversePrimMesherDll>
     <LibreMetaverseStructuredDataDll>$(LibreMetaverseLocalDirFull)/LibreMetaverse.StructuredData.dll</LibreMetaverseStructuredDataDll>
     <LibreMetaverseTypesDll>$(LibreMetaverseLocalDirFull)/LibreMetaverse.Types.dll</LibreMetaverseTypesDll>
+    <SkiaSharpDll>$(LibreMetaverseLocalDirFull)/SkiaSharp.dll</SkiaSharpDll>
   </PropertyGroup>
 
   <Target Name="ValidateLibreMetaverseLocalDir" BeforeTargets="ResolveReferences" Condition="'$(LibreMetaverseLocalDir)' != ''">
@@ -24,6 +25,9 @@
     <PackageReference Remove="LibreMetaverse.PrimMesher" />
     <PackageReference Remove="LibreMetaverse.StructuredData" />
     <PackageReference Remove="LibreMetaverse.Types" />
+    <PackageReference Remove="SkiaSharp.NativeAssets.Linux" />
+    <PackageReference Remove="SkiaSharp.NativeAssets.macOS" />
+    <PackageReference Remove="SkiaSharp.NativeAssets.Win32" />
 
     <Reference Include="LibreMetaverse">
       <HintPath>$(LibreMetaverseDll)</HintPath>
@@ -39,6 +43,10 @@
     </Reference>
     <Reference Include="LibreMetaverse.Types" Condition="Exists('$(LibreMetaverseTypesDll)')">
       <HintPath>$(LibreMetaverseTypesDll)</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="SkiaSharp" Condition="Exists('$(SkiaSharpDll)')">
+      <HintPath>$(SkiaSharpDll)</HintPath>
       <Private>true</Private>
     </Reference>
   </ItemGroup>

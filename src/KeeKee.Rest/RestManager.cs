@@ -138,6 +138,8 @@ namespace KeeKee.Rest {
                         }
                     }, cancellationToken);
                 }
+            } catch (OperationCanceledException) {
+                m_log.Log(KLogLevel.DREST, "RestManager ExecuteAsync cancellation requested");
             } catch (Exception e) {
                 m_log.Log(KLogLevel.Error, "RestManager ExecuteAsync listener registration exception: {0}", e.ToString());
                 return;

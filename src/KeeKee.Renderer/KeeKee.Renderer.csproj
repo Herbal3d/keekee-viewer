@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" />
-    <ProjectReference Include="..\KeeKee.Context\KeeKee.Context.csproj" />
+    <ProjectReference Include="..\KeeKee.Contexts\KeeKee.Contexts.csproj" />
     <ProjectReference Include="..\KeeKee.Entity\KeeKee.Entity.csproj" />
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
     <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" />
