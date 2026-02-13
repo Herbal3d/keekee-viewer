@@ -4,6 +4,22 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 -->
+
+<!--
+  Most of this cruft is to allow us to point at a local build of
+  LibreMetaverse instead of the NuGet package.
+
+  Do the compilatiaon and run with a command like:
+    dotnet run &&project src/KeeKee.Viewer/KeeKee.Viewer.csproj && &&LibreMetaverseLocalDir=path/to/libremetaverse/bin/Debug/net9.0
+    (NOTE: the ampersands are replaced with dashes. Done here because
+      XML comments are dumb and can't quote double dashes.)
+
+  There is also some parameters in .vscode that needs to be set to
+    point at the local build for debugging to work.
+
+  In general, if "LibreMetavserseLocalDir" is set, it will be used instead of the NuGet package.
+
+-->
 <Project>
   <PropertyGroup Condition="'$(LibreMetaverseLocalDir)' != ''">
     <LibreMetaverseLocalDirFull>$([System.IO.Path]::GetFullPath('$(LibreMetaverseLocalDir)'))</LibreMetaverseLocalDirFull>

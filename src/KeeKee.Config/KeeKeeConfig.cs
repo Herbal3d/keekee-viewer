@@ -24,10 +24,6 @@ namespace KeeKee.Config {
         public static string GitHash => GetAssemblyMetadata("GitHash") ?? "unknown";
         public static string BuildTimestamp => GetAssemblyMetadata("BuildTimestamp") ?? "unknown";
         public static string InformationalVersion => GetAssemblyMetadata("InformationalVersion") ?? "unknown";
-        public static string FullVersion =>
-            Assembly.GetEntryAssembly()?
-                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
-                .InformationalVersion ?? "0.0.0+unknown";
 
         private static string? GetAssemblyMetadata(string key) {
             return Assembly.GetEntryAssembly()?

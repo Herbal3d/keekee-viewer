@@ -210,6 +210,8 @@ namespace KeeKee {
 
             IOptions<KeeKeeConfig> keeKeeConfig = GetKeeKeeConfig;
 
+            m_log.LogInformation("KeeKee Version: {version}", KeeKeeConfig.InformationalVersion);
+
             LogConfigurationComplete(m_log);
 
             await KeeKeeHost.RunAsync(GlobalCTS.Token);
