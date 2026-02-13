@@ -11,6 +11,8 @@
 
 namespace KeeKee.Contexts {
 
+    using OMV = OpenMetaverse;
+
     /// <summary>
     /// EntityName class to hold the name of an entity.
     /// 
@@ -63,6 +65,12 @@ namespace KeeKee.Contexts {
         public EntityName(IAssetContext pAssetContext, string pName) {
             AssetContext = pAssetContext;
             Name = pName;
+        }
+
+        // Create a name that has a UUID as an identifier.
+        public EntityName(IAssetContext pAssetContext, string pPrefix, OMV.UUID pId) {
+            AssetContext = pAssetContext;
+            Name = pPrefix + "-" + pId.ToString();
         }
 
         public EntityName(EntityName pOther) {

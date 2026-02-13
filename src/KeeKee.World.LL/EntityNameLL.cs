@@ -37,6 +37,10 @@ namespace KeeKee.World.LL {
                 : base(acontext, name) {
         }
 
+        public EntityNameLL(IAssetContext acontext, string pPrefix, OMV.UUID pName)
+                : base(acontext, pPrefix, pName) {
+        }
+
         public static EntityNameLL ConvertTextureWorldIDToEntityName(IAssetContext context, OMV.UUID textureWorldID) {
             return ConvertTextureWorldIDToEntityName(context, textureWorldID.ToString());
         }

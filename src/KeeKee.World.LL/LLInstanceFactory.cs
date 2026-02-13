@@ -49,7 +49,7 @@ namespace KeeKee.World.LL {
         public LLEntity CreateLLAvatar(OMV.Avatar pAvatar, IRegionContext pRContext, IAssetContext pAContext) {
             IOptions<LLAgentConfig> pConfig = _provider.GetRequiredService<IOptions<LLAgentConfig>>();
             LLEntity ava = CreateLLEntity(pAvatar, pRContext, pAContext, EntityClassifications.Avatar);
-            ava.Name = new EntityName(pAContext, "Avatar-" + ava.LGID.ToString());
+            ava.Name = new EntityName(pAContext, "Avatar", pAvatar.ID);
             ava.AddComponent<LLCmptAvatar>(_componentFactory.CreateLLCmptAvatar(ava));
             ava.AddComponent<LLCmptLocation>(_componentFactory.CreateLLCmptLocation(ava));
             ava.AddComponent<LLCmptAgentMovement>(_componentFactory.CreateLLCmptAgentMovement(ava));
@@ -66,16 +66,13 @@ namespace KeeKee.World.LL {
 
         public LLEntity CreateLLPhysical(OMV.GridClient pClient, OMV.Primitive pPrim, IRegionContext pRContext, IAssetContext pAContext) {
             LLEntity phy = CreateLLEntity(pPrim, pRContext, pAContext, EntityClassifications.Primitive);
+            phy.Name = new EntityName(pAContext, "Prim", pPrim.ID);
             phy.AddComponent<LLCmptLocation>(_componentFactory.CreateLLCmptLocation(phy));
             return phy;
         }
 
         public LLRegionContext CreateLLRegionContext(LLGridClient pGridClient, OMV.Simulator pSim, IAssetContext pAContext) {
             return Create<LLRegionContext>(this, pAContext, pGridClient, pSim);
-        }
-
-        public override string ToString() {
-            return $"LLInstanceFactory";
         }
     }
 }

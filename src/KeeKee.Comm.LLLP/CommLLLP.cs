@@ -826,7 +826,7 @@ namespace KeeKee.Comm.LLLP {
                 // This is an avatar, assume somethings changed no matter what
                 updateFlags |= UpdateCodes.CollisionPlane;
 
-                EntityName avatarEntityName = new EntityNameLL(rcontext.AssetContext, "/Avatar/" + args.Avatar.ID.ToString());
+                EntityName avatarEntityName = new EntityNameLL(rcontext.AssetContext, "Avatar", args.Avatar.ID);
 
                 IEntity? updatedEntity;
                 if (!rcontext.Entities.TryGetEntity(avatarEntityName, out updatedEntity)) {
@@ -883,7 +883,7 @@ namespace KeeKee.Comm.LLLP {
             // the appearance information is stored in the avatar info in libomv
             // We just kick the system to look at it
             lock (m_opLock) {
-                EntityName avatarEntityName = new EntityNameLL(rcontext.AssetContext, "/Avatar/" + args.AvatarID.ToString());
+                EntityName avatarEntityName = new EntityNameLL(rcontext.AssetContext, "Avatar", args.AvatarID);
                 IEntity? ent;
                 if (rcontext.TryGetEntity(avatarEntityName, out ent)) {
                     ent?.Update(UpdateCodes.Appearance);
@@ -927,8 +927,6 @@ namespace KeeKee.Comm.LLLP {
                         // we are connected but doen't have a regionContext for this simulator. Build one.
 
                         foundRegion = m_InstanceFactory.CreateLLRegionContext(m_LLGridClient, sim, LLLPAssetContext);
-                        // foundRegion.Name = new EntityNameLL(LoggedInGridName + "/Region/" + sim.Name.Trim());
-                        foundRegion.Name = new EntityNameLL(LoggedInGridName + "/" + sim.Name.Trim());
 
                         var terrain = foundRegion.TerrainInfo;
                         if (terrain != null) {
