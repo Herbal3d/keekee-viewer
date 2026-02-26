@@ -57,5 +57,6 @@ nunit-*.xml
 docs/_site/
 docs/api/
 dist/
+artifacts/
 node_modules/
 

@@ -21,11 +21,11 @@ namespace KeeKee.Config {
         // "Maximum number of outstanding textures requests
         public int MaxTextureRequests { get; set; } = 10;
         // Directory for resources used by libopenmetaverse (mostly for appearance)
-        public string OMVResources { get; set; } = "./KeeKeeResources/openmetaverse_data";
+        public string OMVResources { get; set; } = "./assets/openmetaverse_data";
         // Filename of texture to display when we can't get the real texture
-        public string NoTextureFilename { get; set; } = "./KeeKeeResources/NoTexture.png";
+        public string NoTextureFilename { get; set; } = "./assets/NoTexture.png";
         // Filename of texture to display when we can't get the real sculpty texture
-        public string NoSculptyFilename { get; set; } = "./KeeKeeResources/NoSculpty.png";
+        public string NoSculptyFilename { get; set; } = "./assets/NoSculpty.png";
         // whether to convert incoming JPEG2000 files to PNG files in the cache
         public bool ConvertPNG { get; set; } = true;
     }

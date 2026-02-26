@@ -80,8 +80,14 @@ namespace KeeKee {
                      //     'appsettings.Development.json', and environment variables.
 
                      // Add the default logging config first so other configs can override it.
-                     config.AddJsonFile("KeeKee.json", optional: true, reloadOnChange: true);
-                     config.AddJsonFile("Grids.json", optional: true, reloadOnChange: true);
+                     config.AddJsonFile("KeeKee.json", optional: false, reloadOnChange: true);
+#if DEBUG
+                     config.AddJsonFile("KeeKee.Debug.json", optional: true, reloadOnChange: true);
+#endif
+                     // This reads KeeKee.{Environment}.json, which can be used to override settings
+                     //       for specific environments (e.g. Development, Staging, Production).
+                     config.AddJsonFile($"KeeKee.{context.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+                     config.AddJsonFile("Grids.json", optional: false, reloadOnChange: true);
                      config.AddEnvironmentVariables("KeeKee_");
                      // re-add command line args so they override other settings
                      config.AddCommandLine(Environment.GetCommandLineArgs());

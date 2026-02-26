@@ -4,11 +4,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <OutputType>Exe</OutputType>
-    <OutputPath>..\..\dist\</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <PublishDir>..\..\dist\</PublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,27 +32,23 @@
     <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" />
     <ProjectReference Include="..\KeeKee.Rest.LLLP\KeeKee.Rest.LLLP.csproj" />
     <ProjectReference Include="..\KeeKee.View\KeeKee.View.csproj" />
+    <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" />
+    <ProjectReference Include="..\KeeKee.World.LL\KeeKee.World.LL.csproj" />
+    <ProjectReference Include="..\KeeKee.World.Services\KeeKee.World.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\*.json" Exclude="..\..\tsconfig.json;..\..\package.json;..\..\package-lock.json">
+    <Content Include="..\..\*.json"
+                Exclude="..\..\tsconfig.json;..\..\package.json;..\..\package-lock.json" >
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="..\..\KeeKeeResources\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <Link>KeeKeeResources\%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Content>
-  </ItemGroup>
-
-    <!-- TypeScript Compilation Target -->
-    <Target Name="CompileTypeScript" BeforeTargets="Build">
+  <!-- TypeScript Compilation Target -->
+  <Target Name="CompileTypeScript" BeforeTargets="Build">
       <Exec Command="npm install" WorkingDirectory="$(ProjectDir)..\.." ContinueOnError="true" />
       <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)..\.." />
-    </Target>
+  </Target>
 
 </Project>
