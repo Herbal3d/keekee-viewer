@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <Authors>Robert Adams (misterblue@misterblue.com)</Authors>
+    <Description>Access library and viewer for OpenSimulator</Description>
+
+    <!-- "Version" is generated in Directory.Build.props-->
+    <PackageId>Herbal3d.KeeKeeCore</PackageId>
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\</PackageOutputPath>
+    <!-- Causes all DLLs and assets to be included in the package -->
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);AddProjectOutputsToPackage</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KeeKee\KeeKee.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Comm.LLLP\KeeKee.Comm.LLLP.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Comm\KeeKee.Comm.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Config\KeeKee.Config.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Contexts\KeeKee.Contexts.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Entity\KeeKee.Entity.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Framework\KeeKee.Framework.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Renderer\KeeKee.Renderer.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Renderer.Godot\KeeKee.Renderer.Godot.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Renderer.Map\KeeKee.Renderer.Map.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Renderer.Null\KeeKee.Renderer.Null.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Rest\KeeKee.Rest.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.Rest.LLLP\KeeKee.Rest.LLLP.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.View\KeeKee.View.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.World\KeeKee.World.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.World.LL\KeeKee.World.LL.csproj" pack="true" />
+    <ProjectReference Include="..\KeeKee.World.Services\KeeKee.World.Services.csproj" pack="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\..\assets\**\*.*"
+          Pack="true"
+          PackagePath="contentFiles/any/any/assets/%(RecursiveDir)%(Filename)%(Extension)"
+          PackageCopyToOutput="true" />
+    <None Include="..\..\buildTransitive\Herbal3d.KeeKeeCore.targets"
+          Pack="true"
+          PackagePath="buildTransitive/Herbal3d.KeeKeeCore.targets" />
+  </ItemGroup>
+
+  <Target Name="AddProjectOutputsToPackage" DependsOnTargets="ResolveReferences">
+    <ItemGroup>
+      <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget','ProjectReference'))" />
+    </ItemGroup>
+  </Target>
+
+</Project>

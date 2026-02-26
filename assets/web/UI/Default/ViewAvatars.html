@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>KeeKee</title>
+<link rel="stylesheet" href="/static/KeeKee.css?xx=6" type="text/css"/>
+<script type="text/javascript" src="/std/jquery.js?xx=6"></script>
+<script type="text/javascript" src="/std/KKScripts.js?xx=6"></script>
+<noscript>
+<p color="red">
+Your browser does not support Javascript. This won't work for you.
+</p>
+</noscript>
+<script type="text/javascript">
+$(document).ready(function() {
+    // setup form to post info when 'Login' is pressed
+    $("#KKLoginForm").submit(SendLoginRequest);
+    // other buttons cause their actions
+    $("#KKNavTeleportButton").click(DoTeleport);
+    $("#KKNavLogoutButton").click(DoLogout);
+    $("#KKNavExitButton").click(DoExit);
+
+    // Major divisions in the content accordioning
+    $('.KKSectionContent').hide('slow');
+    $('#KKLogin').show('slow');
+    $('#KKLoginFirst').focus();
+    $('.KKSectionHeader').click(function() {
+        $(this).next().slideToggle('slow');
+        return false;
+    });
+
+    // Start the timed functions
+    var now = new Date();
+    Math.random(now.getSeconds()*now.getMilliseconds());
+    TimerLoginStuff(true);
+    loginTimerHandle = setInterval('TimerLoginStuff(false)', 3000);
+    avatarTimerHandle = setInterval('TimerAvatarStuff()', 3000);
+    statTimerHandle = setInterval('TimerStatStuff()', 5000);
+});
+
+// Login works by polling the viewer for the status of the user.
+// If the user is logged in, we display the avatars in the area.
+// If not logged in, the user filled in fields and pressed 'login'
+// which POSTs parameters to the viewer which change the user's
+// login state.
+var BASEURL='http://127.0.0.1:9144';
+var loginTimerHandle;
+var loginTimerProcessing = false;
+// Poll for the user's data. Initialize form if first GET.
+function TimerLoginStuff(firstTime) {
+    if (loginTimerProcessing) return;
+    loginTimerProcessing = true;
+    $.ajax({
+        type: "GET",
+        url: BASEURL + '/api/LLLP/status?xx=' + Math.floor(Math.random()*999999),
+        dataType: 'json',
+        timeout: 5000,
+        success: function(data, status) {
+            if (status == 'success') {
+                if (firstTime) InitializeLoginForm(data);
+                UpdateLoginArea(data);
+            }
+        },
+        error: function(xmlHTTPRequest, errorType) {
+            UpdateLoginArea( {
+                msg: {"value": "Lost connection to viewer"},
+                loginstate: {"value": "logout"}
+            });
+        }
+    });
+    loginTimerProcessing = false;
+};
+
+// given a set of login status parameters, update login status area
+function UpdateLoginArea(data) {
+    $('#KKLoginMessage').empty();
+    if (data.msg.value) $('#KKLoginMessage').append(data.msg.value);
+
+    if(data.loginstate.value == 'logout') {
+        $("#KKLoginForm").show('slow');
+        $("#KKAvatarView").hide('slow');
+    }
+    else {
+        $("#KKLoginForm").hide('slow');
+        $("#KKAvatarView").show('slow');
+    }
+}
+
+// Called the first time so we can pre-populate the form
+function InitializeLoginForm(data) {
+    $('#KKLoginForm input[name="LOGINFIRST"]').attr('value', data.first.value);
+    $('#KKLoginForm input[name="LOGINLAST"]').attr('value', data.last.value);
+    $('#KKLoginForm input[name="LOGINSIM"]').attr('value', data.sim.value);
+    var selector = $('#KKLoginForm select[name="LOGINGRID"]');
+    selector.empty();
+    for (grid in data.possiblegrids.value) {
+        var valu = data.possiblegrids.value[grid];
+        selector.append('<option value="' + valu + '">' + valu + '</option>');
+    }
+
+}
+
+// Called by login form 'submit' click
+// Post the user's parameters to the viewer to login the user
+function SendLoginRequest() {
+    $.post(BASEURL + "/api/LLLP/connect/login", $('#KKLoginForm').serializeArray());
+    return false;
+}
+
+var avatarTimerHandle;
+var avatarTimerProcessing = false;
+function TimerAvatarStuff() {
+    if (avatarTimerProcessing) return;
+    avatarTimerProcessing = true;
+    $.getJSON(BASEURL+'/api/avatars?yy=' + Math.floor(Math.random()*999999),
+                function(data, status) {
+        if (status == 'success') {
+            // BuildBasicTable('#KKAvatars', data, false, true);
+            BuildColumnTable('#KKAvatars', data, false, true, false,
+                ["Name", "Region", "X", "Y", "Z", "Distance"]);
+        }
+    });
+    avatarTimerProcessing = false;
+}
+
+function DoTeleport() {
+    var teleParms = new Object;
+    teleParms['DESTINATION'] = $('#KKNavDestinationText').text;
+    $.post(BASEURL + "/api/LLLP/connect/teleport", teleParms);
+    return false;
+}
+
+function DoLogout() {
+    $.post(BASEURL + "/api/LLLP/connect/logout", {});
+    return false;
+}
+
+function DoExit() {
+    $.post(BASEURL + "/api/LLLP/connect/exit", {});
+    return false;
+}
+
+var statTimerHandle;
+var statTimerProcessing = false;
+// Poll for the user's data. Initialize form if first GET.
+function TimerStatStuff() {
+    if (statTimerProcessing) return;
+    statTimerProcessing = true;
+    $.ajax({
+        type: "GET",
+        url: BASEURL + '/api/stats/Renderer/ogreStats?xx=' + Math.floor(Math.random()*999999),
+        dataType: 'json',
+        timeout: 1000,
+        success: function(data, status) {
+            if (status == 'success') {
+                var dataFPS = data['framespersecond']['value'];
+                var workQueue = data['betweenframeworkitems']['value'];
+                var sceneNodes = data['totalbetweenframecreatemeshscenenode']['value'];
+                $('#KKFooter').empty();
+                $('#KKFooter').append('<span id="KKFooterStats">' + dataFPS 
+                        + '/' + workQueue 
+                        + '/' + sceneNodes 
+                        + '</span>');
+            }
+        },
+        error: function(xmlHTTPRequest, errorType) {
+            $('#KKFooter').empty();
+            $('#KKFooter').append('../../..');
+        }
+    });
+    statTimerProcessing = false;
+}
+
+</script>
+</head>
+<body id="KKBody">
+<div id="KKHeader"></div>
+<div id="KKContent">
+<!-- ============================================== -->
+<div class="KKSectionContainer">
+<a class="KKSectionHeader" href="#">Connection</a>
+<div id="KKLogin" class="KKSectionContent">
+
+<div id="KKLoginMessage"></div>
+
+<form id="KKLoginForm">
+    <ul class="KKLogin">
+        <li>
+            <span class="label">First</span>
+            <span class="value">
+                <input type="text" tabindex="1" name="LOGINFIRST" id="KKLoginFirst"/>
+            </span>
+        </li>
+        <li>
+            <span class="label">Last</span>
+            <span class="value">
+                <input type="text" tabindex="2" name="LOGINLAST"/>
+            </span>
+        </li>
+        <li>
+            <span class="label">Password</span>
+            <span class="value">
+                <input type="password" tabindex="3" name="LOGINPASS"/>
+            </span>
+        </li>
+        <li>
+            <span class="label">Grid</span>
+            <span class="value">
+                <select size="1" tabindex="4" name="LOGINGRID">
+                    <option selected value="OSGrid">OSGrid</option>
+                </select>
+            </span>
+        </li>
+        <li>
+            <span class="label">Sim</span>
+            <span class="value">
+                <input type="text" tabindex="5" name="LOGINSIM"/>
+            </span>
+        </li>
+    </ul>
+    <span class="KKLoginSubmit">
+        <input type="submit" tabindex="6" value="Login"/>
+    </span>
+</form>
+</div>  <!-- KKLogin -->
+</div>  <!-- KKSectionContainer -->
+<!-- ============================================== -->
+<div class="KKSectionContainer">
+<a class="KKSectionHeader" href="#">Navigation</a>
+<div id="KKNavgationView" class="KKSectionContent">
+
+<div id="KKNavigation">
+<form id="KKNavigationForm">
+<div id="KKNavigationInputArea">
+    <input id="KKNavDestinationText" type="text" name="DESTINATION" size="20"/>
+    <input id="KKNavTeleportButton" type="button" value="Teleport"/>
+    <input id="KKNavLogoutButton" type="button" value="Logout"/>
+    <input id="KKNavExitButton" type="button" value="Exit"/>
+</div>
+</form>
+</div>  <!-- KKNavigation -->
+</div>  <!-- KKSectionContainer -->
+<!-- ============================================== -->
+<div class="KKSectionContainer">
+<a class="KKSectionHeader" href="#">Avatars</a>
+<div id="KKAvatarView" class="KKSectionContent">
+
+<div id="KKAvatars">
+</div>  <!-- KKAvatars -->
+</div>  <!-- KKSectionContainer -->
+<!-- ============================================== -->
+</div>  <!-- KKContent -->
+<div id="DEBUG"></div>
+<div id="KKDialogSelection"></div>
+<div id="KKFooter"></div>
+</body>
+</html>

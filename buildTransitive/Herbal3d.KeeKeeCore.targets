@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    This targets file is used to copy assets from the KeeKee package to the output directory of the consuming project.
+    The assets will end up in a subdirectory named "assets" in the output directory of the consuming project.
+  -->
+  <PropertyGroup>
+    <_KeeKeeAssetsPath>$(MSBuildThisFileDirectory)..\contentFiles\any\any\assets\**\*.*</_KeeKeeAssetsPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_KeeKeeAsset Include="$(_KeeKeeAssetsPath)" />
+  </ItemGroup>
+
+  <Target Name="KeeKee_CopyAssets" AfterTargets="Build">
+    <Copy
+      SourceFiles="@(_KeeKeeAsset)"
+      DestinationFiles="@(_KeeKeeAsset->'$(TargetDir)assets\%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+</Project>

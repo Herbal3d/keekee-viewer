@@ -1,0 +1,45 @@
+/* KeeKee Viewer - Color Definitions
+ * Define all colors as CSS custom properties (variables)
+ * Include this file BEFORE KeeKee.css in your HTML
+ */
+
+:root {
+    /* Background colors */
+    --k-body-bg: #4A5F6D;
+    --k-stats-bg: #5A6F7D;
+    --k-stats-section-bg: #3A4F5D;
+    --k-chat-bg: #668396;
+    --k-pre-bg: #8080B0;
+
+    --k-dialog-accent: #606080;
+    --k-dialog-button-bg: #505070;
+    --k-dialog-button-color: #FFFFFF;
+    
+    /* Text colors */
+    --k-text-primary: #EEEAD6;
+    --k-text-secondary: #c0c0c0;
+    --k-text-muted: #808080;
+    --k-text-black: #000000;
+    
+    /* Link colors */
+    --k-link-color: #ffffff;
+    --k-link-visited: #d0d0d0;
+    
+    /* Chat colors */
+    --k-chat-time: #c0c0c0;
+    --k-chat-from: #f09090;
+    --k-chat-expression: yellow;
+    --k-chat-status-blue: #303090;
+    --k-chat-status-darkblue: #0000FF;
+    --k-chat-linden: yellow;
+    --k-chat-object: yellow;
+    --k-chat-alert: red;
+    --k-chat-error: red;
+    
+    /* Avatar colors */
+    --k-avatar-name: #f09090;
+    --k-avatar-region: #c0c0c0;
+    
+    /* Border colors */
+    --k-border-color: #808080;
+}
