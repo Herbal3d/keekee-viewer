@@ -5,7 +5,7 @@
     <PatchVersion>1</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
 
-    <BuildTimestamp>$([System.DateTime]::UtcNow.ToString("yyyyMMddHHmmss"))</BuildTimestamp>
+    <BuildTimestamp>$([System.DateTime]::UtcNow.ToString("yyyyMMdd"))</BuildTimestamp>
 
     <GitHash Condition="'$(GitShortHash)' == ''"></GitHash>
     <GitHash Condition="'$(GitShortHash)' != ''">+$(GitShortHash)</GitHash>
@@ -13,7 +13,10 @@
 
     <LibreMetaverseLocalDir Condition="'$(LibreMetaverseLocalDir)' == ''"></LibreMetaverseLocalDir>
 
-    <OutputPath>$(MSBuildThisFileDirectory)artifacts\$(MSBuildProjectName)\$(Configuration)\</OutputPath>
+    <!-- Output all DLLs to a common artifacts directory -->
+    <!-- <OutputPath>$(MSBuildThisFileDirectory)artifacts\$(MSBuildProjectName)\$(Configuration)\</OutputPath> -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)artifacts\</OutputPath>
   </PropertyGroup>
 
   <!-- Embed the values into the assembly -->

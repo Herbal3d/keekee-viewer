@@ -29,9 +29,10 @@
         "CacheDir": "",
         "EnableCaps": true,
         "MaxTextureRequests": 10,
-        "OMVResources": "./assets/openmetaverse_data",
-        "NoTextureFilename": "./assets/NoTexture.png",
-        "NoKculptyFilename": "./assets/NoSculpty.png",
+        "UIContentDir": "../assets/web",
+        "OMVResources": "../assets/openmetaverse_data",
+        "NoTextureFilename": "../assets/NoTexture.png",
+        "NoKculptyFilename": "../assets/NoSculpty.png",
         "ConvertPNG": true
     },
     "LLAgent": {

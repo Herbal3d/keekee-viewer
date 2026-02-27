@@ -9,7 +9,7 @@
     <!--
     This tries to get the git hash to use in the informational version string.
     -->
-  <Target Name="SetGitInformationalVersion" BeforeTargets="GetAssemblyVersion">
+  <Target Name="SetGitInformationalVersion" BeforeTargets="Build">
     <Exec Command="git rev-parse --short=8 HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_GitShortHashRaw" />
     </Exec>

@@ -17,6 +17,7 @@ using Microsoft.Extensions.Options;
 using NLog.Extensions.Logging;
 
 using KeeKee.Config;
+using KeeKee.Comm;
 using KeeKee.Comm.LLLP;
 using KeeKee.Contexts;
 using KeeKee.Entity;
@@ -33,7 +34,6 @@ using KeeKee.Framework.WorkQueue;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 using OMVR = OpenMetaverse.Rendering;
-using KeeKee.Comm;
 
 namespace KeeKee {
 

@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/dist/KeeKee.dll",
+            "program": "${workspaceFolder}/artifacts/KeeKee.Wrapper.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "env": {
