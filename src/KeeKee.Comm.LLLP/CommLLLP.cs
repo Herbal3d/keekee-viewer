@@ -651,7 +651,7 @@ namespace KeeKee.Comm.LLLP {
         }
 
         // Entity has been updated. Tell the world about the updates.
-        private void ProcessEntityUpdates(IEntity ent, UpdateCodes updateFlags) {
+        private void ProcessEntityUpdates(IEntity? ent, UpdateCodes updateFlags) {
             try {
                 if (ent != null) {
                     // special update for the agent so it knows there is new info from the network
@@ -730,7 +730,7 @@ namespace KeeKee.Comm.LLLP {
                 m_log.Log(KLogLevel.DBADERROR, "TerseObjectUpdate: Simulator is null");
                 return;
             }
-            LLRegionContext rcontext = FindRegion(args.Simulator);
+            LLRegionContext? rcontext = FindRegion(args.Simulator);
             if (rcontext == null) {
                 m_log.Log(KLogLevel.DBADERROR, "TerseObjectUpdate: no region context for simulator {0}", args.Simulator.Name);
                 return;

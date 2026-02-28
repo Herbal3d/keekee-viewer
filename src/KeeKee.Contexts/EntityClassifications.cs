@@ -20,7 +20,6 @@ namespace KeeKee.Contexts {
         AssetContext = 3,
         UserContext = 4,
         Avatar = 10,
-        Object = 11,
         Terrain = 12,
         Primitive = 13,
         Attachment = 14,

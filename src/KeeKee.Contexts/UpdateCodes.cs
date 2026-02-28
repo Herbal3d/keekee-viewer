@@ -48,9 +48,10 @@ namespace KeeKee.Contexts {
     }
 
     public static class UpdateCodesUtil {
+        // convert an UpdateCodes value to a string listing the individual codes
         public static string UpdateCodesToString(UpdateCodes what) {
             if (what == UpdateCodes.None) return "None";
-            List<string> parts = new List<string>();
+            List<string> parts = new();
             foreach (UpdateCodes code in Enum.GetValues(typeof(UpdateCodes))) {
                 if (code != UpdateCodes.None && what.HasFlag(code)) {
                     parts.Add(code.ToString());

@@ -27,15 +27,15 @@ namespace KeeKee.Comm {
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-            m_log.Log(KLogLevel.DCOMM, "Starting CommLLPService");
+            m_log.Log(KLogLevel.DCOMM, "Starting CommService");
             await m_comm.StartAsync(stoppingToken);
-            m_log.Log(KLogLevel.DCOMM, "CommLLPService started");
+            m_log.Log(KLogLevel.DCOMM, "Commervice started");
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken) {
-            m_log.Log(KLogLevel.DCOMM, "Stopping CommLLPService");
+            m_log.Log(KLogLevel.DCOMM, "Stopping CommService");
             await m_comm.StopAsync(cancellationToken);
-            m_log.Log(KLogLevel.DCOMM, "CommLLPService stopped");
+            m_log.Log(KLogLevel.DCOMM, "CommService stopped");
         }
     }
 }
