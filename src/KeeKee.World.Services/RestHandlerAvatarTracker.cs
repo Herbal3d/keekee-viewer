@@ -23,14 +23,9 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.World.Services {
 
-    public class RestHandlerAvatarTracker : IRestHandler {
+    public class RestHandlerAvatarTracker : RestHandler {
 
         private readonly KLogger<RestHandlerAvatarTracker> m_log;
-        private readonly RestManager m_RestManager;
-
-        // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; }
-
         protected Dictionary<string, IEntity> m_avatars;
 
         private IWorld m_world;
@@ -38,14 +33,11 @@ namespace KeeKee.World.Services {
         public RestHandlerAvatarTracker(KLogger<RestHandlerAvatarTracker> pLogger,
                                 RestManager pRestManager,
                                 IWorld pWorld
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
-            m_RestManager = pRestManager;
             m_world = pWorld;
 
             Prefix = Utilities.JoinFilePieces(m_RestManager.APIBase, "/avatars");
-
-            m_RestManager.RegisterListener(this);
 
             m_avatars = new Dictionary<string, IEntity>();
 
@@ -56,78 +48,73 @@ namespace KeeKee.World.Services {
             m_world.OnWorldEntityRemoved += new WorldEntityRemovedCallback(World_OnWorldEntityRemoved);
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessGetRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                m_log.Log(KLogLevel.DRESTDETAIL, "GET: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+            m_log.Log(KLogLevel.DRESTDETAIL, "GET: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
 
-                OMVSD.OSDMap ret = new OMVSD.OSDMap();
-                lock (m_avatars) {
-                    foreach (KeyValuePair<string, IEntity> kvp in m_avatars) {
-                        OMVSD.OSDMap oneAV = new OMVSD.OSDMap();
-                        IEntity iav = kvp.Value;
-                        try {
-                            oneAV.Add("Name", new OMVSD.OSDString(iav.Cmpt<ICmptAvatar>().DisplayName));
-                            oneAV.Add("Region", new OMVSD.OSDString(iav.RegionContext.Name.Name));
-                            var loc = iav.Cmpt<ICmptLocation>().RegionPosition;
-                            oneAV.Add("X", new OMVSD.OSDString(loc.X.ToString("###0.###")));
-                            oneAV.Add("Y", new OMVSD.OSDString(loc.Y.ToString("###0.###")));
-                            oneAV.Add("Z", new OMVSD.OSDString(loc.Z.ToString("###0.###")));
+            OMVSD.OSDMap ret = new OMVSD.OSDMap();
+            lock (m_avatars) {
+                foreach (KeyValuePair<string, IEntity> kvp in m_avatars) {
+                    OMVSD.OSDMap oneAV = new OMVSD.OSDMap();
+                    IEntity iav = kvp.Value;
+                    try {
+                        oneAV.Add("Name", new OMVSD.OSDString(iav.Cmpt<ICmptAvatar>().DisplayName));
+                        oneAV.Add("Region", new OMVSD.OSDString(iav.RegionContext.Name.Name));
+                        var loc = iav.Cmpt<ICmptLocation>().RegionPosition;
+                        oneAV.Add("X", new OMVSD.OSDString(loc.X.ToString("###0.###")));
+                        oneAV.Add("Y", new OMVSD.OSDString(loc.Y.ToString("###0.###")));
+                        oneAV.Add("Z", new OMVSD.OSDString(loc.Z.ToString("###0.###")));
 
-                            // Compute distance from main agent if we have one
-                            float dist = 0f;
-                            if (m_world.Agent != null
-                                        && m_world.Agent.HasComponent<ICmptLocation>()
-                                        && m_world.Agent.LGID != iav.LGID) {
-                                dist = OMV.Vector3.Distance(m_world.Agent.Cmpt<ICmptLocation>().RegionPosition, iav.Cmpt<ICmptLocation>().RegionPosition);
-                            }
-                            oneAV.Add("Distance", new OMVSD.OSDString(dist.ToString("###0.###")));
-                            oneAV.Add("Flags", new OMVSD.OSDString(iav.Cmpt<ICmptAvatar>().ActivityFlags));
+                        // Compute distance from main agent if we have one
+                        float dist = 0f;
+                        if (m_world.Agent != null
+                                    && m_world.Agent.HasComponent<ICmptLocation>()
+                                    && m_world.Agent.LGID != iav.LGID) {
+                            dist = OMV.Vector3.Distance(m_world.Agent.Cmpt<ICmptLocation>().RegionPosition, iav.Cmpt<ICmptLocation>().RegionPosition);
+                        }
+                        oneAV.Add("Distance", new OMVSD.OSDString(dist.ToString("###0.###")));
+                        oneAV.Add("Flags", new OMVSD.OSDString(iav.Cmpt<ICmptAvatar>().ActivityFlags));
 
-                            /* Include detailed texture info if available. (Why are we doing this?)
-                            if (iav is LLEntity) {
-                                OMV.Avatar av = ((LLEntityAvatar)iav).Avatar;
-                                if (av != null) {
-                                    OMVSD.OSDMap avTextures = new OMVSD.OSDMap();
-                                    OMV.Primitive.TextureEntry texEnt = av.Textures;
-                                    if (texEnt != null) {
-                                        OMV.Primitive.TextureEntryFace[] texFaces = texEnt.FaceTextures;
-                                        if (texFaces != null) {
-                                            if (texFaces[(int)OMV.AvatarTextureIndex.HeadBaked] != null)
-                                                avTextures.Add("head", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.HeadBaked].TextureID.ToString()));
-                                            if (texFaces[(int)OMV.AvatarTextureIndex.UpperBaked] != null)
-                                                avTextures.Add("upper", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.UpperBaked].TextureID.ToString()));
-                                            if (texFaces[(int)OMV.AvatarTextureIndex.LowerBaked] != null)
-                                                avTextures.Add("lower", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.LowerBaked].TextureID.ToString()));
-                                            if (texFaces[(int)OMV.AvatarTextureIndex.EyesBaked] != null)
-                                                avTextures.Add("eyes", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.EyesBaked].TextureID.ToString()));
-                                            if (texFaces[(int)OMV.AvatarTextureIndex.HairBaked] != null)
-                                                avTextures.Add("hair", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.HairBaked].TextureID.ToString()));
-                                            if (texFaces[(int)OMV.AvatarTextureIndex.SkirtBaked] != null)
-                                                avTextures.Add("skirt", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.SkirtBaked].TextureID.ToString()));
-                                            oneAV.Add("LLtextures", avTextures);
-                                        }
+                        /* Include detailed texture info if available. (Why are we doing this?)
+                        if (iav is LLEntity) {
+                            OMV.Avatar av = ((LLEntityAvatar)iav).Avatar;
+                            if (av != null) {
+                                OMVSD.OSDMap avTextures = new OMVSD.OSDMap();
+                                OMV.Primitive.TextureEntry texEnt = av.Textures;
+                                if (texEnt != null) {
+                                    OMV.Primitive.TextureEntryFace[] texFaces = texEnt.FaceTextures;
+                                    if (texFaces != null) {
+                                        if (texFaces[(int)OMV.AvatarTextureIndex.HeadBaked] != null)
+                                            avTextures.Add("head", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.HeadBaked].TextureID.ToString()));
+                                        if (texFaces[(int)OMV.AvatarTextureIndex.UpperBaked] != null)
+                                            avTextures.Add("upper", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.UpperBaked].TextureID.ToString()));
+                                        if (texFaces[(int)OMV.AvatarTextureIndex.LowerBaked] != null)
+                                            avTextures.Add("lower", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.LowerBaked].TextureID.ToString()));
+                                        if (texFaces[(int)OMV.AvatarTextureIndex.EyesBaked] != null)
+                                            avTextures.Add("eyes", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.EyesBaked].TextureID.ToString()));
+                                        if (texFaces[(int)OMV.AvatarTextureIndex.HairBaked] != null)
+                                            avTextures.Add("hair", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.HairBaked].TextureID.ToString()));
+                                        if (texFaces[(int)OMV.AvatarTextureIndex.SkirtBaked] != null)
+                                            avTextures.Add("skirt", new OMVSD.OSDString(texFaces[(int)OMV.AvatarTextureIndex.SkirtBaked].TextureID.ToString()));
+                                        oneAV.Add("LLtextures", avTextures);
                                     }
                                 }
                             }
-                            */
-                        } catch (Exception e) {
-                            m_log.Log(KLogLevel.DBADERROR, "AvatarTracker.GetHandler: exception building response: {0}", e);
                         }
-                        ret.Add(kvp.Value.Name.Name.Replace('/', '-'), oneAV);
+                        */
+                    } catch (Exception e) {
+                        m_log.Log(KLogLevel.DBADERROR, "AvatarTracker.GetHandler: exception building response: {0}", e);
                     }
+                    ret.Add(kvp.Value.Name.Name.Replace('/', '-'), oneAV);
                 }
-                string asJson = OMVSD.OSDParser.SerializeJsonString(ret);
-                m_RestManager.DoSimpleResponse(pResponse, "application/json", () => Encoding.UTF8.GetBytes(asJson));
-                return;
             }
-            if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
-            }
+            string asJson = OMVSD.OSDParser.SerializeJsonString(ret);
+            m_RestManager.DoSimpleResponse(pResponse, "application/json", () => Encoding.UTF8.GetBytes(asJson));
+            return;
         }
 
         void World_OnAgentNew(IEntity pEnt) {

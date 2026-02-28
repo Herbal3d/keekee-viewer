@@ -25,90 +25,71 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest.LLLP {
 
-    public class RestHandlerTeleport : IRestHandler {
+    public class RestHandlerTeleport : RestHandler {
 
         private readonly KLogger<RestHandlerTeleport> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
 
         /// <summary>
         /// </summary>
 
-        // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; }
-
         public RestHandlerTeleport(KLogger<RestHandlerTeleport> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-            m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/teleport");
-
-            if (m_restConfig.Value.Enable) {
-                m_RestManager.RegisterListener(this);
-            }
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public async Task ProcessPostRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                // TODO: Implement GET handling if needed
-                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
+            m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+
+            string strBody = "";
+            using (StreamReader rdr = new StreamReader(pRequest.InputStream)) {
+                strBody = rdr.ReadToEnd();
+                // m_log.Log(KLogLevel.DRESTDETAIL, "APIPostHandler: Body: '" + strBody + "'");
             }
-            if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+            try {
+                OMVSD.OSDMap body = m_RestManager.MapizeTheBody(strBody);
 
-                string strBody = "";
-                using (StreamReader rdr = new StreamReader(pRequest.InputStream)) {
-                    strBody = rdr.ReadToEnd();
-                    // m_log.Log(KLogLevel.DRESTDETAIL, "APIPostHandler: Body: '" + strBody + "'");
-                }
-                try {
-                    OMVSD.OSDMap body = m_RestManager.MapizeTheBody(strBody);
+                if (body.ContainsKey("DESTINATION")) {
+                    string destination = body["DESTINATION"].AsString();
+                    m_log.Log(KLogLevel.DRESTDETAIL, "Teleport request to " + destination);
 
-                    if (body.ContainsKey("DESTINATION")) {
-                        string destination = body["DESTINATION"].AsString();
-                        m_log.Log(KLogLevel.DRESTDETAIL, "Teleport request to " + destination);
+                    bool result = m_commProvider.StartTeleport(destination);
 
-                        bool result = m_commProvider.StartTeleport(destination);
-
-                        OMVSD.OSDMap respMap = new OMVSD.OSDMap();
-                        if (result) {
-                            respMap.Add("result", new OMVSD.OSDString("success"));
-                            respMap.Add("message", new OMVSD.OSDString("Teleport initiated"));
-                        } else {
-                            respMap.Add("result", new OMVSD.OSDString("failure"));
-                            respMap.Add("message", new OMVSD.OSDString("Teleport failed"));
-                        }
-                        byte[] respBytes = Encoding.UTF8.GetBytes(respMap.ToString());
-                        m_RestManager.DoSimpleResponse(pResponse, "application/json", () => respBytes);
+                    OMVSD.OSDMap respMap = new OMVSD.OSDMap();
+                    if (result) {
+                        respMap.Add("result", new OMVSD.OSDString("success"));
+                        respMap.Add("message", new OMVSD.OSDString("Teleport initiated"));
                     } else {
-                        m_log.Log(KLogLevel.Error, "RestHandlerTeleport: No DESTINATION in request");
-                        m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.BadRequest,
-                                        () => Encoding.UTF8.GetBytes("No DESTINATION specified"));
+                        respMap.Add("result", new OMVSD.OSDString("failure"));
+                        respMap.Add("message", new OMVSD.OSDString("Teleport failed"));
                     }
-                } catch (Exception e) {
-                    m_log.Log(KLogLevel.Error, "RestHandlerTeleport: Exception {0} trying to teleport", e.Message);
-                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError,
-                                        () => Encoding.UTF8.GetBytes("Exception during teleport request"));
+                    byte[] respBytes = Encoding.UTF8.GetBytes(respMap.ToString());
+                    m_RestManager.DoSimpleResponse(pResponse, "application/json", () => respBytes);
+                } else {
+                    m_log.Log(KLogLevel.Error, "RestHandlerTeleport: No DESTINATION in request");
+                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.BadRequest,
+                                    () => Encoding.UTF8.GetBytes("No DESTINATION specified"));
                 }
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.Error, "RestHandlerTeleport: Exception {0} trying to teleport", e.Message);
+                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError,
+                                    () => Encoding.UTF8.GetBytes("Exception during teleport request"));
             }
-        }
-
-        public void Dispose() {
-            // m_RestManager.UnregisterListener(this);
         }
     }
 }

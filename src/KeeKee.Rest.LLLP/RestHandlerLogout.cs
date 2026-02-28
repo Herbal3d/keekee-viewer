@@ -23,48 +23,35 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest.LLLP {
 
-    public class RestHandlerLogout : IRestHandler {
+    public class RestHandlerLogout : RestHandler {
 
         private readonly KLogger<RestHandlerLogout> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
 
         /// <summary>
         /// </summary>
 
-        // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; }
-
         public RestHandlerLogout(KLogger<RestHandlerLogout> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-            m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/logout");
-
-            if (m_restConfig.Value.Enable) {
-                m_RestManager.RegisterListener(this);
-            }
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessPostRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                // TODO: Implement GET handling if needed
-                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
-            }
             if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
                 m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
@@ -74,10 +61,6 @@ namespace KeeKee.Rest.LLLP {
                     m_log.Log(KLogLevel.DRESTDETAIL, "Logout exception: " + e.ToString());
                 }
             }
-        }
-
-        public void Dispose() {
-            // m_RestManager.UnregisterListener(this);
         }
     }
 }

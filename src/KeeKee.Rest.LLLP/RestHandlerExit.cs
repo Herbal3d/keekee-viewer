@@ -24,11 +24,10 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest.LLLP {
 
-    public class RestHandlerExit : IRestHandler {
+    public class RestHandlerExit : RestHandler {
 
         private readonly KLogger<RestHandlerExit> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
         private readonly CancellationTokenSource m_cancelToken;
@@ -36,58 +35,41 @@ namespace KeeKee.Rest.LLLP {
         /// <summary>
         /// </summary>
 
-        // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; }
-
         public RestHandlerExit(KLogger<RestHandlerExit> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider,
                                 CancellationTokenSource pCancelToken
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-            m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
             m_cancelToken = pCancelToken;
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/exit");
-
-            if (m_restConfig.Value.Enable) {
-                m_RestManager.RegisterListener(this);
-            }
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessPostRequest(HttpListenerContext pContext,
                                             HttpListenerRequest pRequest,
                                             HttpListenerResponse pResponse,
                                             CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                // TODO: Implement GET handling if needed
-                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
-            }
-            if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+            m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
 
-                try {
-                    // try a logout
-                    m_commProvider.StartLogout();
-                    // Send a simple response back to the client before exiting.
-                    m_RestManager.DoSimpleResponse(pResponse, null, null);
-                    // Also force the main loop to exit, which will cause the app to close.
-                    m_cancelToken.Cancel();
-                } catch (Exception e) {
-                    m_log.Log(KLogLevel.DRESTDETAIL, "Exit exception: " + e.ToString());
-                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError,
-                                        () => Encoding.UTF8.GetBytes(e.Message));
-                }
+            try {
+                // try a logout
+                m_commProvider.StartLogout();
+                // Send a simple response back to the client before exiting.
+                m_RestManager.DoSimpleResponse(pResponse, null, null);
+                // Also force the main loop to exit, which will cause the app to close.
+                m_cancelToken.Cancel();
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.DRESTDETAIL, "Exit exception: " + e.ToString());
+                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError,
+                                    () => Encoding.UTF8.GetBytes(e.Message));
             }
-        }
-        public void Dispose() {
-            // m_RestManager.UnregisterListener(this);
         }
     }
 }

@@ -23,7 +23,7 @@ namespace KeeKee.View {
     /// Watch the comings and goings of the regions and handle the level of detail
     /// that the regions are displayed in.
     /// </summary>
-    public class RegionTracker : IDisposable {
+    public class RegionTracker : IDisplayable, IDisposable {
 
         private KLogger<RegionTracker> m_log;
         private bool m_enabled = false;
@@ -51,8 +51,7 @@ namespace KeeKee.View {
                 m_world.OnWorldRegionUpdated += new WorldRegionUpdatedCallback(World_OnWorldRegionUpdated);
 
                 m_regionRestHandler = ((RestHandlerDisplayable)m_restFactory.CreateHandler<RestHandlerDisplayable>());
-                m_regionRestHandler.Prefix = "/region/tracker/info";
-                m_regionRestHandler.DisplayableSource = new RegionInformation(this);
+                m_regionRestHandler.SetPrefix("/region/tracker/info", this);
             }
         }
 
@@ -92,17 +91,9 @@ namespace KeeKee.View {
         }
         #endregion EVENT PROCESSING
 
-        #region RESPONSE DATA CONTSRUCTION
-        private class RegionInformation : IDisplayable {
-            RegionTracker m_tracker;
-            public RegionInformation(RegionTracker regTrack) {
-                m_tracker = regTrack;
-            }
-            public OMVSD.OSD GetDisplayable() {
-                return new OMVSD.OSDMap();
-            }
+        // Return the information about the regions in the world. This is used for debugging and testing.
+        public OMVSD.OSD GetDisplayable() {
+            return new OMVSD.OSDMap();
         }
-        #endregion RESPONSE DATA CONSTRUCTION
-
     }
 }

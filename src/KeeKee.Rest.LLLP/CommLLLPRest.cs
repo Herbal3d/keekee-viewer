@@ -40,12 +40,12 @@ namespace KeeKee.Rest.LLLP {
         private RestHandlerFactory m_restFactory { get; set; }
         private ICommProvider m_commProvider { get; set; }
 
-        IRestHandler? m_loginHandler = null;
-        IRestHandler? m_logoutHandler = null;
-        IRestHandler? m_teleportHandler = null;
-        IRestHandler? m_exitHandler = null;
-        IRestHandler? m_chatHandler = null;
-        IRestHandler? m_statusHandler = null;
+        RestHandler? m_loginHandler = null;
+        RestHandler? m_logoutHandler = null;
+        RestHandler? m_teleportHandler = null;
+        RestHandler? m_exitHandler = null;
+        RestHandler? m_chatHandler = null;
+        RestHandler? m_statusHandler = null;
 
         public CommLLLPRest(KLogger<CommLLLPRest> pLog,
                         RestHandlerFactory pRestFactory,

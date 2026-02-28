@@ -28,7 +28,7 @@ namespace KeeKee.World.Services {
         private KLogger<AvatarTracker> m_log;
         protected IWorld m_world;
         protected RestHandlerFactory m_restFactory;
-        protected IRestHandler m_restHandler;
+        protected RestHandler m_restHandler;
 
 
         public AvatarTracker(KLogger<AvatarTracker> pLog,

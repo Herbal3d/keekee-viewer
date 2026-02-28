@@ -24,7 +24,7 @@ namespace KeeKee.Rest {
             m_serviceProvider = pServiceProvider;
         }
 
-        public IRestHandler CreateHandler<T>(params object[] parameters) where T : IRestHandler {
+        public RestHandler CreateHandler<T>(params object[] parameters) where T : RestHandler {
             return ActivatorUtilities.CreateInstance<T>(m_serviceProvider, parameters);
         }
     }

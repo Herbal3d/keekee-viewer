@@ -53,7 +53,7 @@ namespace KeeKee.Rest {
 
         public int Port { get; private set; }
         private HttpListener? m_listener;
-        List<IRestHandler> m_handlers = new List<IRestHandler>();
+        List<RestHandler> m_handlers = new List<RestHandler>();
 
         private readonly RestHandlerFactory m_RestHandlerFactory;
 
@@ -67,9 +67,9 @@ namespace KeeKee.Rest {
             }
         }
 
-        private IRestHandler? m_staticHandler;
-        private IRestHandler? m_stdHandler;
-        private IRestHandler? m_statsHandler;
+        private RestHandler? m_staticHandler;
+        private RestHandler? m_stdHandler;
+        private RestHandler? m_statsHandler;
 
         // return the full base URL with the port added
         public readonly string BaseURL;
@@ -123,11 +123,21 @@ namespace KeeKee.Rest {
                             string absURL = request.Url?.AbsolutePath.ToLower() ?? "";
                             m_log.Log(KLogLevel.DRESTDETAIL, "HTTP request for {0}", absURL);
 
-                            IRestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
+                            RestHandler? thisHandler = m_handlers.Find((rh) => absURL.StartsWith(rh.Prefix.ToLower()));
 
-                            if (thisHandler != null) {
+                            if (thisHandler != null && request != null && response != null) {
                                 string afterString = absURL.Substring(thisHandler.Prefix.Length);
-                                await thisHandler.ProcessGetOrPostRequest(context, request, response, cancellationToken);
+                                switch (request.HttpMethod.ToUpper()) {
+                                    case "GET":
+                                        await thisHandler.ProcessGetRequest(context, request, response, cancellationToken);
+                                        break;
+                                    case "POST":
+                                        await thisHandler.ProcessPostRequest(context, request, response, cancellationToken);
+                                        break;
+                                    default:
+                                        await thisHandler.ProcesstOtherRequest(context, request, response, cancellationToken);
+                                        break;
+                                }
                             } else {
                                 m_statNoHandlers.Event();
                                 m_log.Log(KLogLevel.Warning, "Request not processed because no matching handler, URL={0}", absURL);
@@ -150,7 +160,11 @@ namespace KeeKee.Rest {
             return;
         }
 
-        public void RegisterListener(IRestHandler handler) {
+        public void RegisterListener(RestHandler handler) {
+            if (m_restConfig.Value.Enable == false) {
+                m_log.Log(KLogLevel.DRESTDETAIL, "RestManager not enabled by config, not registering handler {0}", handler.Prefix);
+                return;
+            }
             m_log.Log(KLogLevel.DREST, "Registering prefix {0}", handler.Prefix);
             m_handlers.Add(handler);
         }

@@ -27,11 +27,10 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
 
-    public class RestHandlerStats : IRestHandler {
+    public class RestHandlerStats : RestHandler {
 
         private readonly KLogger<RestHandlerStats> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
         private readonly IOptions<GridConfig> m_gridConfig;
@@ -42,9 +41,6 @@ namespace KeeKee.Rest {
         /// <summary>
         /// </summary>
 
-        // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; }
-
         public RestHandlerStats(KLogger<RestHandlerStats> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
@@ -54,12 +50,11 @@ namespace KeeKee.Rest {
                                 ComponentFactory pComponentFactory,
                                 ICommProvider pCommProvider,
                                 IWorld pWorld
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_commConfig = pCommConfig;
             m_gridConfig = pGridConfig;
-            m_RestManager = pRestManager;
             m_workQueueManager = pWorkQueueManager;
             m_ComponentFactory = pComponentFactory;
             m_commProvider = pCommProvider;
@@ -67,58 +62,50 @@ namespace KeeKee.Rest {
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "stats");
 
-            if (m_restConfig.Value.Enable) {
-                m_RestManager.RegisterListener(this);
-            }
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessGetRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                OMVSD.OSDMap responseMap = new OMVSD.OSDMap {
-                    ["status"] = "success",
-                    ["timestamp"] = DateTime.UtcNow.ToString("o"),
-                    ["commprovider"] = m_commProvider.GetType().Name,
-                    ["isconnected"] = m_commProvider.IsConnected,
-                    ["isloggedin"] = m_commProvider.IsLoggedIn
-                };
+            OMVSD.OSDMap responseMap = new OMVSD.OSDMap {
+                ["status"] = "success",
+                ["timestamp"] = DateTime.UtcNow.ToString("o"),
+                ["commprovider"] = m_commProvider.GetType().Name,
+                ["isconnected"] = m_commProvider.IsConnected,
+                ["isloggedin"] = m_commProvider.IsLoggedIn
+            };
 
-                responseMap["workqueues"] = m_workQueueManager.GetDisplayable();
+            responseMap["workqueues"] = m_workQueueManager.GetDisplayable() ?? new OMVSD.OSDMap();
 
-                responseMap["components"] = m_ComponentFactory.GetDisplayable();
+            responseMap["components"] = m_ComponentFactory.GetDisplayable() ?? new OMVSD.OSDMap();
 
-                responseMap["world"] = m_world.GetDisplayable();
+            responseMap["world"] = m_world.GetDisplayable() ?? new OMVSD.OSDMap();
 
-                /* Sample code on how configuration parameters can be added to the response.
-                // Add in the comm config parameters
-                OMVSD.OSDMap commConfig = new OMVSD.OSDMap();
-                foreach (var param in m_commConfig.Value.GetType().GetProperties()) {
-                    var val = param.GetValue(m_commConfig.Value);
-                    if (val != null) {
-                        commConfig[param.Name.ToLower()] = val.ToString() ?? "";
-                    }
-                }
-                responseMap["commconfig"] = commConfig;
-                */
-
-                // Send the response
-                m_RestManager.DoSimpleResponse(pResponse, "application/json", () => {
-                    return Encoding.UTF8.GetBytes(responseMap.ToString());
-                });
-
-                if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                    m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
-                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
-
+            /* Sample code on how configuration parameters can be added to the response.
+            // Add in the comm config parameters
+            OMVSD.OSDMap commConfig = new OMVSD.OSDMap();
+            foreach (var param in m_commConfig.Value.GetType().GetProperties()) {
+                var val = param.GetValue(m_commConfig.Value);
+                if (val != null) {
+                    commConfig[param.Name.ToLower()] = val.ToString() ?? "";
                 }
             }
-        }
+            responseMap["commconfig"] = commConfig;
+            */
 
-        public void Dispose() {
-            // m_RestManager.UnregisterListener(this);
+            // Send the response
+            m_RestManager.DoSimpleResponse(pResponse, "application/json", () => {
+                return Encoding.UTF8.GetBytes(responseMap.ToString());
+            });
+
+            if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
+                m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
+                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
+
+            }
+            ;
         }
     }
 }

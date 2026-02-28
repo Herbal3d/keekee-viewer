@@ -21,11 +21,10 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest {
 
-    public class RestHandlerStatic : IRestHandler {
+    public class RestHandlerStatic : RestHandler {
 
         private readonly KLogger<RestHandlerStatic> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager m_RestManager;
 
         /// <summary>
         /// API URL to filesystem base directory mapping
@@ -37,16 +36,14 @@ namespace KeeKee.Rest {
         // The baseUIDir + BaseUrl + "/"
         private string StaticDir = "";
 
-        // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; } = "/static/";
-
         public RestHandlerStatic(KLogger<RestHandlerStatic> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 RestManager pRestManager
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-            m_RestManager = pRestManager;
+
+            Prefix = "/static/";
 
             BaseUIDir = m_restConfig.Value.UIContentDir;
             if (!BaseUIDir.EndsWith("/")) BaseUIDir += "/";
@@ -57,12 +54,9 @@ namespace KeeKee.Rest {
             m_log.Log(KLogLevel.DRESTDETAIL, "baseUIDir={0}, staticDir={1}, Prefix={2}",
                      BaseUIDir, StaticDir, Prefix);
 
-            if (m_restConfig.Value.Enable) {
-                m_RestManager.RegisterListener(this);
-            }
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessGetRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
@@ -94,10 +88,6 @@ namespace KeeKee.Rest {
                     m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
                 }
             }
-        }
-
-        public void Dispose() {
-            // m_RestManager.UnregisterListener(this);
         }
     }
 

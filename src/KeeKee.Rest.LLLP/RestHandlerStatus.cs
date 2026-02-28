@@ -27,11 +27,10 @@ using OMVSD = OpenMetaverse.StructuredData;
 
 namespace KeeKee.Rest.LLLP {
 
-    public class RestHandlerStatus : IRestHandler {
+    public class RestHandlerStatus : RestHandler {
 
         private readonly KLogger<RestHandlerStatus> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager m_RestManager;
         private readonly ICommProvider m_commProvider;
         private readonly CommLLLP? m_commLLLP;
         private readonly IOptions<CommConfig> m_commConfig;
@@ -42,9 +41,6 @@ namespace KeeKee.Rest.LLLP {
         /// <summary>
         /// </summary>
 
-        // The prefix of the requested URL that is processed by this handler.
-        public string Prefix { get; set; }
-
         public RestHandlerStatus(KLogger<RestHandlerStatus> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
@@ -53,10 +49,9 @@ namespace KeeKee.Rest.LLLP {
                                 RestManager pRestManager,
                                 WorkQueueManager pWorkQueueManager,
                                 ICommProvider pCommProvider
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-            m_RestManager = pRestManager;
             m_commProvider = pCommProvider;
             m_grids = p_grids;
             m_workQueueManager = pWorkQueueManager;
@@ -67,96 +62,81 @@ namespace KeeKee.Rest.LLLP {
 
             Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/stats");
 
-            if (m_restConfig.Value.Enable) {
-                m_RestManager.RegisterListener(this);
-            }
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessGetRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                OMVSD.OSDMap responseMap = new OMVSD.OSDMap {
-                    ["status"] = "success",
-                    ["timestamp"] = DateTime.UtcNow.ToString("o"),
-                    ["commprovider"] = m_commProvider.GetType().Name,
-                    ["isconnected"] = m_commProvider.IsConnected,
-                    ["isloggedin"] = m_commProvider.IsLoggedIn
-                };
+            OMVSD.OSDMap responseMap = new OMVSD.OSDMap {
+                ["status"] = "success",
+                ["timestamp"] = DateTime.UtcNow.ToString("o"),
+                ["commprovider"] = m_commProvider.GetType().Name,
+                ["isconnected"] = m_commProvider.IsConnected,
+                ["isloggedin"] = m_commProvider.IsLoggedIn
+            };
 
-                responseMap["currentgrid"] = m_commLLLP?.LoggedInGridName ?? "unknown";
-                responseMap["currentsim"] = m_commLLLP?.GridClient?.Network?.CurrentSim?.Name ?? "unknown";
+            responseMap["currentgrid"] = m_commLLLP?.LoggedInGridName ?? "unknown";
+            responseMap["currentsim"] = m_commLLLP?.GridClient?.Network?.CurrentSim?.Name ?? "unknown";
 
-                // Add the main avatar's info.
-                // Eventually this will loop and return all avatars in the array.
-                OMVSD.OSDMap avatarInfo = new OMVSD.OSDMap();
-                var cmptAvatar = m_commLLLP?.MainAgent?.Cmpt<LLCmptAvatar>();
-                if (cmptAvatar != null) {
-                    avatarInfo["first"] = cmptAvatar.First;
-                    avatarInfo["last"] = cmptAvatar.Last;
-                    avatarInfo["displayname"] = cmptAvatar.DisplayName;
-                }
-                var cmptAvatarLoc = m_commLLLP?.MainAgent?.Cmpt<LLCmptLocation>();
-                if (cmptAvatarLoc != null) {
-                    var globalPos = cmptAvatarLoc.GlobalPosition;
-                    var localPos = cmptAvatarLoc.LocalPosition;
-                    avatarInfo["globalPos"] = globalPos.ToString();
-                    avatarInfo["globalx"] = globalPos.X;
-                    avatarInfo["globaly"] = globalPos.Y;
-                    avatarInfo["globalz"] = globalPos.Z;
-                    avatarInfo["localPos"] = localPos.ToString();
-                    avatarInfo["x"] = localPos.X;
-                    avatarInfo["y"] = localPos.Y;
-                    avatarInfo["z"] = localPos.Z;
-                }
-                OMVSD.OSDArray avatarArray = new OMVSD.OSDArray();
-                avatarArray.Add(avatarInfo);
+            // Add the main avatar's info.
+            // Eventually this will loop and return all avatars in the array.
+            OMVSD.OSDMap avatarInfo = new OMVSD.OSDMap();
+            var cmptAvatar = m_commLLLP?.MainAgent?.Cmpt<LLCmptAvatar>();
+            if (cmptAvatar != null) {
+                avatarInfo["first"] = cmptAvatar.First;
+                avatarInfo["last"] = cmptAvatar.Last;
+                avatarInfo["displayname"] = cmptAvatar.DisplayName;
+            }
+            var cmptAvatarLoc = m_commLLLP?.MainAgent?.Cmpt<LLCmptLocation>();
+            if (cmptAvatarLoc != null) {
+                var globalPos = cmptAvatarLoc.GlobalPosition;
+                var localPos = cmptAvatarLoc.LocalPosition;
+                avatarInfo["globalPos"] = globalPos.ToString();
+                avatarInfo["globalx"] = globalPos.X;
+                avatarInfo["globaly"] = globalPos.Y;
+                avatarInfo["globalz"] = globalPos.Z;
+                avatarInfo["localPos"] = localPos.ToString();
+                avatarInfo["x"] = localPos.X;
+                avatarInfo["y"] = localPos.Y;
+                avatarInfo["z"] = localPos.Z;
+            }
+            OMVSD.OSDArray avatarArray = new OMVSD.OSDArray();
+            avatarArray.Add(avatarInfo);
 
-                responseMap["avatar"] = avatarArray;
+            responseMap["avatar"] = avatarArray;
 
-                // Add in the comm config parameters
-                OMVSD.OSDMap commConfig = new OMVSD.OSDMap();
-                foreach (var param in m_commConfig.Value.GetType().GetProperties()) {
-                    var val = param.GetValue(m_commConfig.Value);
-                    if (val != null) {
-                        commConfig.Add(param.Name, val.ToString() ?? "");
-                    }
-                }
-                responseMap["commconfig"] = commConfig;
-
-                // The stats that the CommProvider can provide
-                responseMap["commstats"] = m_commProvider.CommStatistics.GetDisplayable();
-
-                // Add in the grid info
-                OMVSD.OSDArray possibleGrids = new OMVSD.OSDArray();
-                m_grids.ForEach((gd) => {
-                    if (gd.GridNick == m_commLLLP?.LoggedInGridName) {
-                        responseMap["currentgrid_fullname"] = gd.GridName;
-                        responseMap["currentgrid_loginuri"] = gd.LoginURI;
-                        responseMap["currentgrid_platform"] = gd.Platform;
-                        responseMap["currentgrid_website"] = gd.WebSite;
-                    }
-                    possibleGrids.Add(gd.GridNick);
-                });
-                responseMap["possiblegrids"] = possibleGrids;
-
-                // Send the response
-                m_RestManager.DoSimpleResponse(pResponse, "application/json", () => {
-                    return Encoding.UTF8.GetBytes(responseMap.ToString());
-                });
-
-                if (pRequest?.HttpMethod.ToUpper().Equals("POST") ?? false) {
-                    m_log.Log(KLogLevel.DRESTDETAIL, "POST: " + (pRequest?.Url?.ToString() ?? "UNKNOWN"));
-                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NotImplemented, null);
-
+            // Add in the comm config parameters
+            OMVSD.OSDMap commConfig = new OMVSD.OSDMap();
+            foreach (var param in m_commConfig.Value.GetType().GetProperties()) {
+                var val = param.GetValue(m_commConfig.Value);
+                if (val != null) {
+                    commConfig.Add(param.Name, val.ToString() ?? "");
                 }
             }
-        }
+            responseMap["commconfig"] = commConfig;
 
-        public void Dispose() {
-            // m_RestManager.UnregisterListener(this);
+            // The stats that the CommProvider can provide
+            responseMap["commstats"] = m_commProvider.CommStatistics.GetDisplayable();
+
+            // Add in the grid info
+            OMVSD.OSDArray possibleGrids = new OMVSD.OSDArray();
+            m_grids.ForEach((gd) => {
+                if (gd.GridNick == m_commLLLP?.LoggedInGridName) {
+                    responseMap["currentgrid_fullname"] = gd.GridName;
+                    responseMap["currentgrid_loginuri"] = gd.LoginURI;
+                    responseMap["currentgrid_platform"] = gd.Platform;
+                    responseMap["currentgrid_website"] = gd.WebSite;
+                }
+                possibleGrids.Add(gd.GridNick);
+            });
+            responseMap["possiblegrids"] = possibleGrids;
+
+            // Send the response
+            m_RestManager.DoSimpleResponse(pResponse, "application/json", () => {
+                return Encoding.UTF8.GetBytes(responseMap.ToString());
+            });
         }
     }
 }

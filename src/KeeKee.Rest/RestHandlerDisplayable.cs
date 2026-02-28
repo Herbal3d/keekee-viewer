@@ -27,28 +27,23 @@ namespace KeeKee.Rest {
     /// The prefix must be set before use so invocation is to create with
     /// the factory and then set the prefix and the IDisplayable source.
     /// </summary>
-    public class RestHandlerDisplayable : IRestHandler {
+    public class RestHandlerDisplayable : RestHandler {
 
         private readonly KLogger<RestHandlerDisplayable> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
-        private readonly RestManager m_RestManager;
 
         public const string NOPREFIX = "/no-prefix/no-prefix/";
-        private string m_prefix = NOPREFIX;
-        public string Prefix {
-            get { return m_prefix; }
-            set { SetPrefix(value, null); }
-        }
 
         public IDisplayable? DisplayableSource { get; set; } = null;
 
         public RestHandlerDisplayable(KLogger<RestHandlerDisplayable> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 RestManager pRestManager
-                                ) {
+                                ) : base(pRestManager) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-            m_RestManager = pRestManager;
+
+            Prefix = NOPREFIX;
 
             // LIstener is registered when prefix is set
             // m_RestManager.RegisterListener(this);
@@ -60,17 +55,11 @@ namespace KeeKee.Rest {
         /// </summary>
         /// <param name="pPrefix"></param>
         public void SetPrefix(string pPrefix, IDisplayable? pDisplayableSource) {
-            if (m_prefix == NOPREFIX) {
+            if (Prefix == NOPREFIX) {
                 m_log.Log(KLogLevel.DRESTDETAIL, "Setting Prefix to {0}", pPrefix);
-                m_prefix = pPrefix;
-                if (!m_restConfig.Value.Enable) {
-                    m_log.Log(KLogLevel.DRESTDETAIL, "RestHandlerDisplayable not enabled by config");
-                    return;
-                } else {
-                    m_RestManager.RegisterListener(this);
-                }
+                Prefix = pPrefix;
             }
-            m_prefix = pPrefix;
+            Prefix = pPrefix;
             DisplayableSource = pDisplayableSource;
         }
 
