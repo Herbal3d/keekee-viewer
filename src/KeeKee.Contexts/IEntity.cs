@@ -92,7 +92,7 @@ namespace KeeKee.Contexts {
         /// <param name="pType"></param>
         /// <param name="pComponent"></param>
         /// <returns></returns>
-        private bool TryGetComponent(Type pType, out IEntityComponent pComponent) {
+        private bool TryGetComponent(Type pType, out IEntityComponent? pComponent) {
             lock (m_components) {
                 if (m_components.TryGetValue(pType, out IEntityComponent? found)) {
                     pComponent = found;
@@ -154,9 +154,9 @@ namespace KeeKee.Contexts {
             // tell all the interfaces we're done with them
             foreach (var kvp in m_components) {
                 try {
-                    IDisposable idis = (IDisposable)kvp.Value;
+                    IDisposable idis = kvp.Value as IDisposable;
+                    idis?.Dispose();
                     // is this right? How to tell object it's done here but don't need to zap oneself
-                    // idis.Dispose();
                 } catch {
                     // if it won't dispose it's not our problem
                 }
@@ -166,7 +166,7 @@ namespace KeeKee.Contexts {
 
         // Tell the entity that something about it changed
         virtual public void Update(UpdateCodes what) {
-            EntityLogger.Log(KLogLevel.DUPDATEDETAIL, $@"IEntity.Update. what={UpdateCodesUtil.UpdateCodesToString(what)}");
+            EntityLogger.Log(KLogLevel.DUPDATEDETAIL, $"IEntity.Update. what={UpdateCodesUtil.UpdateCodesToString(what)}");
             // Update all the components. This makes things happen since all logic is hiding in the components.
             IEntityComponent? cmpt = null;
             try {

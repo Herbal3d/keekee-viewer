@@ -88,6 +88,12 @@ namespace KeeKee.Contexts {
             if (State != null && m_regionStateChangedCallback != null) {
                 State.OnStateChanged -= m_regionStateChangedCallback;
             }
+
+            OnRegionStateChange = null;
+            OnRegionUpdated = null;
+
+            Entities?.Dispose();
+            base.Dispose();
             return;
         }
 

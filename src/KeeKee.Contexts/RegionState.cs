@@ -32,7 +32,7 @@ namespace KeeKee.Contexts {
         public event RegionStateChangedCallback? OnStateChanged;
 
         // one work queue for all the state update work
-        private static BasicWorkQueue m_stateWork;
+        private BasicWorkQueue m_stateWork;
 
         private RegionStateCode m_regionState = RegionStateCode.Uninitialized;
         private Object m_regionStateLock = new Object();

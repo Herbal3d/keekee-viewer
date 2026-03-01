@@ -48,7 +48,7 @@ namespace KeeKee.Renderer {
             set {
                 bool changed = (m_heading != value);
                 m_heading = value;
-                if (changed && (OnCameraUpdate != null)) OnCameraUpdate(this);
+                if (changed) OnCameraUpdate?.Invoke(this);
             }
         }
 
@@ -62,7 +62,7 @@ namespace KeeKee.Renderer {
             bool changed = (m_heading != heading) | (m_globalPosition != pos);
             m_globalPosition = pos;
             m_heading = heading;
-            if (changed && (OnCameraUpdate != null)) OnCameraUpdate(this);
+            if (changed) OnCameraUpdate?.Invoke(this);
         }
 
         protected float m_zoom;
@@ -71,7 +71,7 @@ namespace KeeKee.Renderer {
             set {
                 bool changed = (m_zoom != value);
                 m_zoom = value;
-                if (changed && (OnCameraUpdate != null)) OnCameraUpdate(this);
+                if (changed) OnCameraUpdate?.Invoke(this);
             }
         }
 
@@ -81,7 +81,7 @@ namespace KeeKee.Renderer {
             set {
                 bool changed = (m_far != value);
                 m_far = value;
-                if (changed && (OnCameraUpdate != null)) OnCameraUpdate(this);
+                if (changed) OnCameraUpdate?.Invoke(this);
             }
         }
 
@@ -94,7 +94,7 @@ namespace KeeKee.Renderer {
         public void rotate(OMV.Quaternion rot) {
             rot.Normalize();
             m_heading = rot * m_heading;
-            if (OnCameraUpdate != null) OnCameraUpdate(this);
+            OnCameraUpdate?.Invoke(this);
         }
 
         public void rotate(OMV.Vector3 dir) {
@@ -122,7 +122,7 @@ namespace KeeKee.Renderer {
                 rot.Normalize();
                 rotate(rot);
             }
-            if (OnCameraUpdate != null) OnCameraUpdate(this);
+            OnCameraUpdate?.Invoke(this);
         }
     }
 }

@@ -78,11 +78,11 @@ namespace KeeKee.Framework.WorkQueue {
         /// <returns></returns>
         public OMVSD.OSD GetDisplayable() {
             OMVSD.OSDArray aMap = new OMVSD.OSDArray();
-            lock (m_queues) {
-                foreach (IWorkQueue wq in m_queues) {
-                    aMap.Add(wq.GetDisplayable());
-                }
-            }
+            ForEach(wq => {
+                var info = wq.GetDisplayable();
+                if (info is not null)
+                    aMap.Add(info);
+            });
             return aMap;
         }
     }

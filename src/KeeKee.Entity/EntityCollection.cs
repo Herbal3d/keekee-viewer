@@ -9,7 +9,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.ComponentModel;
 using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.WorkQueue;
@@ -104,6 +103,11 @@ namespace KeeKee.Entity {
         private void SelectEntity(IEntity ent) {
         }
 
+        /// <summary>
+        /// Add the entity to the collection and track it.
+        /// </summary>
+        /// <param name="ent"></param>
+        /// <returns>'true' if the entity was added, 'false' if it was already in the collection.</returns>
         private bool TrackEntity(IEntity ent) {
             try {
                 lock (this) {
@@ -114,19 +118,22 @@ namespace KeeKee.Entity {
                         return true;
                     }
                 }
-            } catch {
-                // sometimes they send me the same entry twice
-                m_log.Log(KLogLevel.DWORLD, "Asked to add same entity again: " + ent.Name);
+            } catch(Exception e) {
+                m_log.Log(KLogLevel.DWORLD, $"Exception adding entity {ent.Name}: {e}");
             }
             return false;
         }
 
         private void UnTrackEntity(IEntity ent) {
-            m_entityDictionary.Remove(ent.Name.Name, ent.LGID);
+            lock (this) {
+                m_entityDictionary.Remove(ent.Name.Name, ent.LGID);
+            }
         }
 
         private void ClearTrackedEntities() {
-            m_entityDictionary.Clear();
+            lock (this) {
+                m_entityDictionary.Clear();
+            }
         }
         public bool TryGetEntity(ulong lgid, out IEntity ent) {
             return m_entityDictionary.TryGetValue(lgid, out ent);
@@ -141,6 +148,10 @@ namespace KeeKee.Entity {
         }
 
         /// <summary>
+        /// Try to find an entity with the given name. If it doesn't exist, create it using the
+        /// provided callback and add it to the collection.
+        /// The callback is only called if we need to create the entity, so it can be expensive to call.
+        /// The callback should return a fully formed entity ready to be added to the collection.
         /// </summary>
         /// <param name="localID"></param>
         /// <param name="ent"></param>
@@ -164,10 +175,13 @@ namespace KeeKee.Entity {
             return false;
         }
 
-        public IEntity FindEntity(Predicate<IEntity> pred) {
+        public IEntity? FindEntity(Predicate<IEntity> pred) {
             return m_entityDictionary.FindValue(pred);
         }
 
+        // Perform an action on each entity in the collection.
+        // The collection is locked for the duration of the action,
+        //     so the action should be quick and not call back into the collection.
         public void ForEach(Action<IEntity> act) {
             lock (this) {
                 m_entityDictionary.ForEach(act);
@@ -175,11 +189,14 @@ namespace KeeKee.Entity {
         }
 
         public void Dispose() {
-            // TODO: do something about the entity list
-            m_entityDictionary.ForEach(delegate (IEntity ent) {
+            ForEach( (IEntity ent) =>{
                 ent.Dispose();
             });
             m_entityDictionary.Clear(); // release any entities we might have
+
+            OnEntityNew = null;
+            OnEntityUpdate = null;
+            OnEntityRemoved = null;
 
         }
     }

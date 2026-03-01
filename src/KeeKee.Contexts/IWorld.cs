@@ -45,25 +45,25 @@ namespace KeeKee.Contexts {
 
         #region Events
         // when a new region is being added to the world
-        event WorldRegionNewCallback OnWorldRegionNew;
+        event WorldRegionNewCallback? OnWorldRegionNew;
         // when the underlying simulator is changing.
-        event WorldRegionUpdatedCallback OnWorldRegionUpdated;
+        event WorldRegionUpdatedCallback? OnWorldRegionUpdated;
         // when a new region is being removed from the world
-        event WorldRegionRemovedCallback OnWorldRegionRemoved;
+        event WorldRegionRemovedCallback? OnWorldRegionRemoved;
 
         // when new items are added to the world
-        event WorldEntityNewCallback OnWorldEntityNew;
+        event WorldEntityNewCallback? OnWorldEntityNew;
         // when a prim is updated
-        event WorldEntityUpdateCallback OnWorldEntityUpdate;
+        event WorldEntityUpdateCallback? OnWorldEntityUpdate;
         // when an object is killed
-        event WorldEntityRemovedCallback OnWorldEntityRemoved;
+        event WorldEntityRemovedCallback? OnWorldEntityRemoved;
 
         // when a new agent is added to the system
-        event WorldAgentNewCallback OnAgentNew;
+        event WorldAgentNewCallback? OnAgentNew;
         // when an agent is updated
-        event WorldAgentUpdateCallback OnAgentUpdate;
+        event WorldAgentUpdateCallback? OnAgentUpdate;
         // when an agent is removed from the world (logged out)
-        event WorldAgentRemovedCallback OnAgentRemoved;
+        event WorldAgentRemovedCallback? OnAgentRemoved;
 
         #endregion Events
 

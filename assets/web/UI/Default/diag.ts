@@ -29,7 +29,7 @@ Array.from(document.getElementsByClassName('k-clickable')).forEach( nn => {
 });
 
 // Keep calling the update stats function every 500ms to keep the display updated
-const timerIdStats = setInterval(() => UpdateAllStats(), 500);
+const timerIdStats = setInterval(() => UpdateAllStats(), 1000);
 
 // Diagnostic test button
 ClickableOps['diagTest'] = function(pTarget: EventTarget) : void {
@@ -241,6 +241,7 @@ function MakeStatsWorld(world: WorldInfo) : HTMLElement {
         let info = world.Regions[region];
         var regionDiv = MakeElement('div', 'div-stats-region');
         regionDiv.appendChild(MakeSectionHeader(`Region: ${info.Name} - ${info.EntityCount} entities`));
+        /*
         var entityTable = MakeElement('table', 'table-stats-entities');
         entityTable.appendChild(MakeHeaderRow(['Name', 'LGID', 'Classification', 'Containing Entity', 'Components']));
         for (let entity of info.Entities) {
@@ -253,6 +254,7 @@ function MakeStatsWorld(world: WorldInfo) : HTMLElement {
             entityTable.appendChild(row);
         }
         regionDiv.appendChild(entityTable);
+        */
         worldDiv.appendChild(regionDiv);
     }
     return worldDiv;
@@ -482,152 +484,3 @@ type ColumnSpec = string[];
 interface TableData {
     [rowKey: string]: { [colKey: string]: any };
 }
-/*
-<script type="text/javascript">
-$(document).ready(function() {
-    // setup form to post info when 'Login' is pressed
-    $("#k-LoginForm").submit(SendLoginRequest);
-
-    // Major divisions in the content accordioning
-    $('.k-Section').hide();
-    $('#k-Login').show('slow');
-    $('.k-SectionHeader').click(function() {
-        $(this).next().slideToggle('slow');
-        return false;
-    });
-
-    // Start the timed functions
-    TimerLoginStuff(true);
-    TimerDataStuff();
-});
-
-// Login works by polling the viewer for the status of the user.
-// If the user is logged in, we display this status and the user location.
-// If not logged in, the user filled in fields and pressed 'login'
-// which POSTs parameters to the viewer which change the user's
-// login state.
-// var BASEURL='http://127.0.0.1:9144';
-var BASEURL='';
-var loginTimerHandle;
-// poll for the user's date. Initialize form if first GET.
-function TimerLoginStuff(firstTime) {
-    fetch( BASEURL + '/api/LLLP/status', { method: 'GET', cache: 'no-cache' } )
-    .then( response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then( data => {
-        LogDebug('Login data: ' + JSON.stringify(data));
-        data["loginstate"] = (data["isloggedin"]) ? "loggedin" : "loggedout";
-
-        if (firstTime) InitializeLoginForm(data);
-        UpdateLoginArea(data);
-    })
-    .catch( error => {
-        UpdateLoginArea( {
-            msg: "Lost connection to viewer",
-            loginstate: "loggedout"
-        });
-    });
-            
-    loginTimerHandle = setTimeout(() => TimerLoginStuff(false), 3000);
-};
-
-// given a set of login status parameters, update login status area
-function UpdateLoginArea(data) {
-    $('#k-CurrentLogin td').empty();
-    if (data['first'] != undefined) {
-        $('#k-CurrentLogin td:nth-child(1)').append(data.first.value);
-        $('#k-CurrentLogin td:nth-child(2)').append(data.last.value);
-        $('#k-CurrentLogin td:nth-child(3)').append(data.currentgrid.value);
-        $('#k-CurrentLogin td:nth-child(4)').append(data.currentsim.value);
-        $('#k-CurrentLogin td:nth-child(5)').append(data.positionx.value);
-        $('#k-CurrentLogin td:nth-child(6)').append(data.positiony.value);
-        $('#k-CurrentLogin td:nth-child(7)').append(data.positionz.value);
-    }
-
-    $('#k-LoginMessage').empty();
-    if (data.msg != undefined)
-        $('#k-LoginMessage').append(data.msg.value);
-
-    if(data.loginstate.value == 'logout') {
-        $("#k-LoginForm").slideDown('slow');
-    }
-    else {
-        $("#k-LoginForm").slideUp('slow');
-    }
-}
-
-// Called the first time so we can pre-populate the form
-function InitializeLoginForm(data) {
-    if (data['first'] != undefined) {
-        $('#k-LoginForm input[name="LOGINFIRST"]').attr('value', data.first?.value ?? "");
-        $('#k-LoginForm input[name="LOGINLAST"]').attr('value', data.last?.value ?? "");
-        $('#k-LoginForm input[name="LOGINSIM"]').attr('value', data.currentsim?.value ?? "");
-    }
-    var selector = $('#k-LoginForm select[name="LOGINGRID"]');
-    selector.empty();
-    for (grid in data.possiblegrids.value) {
-        var valu = data.possiblegrids.value[grid];
-        selector.append('<option value="' + valu + '">' + valu + '</option>');
-    }
-}
-
-// Called by login form 'submit' click
-// Post the user's parameters to the viewer to login the user
-function SendLoginRequest() {
-    $.post(BASEURL + "/api/LLLP/connect/login", $('#k-LoginForm').serializeArray());
-    return false;
-}
-
-// One of the sections is viewer statistics. Poll for the data.
-var statTimerHandle;
-var graphFPS;
-var lastFPS = 10;
-var xxThru = 0;
-function TimerDataStuff() {
-    statTimerHandle = setTimeout(() => TimerStatDisplay(), 2000);
-}
-
-// called by timer to fetch and display statistic information
-function TimerStatDisplay() {
-    if ($('#k-QueueStats').is(':visible')) {
-        $.getJSON(BASEURL+'/api/stats/workQueues', function(data, status) {
-            if (status == 'success') {
-                BuildBasicTable('#k-QueueStats', data, false, false);
-            }
-        });
-        $.getJSON(BASEURL+'/api/stats/Renderer/detailStats', function(data, status) {
-            if (status == 'success') {
-                BuildBasicTable('#k-RendererStats', data, true, false);
-            }
-        });
-        $.getJSON(BASEURL+'/api/stats/Renderer/ogreStats', function(data, status) {
-            if (status == 'success') {
-                BuildBasicTable('#k-OgreStats', data, false, false, true);
-                if (typeof(graphFPS) == 'undefined') {
-                    graphFPS = new TrendData(100);
-                    graphFPS.Format = {type:'bar', width:'auto',height:'20px'};
-                                
-                }
-                var thisFPS = data['framespersecond']['value'];
-                if (thisFPS > (lastFPS * 2)) thisFPS = lastFPS * 2;
-                lastFPS = (lastFPS + thisFPS) / 2;
-                graphFPS.AddPoint(thisFPS);
-                graphFPS.UpdateDisplay('#k-OgreStats-framespersecond-Display');
-            }
-        });
-        $.getJSON(BASEURL+'/api/stats/Comm/stats', function(data, status) {
-            if (status == 'success') {
-                BuildBasicTable('#k-CommStats', data, false, false);
-            }
-        });
-    }
-    statTimerHandle = setTimeout(() => TimerStatDisplay(), 2000);
-};
-
-</script>
-*/
-

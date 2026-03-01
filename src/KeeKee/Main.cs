@@ -122,17 +122,19 @@ namespace KeeKee {
                      // REST services: provides REST interface for services. RestHandlerFactory creates handlers for each access point.
                      services.Configure<RestManagerConfig>(context.Configuration.GetSection(RestManagerConfig.subSectionName));
                      services.AddTransient<RestHandlerFactory>();
-                     services.AddTransient<RestHandlerUI, RestHandlerUI>();
-                     services.AddTransient<RestHandlerStatic, RestHandlerStatic>();
+                     services.AddSingleton<RestManager>();
+                     services.AddHostedService(sp => sp.GetRequiredService<RestManager>());
+                     services.AddTransient<RestHandlerUI>();
+                     services.AddTransient<RestHandlerStatic>();
+
+                     // REST handlers for LLLP communication. These are created by the CommLLLPRest service when it starts up.
+                     services.AddSingleton<CommLLLPRest>();
+                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
                      services.AddTransient<RestHandlerLogin>();
                      services.AddTransient<RestHandlerLogout>();
                      services.AddTransient<RestHandlerTeleport>();
                      services.AddTransient<RestHandlerExit>();
                      services.AddTransient<RestHandlerChat>();
-                     services.AddSingleton<RestManager>();
-                     services.AddHostedService(sp => sp.GetRequiredService<RestManager>());
-                     services.AddSingleton<CommLLLPRest>();
-                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
 
                      // Communication services. Set up for LLLP.
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));

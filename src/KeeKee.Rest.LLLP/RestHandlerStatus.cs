@@ -124,10 +124,10 @@ namespace KeeKee.Rest.LLLP {
             OMVSD.OSDArray possibleGrids = new OMVSD.OSDArray();
             m_grids.ForEach((gd) => {
                 if (gd.GridNick == m_commLLLP?.LoggedInGridName) {
-                    responseMap["currentgrid_fullname"] = gd.GridName;
-                    responseMap["currentgrid_loginuri"] = gd.LoginURI;
-                    responseMap["currentgrid_platform"] = gd.Platform;
-                    responseMap["currentgrid_website"] = gd.WebSite;
+                    responseMap["currentgrid_fullname"] = gd.GridName ?? "unknown";
+                    responseMap["currentgrid_loginuri"] = gd.LoginURI ?? "unknown";
+                    responseMap["currentgrid_platform"] = gd.Platform ?? "unknown";
+                    responseMap["currentgrid_website"] = gd.WebSite ?? "unknown";
                 }
                 possibleGrids.Add(gd.GridNick);
             });

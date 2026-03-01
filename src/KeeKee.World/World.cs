@@ -25,25 +25,25 @@ namespace KeeKee.World {
         List<IRegionContext> m_regionList;
 
         // A new region has been added to the world
-        public event WorldRegionNewCallback OnWorldRegionNew;
+        public event WorldRegionNewCallback? OnWorldRegionNew;
         // A known region has changed it's state (terrain, location, ...)
-        public event WorldRegionUpdatedCallback OnWorldRegionUpdated;
+        public event WorldRegionUpdatedCallback? OnWorldRegionUpdated;
         // a region is removed from the world
-        public event WorldRegionRemovedCallback OnWorldRegionRemoved;
+        public event WorldRegionRemovedCallback? OnWorldRegionRemoved;
 
         // when new items are added to the world
-        public event WorldEntityNewCallback OnWorldEntityNew;
+        public event WorldEntityNewCallback? OnWorldEntityNew;
         // when an entity is updated
-        public event WorldEntityUpdateCallback OnWorldEntityUpdate;
+        public event WorldEntityUpdateCallback? OnWorldEntityUpdate;
         // when an object is killed
-        public event WorldEntityRemovedCallback OnWorldEntityRemoved;
+        public event WorldEntityRemovedCallback? OnWorldEntityRemoved;
 
         // When an agent is added to the world
-        public event WorldAgentNewCallback OnAgentNew;
+        public event WorldAgentNewCallback? OnAgentNew;
         // When an agent is added to the world
-        public event WorldAgentUpdateCallback OnAgentUpdate;
+        public event WorldAgentUpdateCallback? OnAgentUpdate;
         // When an agent is removed from the world
-        public event WorldAgentRemovedCallback OnAgentRemoved;
+        public event WorldAgentRemovedCallback? OnAgentRemoved;
 
         /// <summary>
         /// Constructor called in instance of main and not in own thread. This is only
@@ -65,54 +65,36 @@ namespace KeeKee.World {
                     m_regionList.Add(rcontext);
 
                     IEntityCollection coll = rcontext.Entities;
-                    if (Region_OnNewEntityCallback == null) {
-                        Region_OnNewEntityCallback = new EntityNewCallback(Region_OnNewEntity);
-                    }
-                    coll.OnEntityNew += Region_OnNewEntityCallback;
+                    coll.OnEntityNew += Region_OnNewEntity;
+                    coll.OnEntityUpdate += Region_OnUpdateEntity;
+                    coll.OnEntityRemoved += Region_OnRemovedEntity;
 
-                    if (Region_OnUpdateEntityCallback == null) {
-                        Region_OnUpdateEntityCallback = new EntityUpdateCallback(Region_OnUpdateEntity);
-                    }
-                    coll.OnEntityUpdate += Region_OnUpdateEntityCallback;
-
-                    if (Region_OnRemovedEntityCallback == null) {
-                        Region_OnRemovedEntityCallback = new EntityRemovedCallback(Region_OnRemovedEntity);
-                    }
-                    coll.OnEntityRemoved += Region_OnRemovedEntityCallback;
-
-                    if (Region_OnRegionUpdatedCallback == null) {
-                        Region_OnRegionUpdatedCallback = new IRegionContext.RegionRegionUpdatedCallback(Region_OnRegionUpdated);
-                    }
-                    rcontext.OnRegionUpdated += Region_OnRegionUpdatedCallback;
+                    rcontext.OnRegionUpdated += Region_OnRegionUpdated;
                 }
             }
             // tell the world there is a new region (do it outside the lock)
             if (foundRegion == null) {
-                if (OnWorldRegionNew != null) OnWorldRegionNew(rcontext);
+                OnWorldRegionNew?.Invoke(rcontext);
             }
         }
 
-        private EntityNewCallback? Region_OnNewEntityCallback = null;
         private void Region_OnNewEntity(IEntity ent) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Region_OnNewEntity: {0}", ent.Name.Name);
             OnWorldEntityNew?.Invoke(ent);
             return;
         }
 
-        private EntityUpdateCallback? Region_OnUpdateEntityCallback = null;
         private void Region_OnUpdateEntity(IEntity ent, UpdateCodes what) {
             OnWorldEntityUpdate?.Invoke(ent, what);
             return;
         }
 
-        private EntityRemovedCallback? Region_OnRemovedEntityCallback = null;
         private void Region_OnRemovedEntity(IEntity ent) {
             m_log.Log(KLogLevel.DWORLDDETAIL, "Region_OnRemovedEntity: {0}", ent.Name.Name);
             OnWorldEntityRemoved?.Invoke(ent);
             return;
         }
 
-        private IRegionContext.RegionRegionUpdatedCallback? Region_OnRegionUpdatedCallback = null;
         private void Region_OnRegionUpdated(IRegionContext rcontext, UpdateCodes what) {
             OnWorldRegionUpdated?.Invoke(rcontext, what);
             return;
@@ -152,22 +134,13 @@ namespace KeeKee.World {
                     // we know about this region so remove it and disconnect from events
                     m_regionList.Remove(foundRegion);
                     m_log.Log(KLogLevel.DWORLD, "Removing region " + foundRegion.Name);
+
                     IEntityCollection coll = rcontext.Entities;
-                    if (coll != null) {
-                        if (Region_OnNewEntityCallback != null) {
-                            coll.OnEntityNew -= Region_OnNewEntityCallback;
-                        }
-                        if (Region_OnUpdateEntityCallback != null) {
-                            coll.OnEntityUpdate -= Region_OnUpdateEntityCallback;
-                        }
-                        if (Region_OnRemovedEntityCallback != null) {
-                            coll.OnEntityRemoved -= Region_OnRemovedEntityCallback;
-                        }
-                    }
-                    if (Region_OnRegionUpdatedCallback != null) {
-                        rcontext.OnRegionUpdated -= Region_OnRegionUpdatedCallback;
-                    }
-                    if (OnWorldRegionRemoved != null) OnWorldRegionRemoved(rcontext);
+                    coll.OnEntityNew -= Region_OnNewEntity;
+                    coll.OnEntityUpdate -= Region_OnUpdateEntity;
+                    coll.OnEntityRemoved -= Region_OnRemovedEntity;
+
+                    rcontext.OnRegionUpdated -= Region_OnRegionUpdated;
                 } else {
                     m_log.Log(KLogLevel.DBADERROR, "RemoveRegion: asked to remove region we don't have. Name={0}", rcontext.Name);
                 }
@@ -224,6 +197,7 @@ namespace KeeKee.World {
             return;
         }
 
+        // Return a displayable version of the regions in the world.
         public OSD? GetDisplayable() {
             OSDMap ret = new OSDMap();
             ret["RegionCount"] = m_regionList.Count;
@@ -231,7 +205,10 @@ namespace KeeKee.World {
             OSDArray regions = new OSDArray();
             lock (m_regionList) {
                 foreach (IRegionContext rc in m_regionList) {
-                    regions.Add(rc.GetDisplayable());
+                    var disp = rc.GetDisplayable();
+                    if (disp != null) {
+                        regions.Add(disp);
+                    }
                 }
             }
             ret["Regions"] = regions;

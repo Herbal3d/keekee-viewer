@@ -551,11 +551,12 @@ namespace KeeKee.Comm.LLLP {
         // ===============================================================
         public void Objects_ObjectUpdate(object? sender, OMV.PrimEventArgs args) {
             m_log.Log(KLogLevel.DCOMMDETAIL, "EVENT Objects_ObjectUpdate: Object update received");
+            if (QueueTilOnline(args.Simulator, CommActionCode.OnObjectUpdated, sender, args)) return;
+
             if (args.IsAttachment) {
                 Objects_AttachmentUpdate(sender, args);
                 return;
             }
-            if (QueueTilOnline(args.Simulator, CommActionCode.OnObjectUpdated, sender, args)) return;
             lock (m_opLock) {
                 LLRegionContext? rcontext = FindRegion(args.Simulator);
                 if (rcontext == null) return;
