@@ -16,7 +16,7 @@ using KeeKee.Framework.Logging;
 using KeeKee.Renderer;
 
 namespace KeeKee.View {
-    public partial class ViewWindow : IViewWindow {
+    public partial class ViewWindow {
         private KLogger<ViewWindow> m_log;
 
         private IOptions<ViewConfig> m_ViewConfig;

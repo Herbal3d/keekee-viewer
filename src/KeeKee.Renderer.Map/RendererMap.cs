@@ -42,22 +42,22 @@ namespace KeeKee.Renderer.Map {
 
         //=================================================================
         // Set the entity to be rendered
-        public void Render(IEntity ent) {
-            return;
+        public Task Render(IEntity ent) {
+            return Task.CompletedTask;
         }
-        public void RenderUpdate(IEntity ent, UpdateCodes what) {
-            return;
+        public Task RenderUpdate(IEntity ent, UpdateCodes what) {
+            return Task.CompletedTask;
         }
-        public void UnRender(IEntity ent) {
-            return;
+        public Task UnRender(IEntity ent) {
+            return Task.CompletedTask;
         }
 
         // tell the renderer about the camera position
         public void UpdateCamera(CameraControl cam) {
             return;
         }
-        public void UpdateEnvironmentalLights(IEntity pSun, IEntity pMoon) {
-            return;
+        public Task UpdateEnvironmentalLights(IEntity pSun, IEntity pMoon) {
+            return Task.CompletedTask;
         }
 
         // Given the current mouse position, return a point in the world
@@ -66,8 +66,8 @@ namespace KeeKee.Renderer.Map {
         }
 
         // rendering specific information for placing in  the view
-        public void MapRegionIntoView(IRegionContext rcontext) {
-            return;
+        public Task MapRegionIntoView(IRegionContext rcontext) {
+            return Task.CompletedTask;
         }
 
         // Set one region as the focus of display
@@ -76,8 +76,8 @@ namespace KeeKee.Renderer.Map {
         }
 
         // something about the terrain has changed, do some updating
-        public void UpdateTerrain(IRegionContext wcontext) {
-            return;
+        public Task UpdateTerrain(IRegionContext wcontext) {
+            return Task.CompletedTask;
         }
         #endregion IRenderProvider
     }

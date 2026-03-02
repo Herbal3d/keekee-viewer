@@ -35,7 +35,7 @@ namespace KeeKee.View {
     /// User input
     ///
     /// </summary>
-    public class Viewer : BackgroundService, IViewProvider {
+    public class Viewer : BackgroundService {
 
         private KLogger<Viewer> m_log;
         private IOptions<ViewConfig> m_ViewConfig;
@@ -98,18 +98,18 @@ namespace KeeKee.View {
             m_cameraLookAt = new OMV.Vector3d(0d, 0d, 0d);
 
             // connect me to the world so I can know when things change in the world
-            TheWorld.OnWorldRegionNew += new WorldRegionNewCallback(World_OnRegionNew);
-            TheWorld.OnWorldRegionUpdated += new WorldRegionUpdatedCallback(World_OnRegionUpdated);
-            TheWorld.OnWorldRegionRemoved += new WorldRegionRemovedCallback(World_OnRegionRemoved);
-            TheWorld.OnWorldEntityNew += new WorldEntityNewCallback(World_OnEntityNew);
-            TheWorld.OnWorldEntityUpdate += new WorldEntityUpdateCallback(World_OnEntityUpdate);
-            TheWorld.OnWorldEntityRemoved += new WorldEntityRemovedCallback(World_OnEntityRemoved);
-            TheWorld.OnAgentNew += new WorldAgentNewCallback(World_OnAgentNew);
-            TheWorld.OnAgentUpdate += new WorldAgentUpdateCallback(World_OnAgentUpdate);
-            TheWorld.OnAgentRemoved += new WorldAgentRemovedCallback(World_OnAgentRemoved);
+            TheWorld.OnWorldRegionNew += World_OnRegionNew;
+            TheWorld.OnWorldRegionUpdated += World_OnRegionUpdated;
+            TheWorld.OnWorldRegionRemoved += World_OnRegionRemoved;
+            TheWorld.OnWorldEntityNew += World_OnEntityNew;
+            TheWorld.OnWorldEntityUpdate += World_OnEntityUpdate;
+            TheWorld.OnWorldEntityRemoved += World_OnEntityRemoved;
+            TheWorld.OnAgentNew += World_OnAgentNew;
+            TheWorld.OnAgentUpdate += World_OnAgentUpdate;
+            TheWorld.OnAgentRemoved += World_OnAgentRemoved;
 
             // this will cause the renderer to move it's camera whenever the main camera is moved
-            m_mainCamera.OnCameraUpdate += new CameraControlUpdateCallback(Renderer.UpdateCamera);
+            m_mainCamera.OnCameraUpdate += Renderer.UpdateCamera;
             // this will cause camera direction to be sent back  to the server for interest management
             m_mainCamera.OnCameraUpdate += new CameraControlUpdateCallback(CameraControl_OnCameraUpdate);
 
@@ -117,9 +117,9 @@ namespace KeeKee.View {
             Renderer.UpdateCamera(m_mainCamera);
 
             // start getting IO stuff from the user
-            Renderer.UserInterface.OnUserInterfaceKeypress += new UserInterfaceKeypressCallback(UserInterface_OnKeypress);
-            Renderer.UserInterface.OnUserInterfaceMouseMove += new UserInterfaceMouseMoveCallback(UserInterface_OnMouseMove);
-            Renderer.UserInterface.OnUserInterfaceMouseButton += new UserInterfaceMouseButtonCallback(UserInterface_OnMouseButton);
+            Renderer.UserInterface.OnUserInterfaceKeypress += UserInterface_OnKeypress;
+            Renderer.UserInterface.OnUserInterfaceMouseMove += UserInterface_OnMouseMove;
+            Renderer.UserInterface.OnUserInterfaceMouseButton += UserInterface_OnMouseButton;
 
             // start the renderer
             // ((IModule)Renderer).Start();

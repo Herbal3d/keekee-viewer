@@ -26,11 +26,13 @@ using OMVR = OpenMetaverse.Rendering;
 using OMVI = OpenMetaverse.Imaging;
 using System.Runtime.CompilerServices;
 
-namespace KeeKee.Renderer.OGL {
+namespace KeeKee.Renderer.OGL
+{
     /// <summary>
     /// A renderer that renders straight to OpenGL/OpenTK
     /// </summary>
-    public sealed class RendererOGL : IRenderProvider {
+    public sealed class RendererOGL : IRenderProvider
+    {
         private KLogger<RendererOGL> m_log;
 
         private IOptions<RendererOGLConfig> m_options;
@@ -53,7 +55,8 @@ namespace KeeKee.Renderer.OGL {
                             IOptions<RendererOGLConfig> pOptions,
                             IUserInterfaceProvider pUserInterface,
                             OMVR.IRendering pMeshMaker
-                            ) {
+                            )
+        {
             m_log = pLog;
             m_options = pOptions;
             UserInterface = pUserInterface;
@@ -68,34 +71,43 @@ namespace KeeKee.Renderer.OGL {
         #region IRenderProvider
 
         // entry for main thread for rendering. Return false if you don't need it.
-        public bool RendererThread() {
+        public bool RendererThread()
+        {
             return false;
         }
         // entry for rendering one frame. An alternate to the above thread method
-        public bool RenderOneFrame(bool pump, int len) {
+        public bool RenderOneFrame(bool pump, int len)
+        {
             return true;
         }
 
         //=================================================================
         // Set the entity to be rendered
-        public void Render(IEntity ent) {
-            if (ent is LLEntity) {
-                lock (ent) {
+        public void Render(IEntity ent)
+        {
+            if (ent is LLEntity)
+            {
+                lock (ent)
+                {
                     CreateNewPrim(ent as LLEntity);
                 }
             }
             return;
         }
 
-        private async Task<RenderablePrim?> CreateNewPrim(LLEntity ent) {
+        private async Task<RenderablePrim?> CreateNewPrim(LLEntity ent)
+        {
             m_log.Log(KLogLevel.DRENDERDETAIL, "Create new prim {0}", ent.Name.Name);
             // entity render info is kept per region. Get the region prim structure
             CmptRegionRenderInfo rri = GetRegionRenderInfo(ent.RegionContext);
 
-            if (ent.HasComponent<ICmptAvatar>()) {
+            if (ent.HasComponent<ICmptAvatar>())
+            {
                 // if this entity is an avatar, just put it on the display list
-                lock (rri.renderAvatarList) {
-                    if (!rri.renderAvatarList.ContainsKey(ent.LGID)) {
+                lock (rri.renderAvatarList)
+                {
+                    if (!rri.renderAvatarList.ContainsKey(ent.LGID))
+                    {
                         RenderableAvatar ravv = new RenderableAvatar();
                         ravv.Avatar = ent;
                         rri.renderAvatarList.Add(ent.LGID, ravv);
@@ -103,7 +115,8 @@ namespace KeeKee.Renderer.OGL {
                 }
                 return null;
             }
-            if (ent.Prim == null) {
+            if (ent.Prim == null)
+            {
                 m_log.Log(KLogLevel.DBADERROR, "CreateNewPrim: no prim data for {0}", ent.Name.Name);
                 return null;
             }
@@ -128,18 +141,22 @@ namespace KeeKee.Renderer.OGL {
             render.IsVisible = true;    // initially assume visible
 
 
-            if (prim.Sculpt != null) {
+            if (prim.Sculpt != null)
+            {
                 EntityNameLL textureEnt = EntityNameLL.ConvertTextureWorldIDToEntityName(ent.AssetContext, prim.Sculpt.SculptTexture);
                 var textureInfo = await ent.AssetContext.DoTextureLoad(textureEnt, AssetType.SculptieTexture);
                 textureInfo.AssetData.Decode();
                 var textureBitmap = textureInfo.AssetData.Image.ExportBitmap();
                 render.Mesh = m_meshMaker.GenerateFacetedSculptMesh(prim, textureBitmap, OMVR.DetailLevel.Medium);
                 textureBitmap.Dispose();
-            } else {
+            }
+            else
+            {
                 render.Mesh = m_meshMaker.GenerateFacetedMesh(prim, OMVR.DetailLevel.High);
             }
 
-            if (render.Mesh == null) {
+            if (render.Mesh == null)
+            {
                 // mesh generation failed 
                 m_log.Log(KLogLevel.DBADERROR, "FAILED MESH GENERATION: not generating new prim {0}", ent.Name.Name);
                 return null;
@@ -147,13 +164,15 @@ namespace KeeKee.Renderer.OGL {
 
             // Create a FaceData struct for each face that stores the 3D data
             // in an OpenGL friendly format
-            for (int j = 0; j < render.Mesh.Faces.Count; j++) {
+            for (int j = 0; j < render.Mesh.Faces.Count; j++)
+            {
                 OMVR.Face face = render.Mesh.Faces[j];
                 FaceData data = new FaceData();
 
                 // Vertices for this face
                 data.Vertices = new float[face.Vertices.Count * 3];
-                for (int k = 0; k < face.Vertices.Count; k++) {
+                for (int k = 0; k < face.Vertices.Count; k++)
+                {
                     data.Vertices[k * 3 + 0] = face.Vertices[k].Position.X;
                     data.Vertices[k * 3 + 1] = face.Vertices[k].Position.Y;
                     data.Vertices[k * 3 + 2] = face.Vertices[k].Position.Z;
@@ -168,13 +187,15 @@ namespace KeeKee.Renderer.OGL {
 
                 // Texcoords for this face
                 data.TexCoords = new float[face.Vertices.Count * 2];
-                for (int k = 0; k < face.Vertices.Count; k++) {
+                for (int k = 0; k < face.Vertices.Count; k++)
+                {
                     data.TexCoords[k * 2 + 0] = face.Vertices[k].TexCoord.X;
                     data.TexCoords[k * 2 + 1] = face.Vertices[k].TexCoord.Y;
                 }
 
                 data.Normals = new float[face.Vertices.Count * 3];
-                for (int k = 0; k < face.Vertices.Count; k++) {
+                for (int k = 0; k < face.Vertices.Count; k++)
+                {
                     data.Normals[k * 3 + 0] = face.Vertices[k].Normal.X;
                     data.Normals[k * 3 + 1] = face.Vertices[k].Normal.Y;
                     data.Normals[k * 3 + 2] = face.Vertices[k].Normal.Z;
@@ -186,8 +207,10 @@ namespace KeeKee.Renderer.OGL {
 
                 // Texture for this face
                 if (teFace.TextureID != OMV.UUID.Zero &&
-                            teFace.TextureID != OMV.Primitive.TextureEntry.WHITE_TEXTURE) {
-                    if (!Textures.ContainsKey(teFace.TextureID)) {
+                            teFace.TextureID != OMV.Primitive.TextureEntry.WHITE_TEXTURE)
+                {
+                    if (!Textures.ContainsKey(teFace.TextureID))
+                    {
                         // temporarily add the entry to the table so we don't request it multiple times
                         Textures.Add(teFace.TextureID, new TextureInfo(0, true));
                         // We haven't constructed this image in OpenGL yet, get ahold of it
@@ -202,20 +225,24 @@ namespace KeeKee.Renderer.OGL {
                 render.Mesh.Faces[j] = face;
             }
 
-            lock (rri.renderPrimList) {
+            lock (rri.renderPrimList)
+            {
                 rri.renderPrimList[prim.LocalID] = render;
             }
             return render;
         }
 
-        private void OnTextureDownloadFinished(string textureEntityName, bool hasTransparancy) {
+        private void OnTextureDownloadFinished(string textureEntityName, bool hasTransparancy)
+        {
             m_log.Log(KLogLevel.DRENDERDETAIL, "OnTextureDownloadFinished {0}", textureEntityName);
             EntityName entName = new EntityName(textureEntityName);
             OMV.UUID id = new OMV.UUID(entName.ExtractEntityFromEntityName());
 
             TextureInfo info;
-            lock (Textures) {
-                if (!Textures.TryGetValue(id, out info)) {
+            lock (Textures)
+            {
+                if (!Textures.TryGetValue(id, out info))
+                {
                     // The id of zero will say that the mipmaps need to be generated before the texture is used
                     m_log.Log(KLogLevel.DRENDERDETAIL, "Adding TextureInfo for {0}:{1}", entName.Name, id.ToString());
                     info.Alpha = hasTransparancy;
@@ -223,46 +250,61 @@ namespace KeeKee.Renderer.OGL {
             }
         }
 
-        public async Task RenderUpdate(LLEntity ent, UpdateCodes what) {
+        public async Task RenderUpdate(LLEntity ent, UpdateCodes what)
+        {
             m_log.Log(KLogLevel.DRENDERDETAIL, "RenderUpdate: {0} for {1}", ent.Name.Name, what);
             bool fullUpdate = false;
-            if (ent is LLEntity && ((what & UpdateCodes.New) != 0)) {
+            if (ent is LLEntity && ((what & UpdateCodes.New) != 0))
+            {
                 _ = await CreateNewPrim(ent);
                 fullUpdate = true;
             }
-            lock (ent) {
-                if ((what & UpdateCodes.Animation) != 0) {
+            lock (ent)
+            {
+                if ((what & UpdateCodes.Animation) != 0)
+                {
                     // the prim has changed its rotation animation
                     ICmptAnimation anim;
-                    if (ent.HasComponent<ICmptAnimation>(out anim)) {
+                    if (ent.HasComponent<ICmptAnimation>(out anim))
+                    {
                         m_log.Log(KLogLevel.DRENDERDETAIL, "RenderUpdate: animation ");
                         CmptRegionRenderInfo rri;
-                        if (ent.RegionContext.HasComponent<CmptRegionRenderInfo>(out rri)) {
-                            lock (rri) {
+                        if (ent.RegionContext.HasComponent<CmptRegionRenderInfo>(out rri))
+                        {
+                            lock (rri)
+                            {
                                 rri.animations.Add(AnimatBase.CreateAnimation(anim, ent.Prim.LocalID));
                             }
                         }
                     }
                 }
-                if ((what & UpdateCodes.Text) != 0) {
+                if ((what & UpdateCodes.Text) != 0)
+                {
                     // text associated with the prim changed
                     m_log.Log(KLogLevel.DRENDERDETAIL, "RenderUpdate: text changed");
                 }
-                if ((what & UpdateCodes.Particles) != 0) {
+                if ((what & UpdateCodes.Particles) != 0)
+                {
                     // particles associated with the prim changed
                     m_log.Log(KLogLevel.DRENDERDETAIL, "RenderUpdate: particles changed");
                 }
-                if (!fullUpdate && (what & (UpdateCodes.Scale | UpdateCodes.Position | UpdateCodes.Rotation)) != 0) {
+                if (!fullUpdate && (what & (UpdateCodes.Scale | UpdateCodes.Position | UpdateCodes.Rotation)) != 0)
+                {
                     // world position has changed. Tell Ogre they have changed
-                    try {
+                    try
+                    {
                         m_log.Log(KLogLevel.DRENDERDETAIL, "RenderUpdate: Updating position/rotation for {0}", ent.Name.Name);
                         CmptRegionRenderInfo rri;
-                        if (ent.RegionContext.HasComponent<CmptRegionRenderInfo>(out rri)) {
-                            lock (rri.renderPrimList) {
+                        if (ent.RegionContext.HasComponent<CmptRegionRenderInfo>(out rri))
+                        {
+                            lock (rri.renderPrimList)
+                            {
                                 // exception if the casting does not work
-                                if (((LLEntity)ent).Prim != null) {
+                                if (((LLEntity)ent).Prim != null)
+                                {
                                     uint localID = ((LLEntity)ent).Prim.LocalID;
-                                    if (rri.renderPrimList.ContainsKey(localID)) {
+                                    if (rri.renderPrimList.ContainsKey(localID))
+                                    {
                                         ICmptLocation entLoc = ent.Cmpt<ICmptLocation>();
                                         RenderablePrim rp = rri.renderPrimList[localID];
                                         rp.Position = new OMV.Vector3(entLoc.RegionPosition.X, entLoc.RegionPosition.Y, entLoc.RegionPosition.Z);
@@ -271,7 +313,9 @@ namespace KeeKee.Renderer.OGL {
                                 }
                             }
                         }
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e)
+                    {
                         m_log.Log(KLogLevel.DBADERROR, "RenderUpdate: FAIL updating pos/rot: {0}", e);
                     }
                 }
@@ -279,13 +323,16 @@ namespace KeeKee.Renderer.OGL {
             return;
         }
 
-        public void UnRender(IEntity ent) {
+        public void UnRender(IEntity ent)
+        {
             return;
         }
 
         // tell the renderer about the camera position
-        public void UpdateCamera(CameraControl cam) {
-            if (m_focusRegion != null) {
+        public Task UpdateCamera(CameraControl cam)
+        {
+            if (m_focusRegion != null)
+            {
                 ICmptLocation regionLoc = m_focusRegion.Cmpt<ICmptLocation>();
                 OMV.Vector3 newPos = new OMV.Vector3();
                 newPos.X = (float)(cam.GlobalPosition.X - regionLoc.GlobalPosition.X);
@@ -298,32 +345,39 @@ namespace KeeKee.Renderer.OGL {
                 OMV.Vector3 dir = new OMV.Vector3(1f, 0f, 0f);
                 Camera.FocalPoint = (dir * cam.Heading) + Camera.Position;
             }
-            return;
+            return Task.CompletedTask;
         }
-        public void UpdateEnvironmentalLights(IEntity pSun, IEntity pMoon) {
-            return;
+        public Task UpdateEnvironmentalLights(IEntity pSun, IEntity pMoon)
+        {
+            return Task.CompletedTask;
         }
 
         // Given the current mouse position, return a point in the world
-        public OMV.Vector3d SelectPoint() {
+        public OMV.Vector3d SelectPoint()
+        {
             return new OMV.Vector3d(0d, 0d, 0d);
         }
 
         // rendering specific information for placing in  the view
-        public void MapRegionIntoView(IRegionContext rcontext) {
-            if (!m_trackedRegions.Contains(rcontext)) {
+        public Task MapRegionIntoView(IRegionContext rcontext)
+        {
+            if (!m_trackedRegions.Contains(rcontext))
+            {
                 m_trackedRegions.Add(rcontext);
             }
             // get the render info block to create it if it doesn't exist
             CmptRegionRenderInfo rri = GetRegionRenderInfo(rcontext);
-            return;
+            return Task.CompletedTask;
         }
 
         // create and initialize the renderinfoblock
-        private CmptRegionRenderInfo GetRegionRenderInfo(IRegionContext rcontext) {
+        private CmptRegionRenderInfo GetRegionRenderInfo(IRegionContext rcontext)
+        {
             CmptRegionRenderInfo? ret = null;
-            if (!rcontext.HasComponent<CmptRegionRenderInfo>(out ret)) {
-                ret = new CmptRegionRenderInfo() {
+            if (!rcontext.HasComponent<CmptRegionRenderInfo>(out ret))
+            {
+                ret = new CmptRegionRenderInfo()
+                {
                     ContainingEntity = rcontext
                 };
                 rcontext.AddComponent<CmptRegionRenderInfo>(ret);
@@ -334,20 +388,23 @@ namespace KeeKee.Renderer.OGL {
         }
 
         // Set one region as the focus of display
-        public void SetFocusRegion(IRegionContext rcontext) {
+        public void SetFocusRegion(IRegionContext rcontext)
+        {
             m_focusRegion = rcontext;
             return;
         }
 
         // something about the terrain has changed, do some updating
-        public void UpdateTerrain(IRegionContext rcontext) {
+        public Task UpdateTerrain(IRegionContext rcontext)
+        {
             CmptRegionRenderInfo rri = GetRegionRenderInfo(rcontext);
             // making this true will case the low level renderer to rebuild the terrain
             rri.refreshTerrain = true;
-            return;
+            return Task.CompletedTask;
         }
 
-        public void RenderUpdate(IEntity ent, UpdateCodes what) {
+        public void RenderUpdate(IEntity ent, UpdateCodes what)
+        {
             throw new NotImplementedException();
         }
         #endregion IRenderProvider
