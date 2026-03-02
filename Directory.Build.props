@@ -2,7 +2,7 @@
   <PropertyGroup>
     <MajorVersion>0</MajorVersion>
     <MinorVersion>4</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <PatchVersion>2</PatchVersion>
     <Version>$(MajorVersion).$(MinorVersion).$(PatchVersion)</Version>
 
     <BuildTimestamp>$([System.DateTime]::UtcNow.ToString("yyyyMMdd"))</BuildTimestamp>

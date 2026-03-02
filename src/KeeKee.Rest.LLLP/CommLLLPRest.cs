@@ -26,10 +26,6 @@ namespace KeeKee.Rest.LLLP {
     /// values as well as the current state of the connection.
     /// This handles the following REST operations:
     /// GET http://127.0.0.0:port/api/LLLP/ : returns the JSON of the comm parameter block
-    /// POST http://127.0.0.1:port/api/LLLP/login    : take JSON body as parameters to use to login
-    ///            parameters are: LOGINFIRST, LOGINLAST, LOGINPASS, LOGINGRID, LOGINSIM
-    /// POST http://127.0.0.1:port/api/LLLP/logout   : perform a logout
-    /// POST http://127.0.0.1:port/api/LLLP/exit     : exit the application
     /// POST http://127.0.0.1:port/api/LLLP/teleport : teleport the user
     ///            parameter is DESTINATION
     /// GET https://127.0..1.1:port/api/LLLP/stats : get operation statistics
@@ -40,10 +36,7 @@ namespace KeeKee.Rest.LLLP {
         private RestHandlerFactory m_restFactory { get; set; }
         private ICommProvider m_commProvider { get; set; }
 
-        RestHandler? m_loginHandler = null;
-        RestHandler? m_logoutHandler = null;
         RestHandler? m_teleportHandler = null;
-        RestHandler? m_exitHandler = null;
         RestHandler? m_chatHandler = null;
         RestHandler? m_statusHandler = null;
 
@@ -66,10 +59,7 @@ namespace KeeKee.Rest.LLLP {
                 // The LLLP comm provider is being used to start it's REST interface.
                 m_log.LogInfo("CommLLLPRest starting.");
 
-                m_loginHandler = m_restFactory.CreateHandler<RestHandlerLogin>();
-                m_logoutHandler = m_restFactory.CreateHandler<RestHandlerLogout>();
                 m_teleportHandler = m_restFactory.CreateHandler<RestHandlerTeleport>();
-                m_exitHandler = m_restFactory.CreateHandler<RestHandlerExit>();
                 m_chatHandler = m_restFactory.CreateHandler<RestHandlerChat>();
                 m_statusHandler = m_restFactory.CreateHandler<RestHandlerStatus>();
 

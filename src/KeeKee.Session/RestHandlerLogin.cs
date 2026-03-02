@@ -17,6 +17,7 @@ using KeeKee.Config;
 using KeeKee.Contexts;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
+using KeeKee.Rest;
 using KeeKee.World;
 
 using Microsoft.Extensions.Options;
@@ -24,7 +25,7 @@ using Microsoft.Extensions.Options;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest.LLLP {
+namespace KeeKee.Session {
 
     public class RestHandlerLogin : RestHandler {
 
@@ -33,14 +34,15 @@ namespace KeeKee.Rest.LLLP {
         private readonly ICommProvider m_commProvider;
         private readonly IOptions<CommConfig> m_commConfig;
         private readonly Grids m_grids;
+        private readonly SessionManager m_sessionManager;
 
         /// <summary>
         /// </summary>
-
         public RestHandlerLogin(KLogger<RestHandlerLogin> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
+                                SessionManager pSessionManager,
                                 Grids pGrids,
                                 ICommProvider pCommProvider
                                 ) : base(pRestManager) {
@@ -49,8 +51,8 @@ namespace KeeKee.Rest.LLLP {
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
             m_grids = pGrids;
-
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/login");
+            m_sessionManager = pSessionManager;
+            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "Session/login");
         }
 
         public override async Task ProcessGetRequest(HttpListenerContext pContext,

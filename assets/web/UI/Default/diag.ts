@@ -17,7 +17,7 @@ let BASEURL='http://localhost:9144'
 type ClickOperation = ( pTarget: EventTarget ) => void;
 const ClickableOps: { [key: string]: ClickOperation } = {};
 
-// Make all 'class=b-clickable' page items create events
+// Make all 'class=k-clickable' page items create events
 Array.from(document.getElementsByClassName('k-clickable')).forEach( nn => {
     nn.addEventListener('click', (evnt: Event) => {
         const buttonOp = (evnt.target as HTMLElement).getAttribute('op');
@@ -58,7 +58,7 @@ ClickableOps['gridLogin'] = function(pTarget: EventTarget) : void {
         Grid: grid
     };
 
-    fetch( BASEURL + '/api/LLLP/login', {
+    fetch( BASEURL + '/api/Session/login', {
                 method: 'POST',
                 cache: 'no-cache',
                 body: JSON.stringify(loginData),
@@ -86,7 +86,7 @@ ClickableOps['gridLogin'] = function(pTarget: EventTarget) : void {
 // button to do the logout
 ClickableOps['gridLogout'] = function(pTarget: EventTarget) :void {
     LogDebug('Do the logout');
-    fetch( BASEURL + '/api/LLLP/logout', { method: 'POST', cache: 'no-cache' } )
+    fetch( BASEURL + '/api/Session/logout', { method: 'POST', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -100,7 +100,7 @@ ClickableOps['gridLogout'] = function(pTarget: EventTarget) :void {
 // button to force exit
 ClickableOps['gridExit'] = function(pTarget: EventTarget) : void {
     LogDebug('Do the exit');
-    fetch( BASEURL + '/api/LLLP/exit', { method: 'POST', cache: 'no-cache' } )
+    fetch( BASEURL + '/api/Session/exit', { method: 'POST', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -124,7 +124,7 @@ interface GridsInfo {
 
 // Fetch the list of grids from the viewer and populate the grid select box
 function FetchGridInfo() : void{
-    fetch( BASEURL + '/api/LLLP/login', { method: 'GET', cache: 'no-cache' } )
+    fetch( BASEURL + '/api/Session/login', { method: 'GET', cache: 'no-cache' } )
     .then( response => {
         if (!response.ok) {
             LogDebug('Fetch grids failed: Network response was not ok');
@@ -478,6 +478,7 @@ interface LLLPStatsData {
     },
     [key: string]: any; // Allow for additional properties
 }
+
 // Specify the column names or the fields to extract to fill the columm.
 type ColumnSpec = string[];
 

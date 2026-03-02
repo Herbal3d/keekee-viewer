@@ -11,17 +11,18 @@
 
 using System.Net;
 
+using Microsoft.Extensions.Options;
+
 using KeeKee.Comm;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
-
-using Microsoft.Extensions.Options;
+using KeeKee.Rest;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest.LLLP {
+namespace KeeKee.Session {
 
     public class RestHandlerLogout : RestHandler {
 
@@ -44,7 +45,7 @@ namespace KeeKee.Rest.LLLP {
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
 
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/logout");
+            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "Session/logout");
         }
 
         public override async Task ProcessPostRequest(HttpListenerContext pContext,

@@ -11,7 +11,7 @@
 import { LogDebug } from "./DebugLog.js";
 let BASEURL = 'http://localhost:9144';
 const ClickableOps = {};
-// Make all 'class=b-clickable' page items create events
+// Make all 'class=k-clickable' page items create events
 Array.from(document.getElementsByClassName('k-clickable')).forEach(nn => {
     nn.addEventListener('click', (evnt) => {
         const buttonOp = evnt.target.getAttribute('op');
@@ -48,7 +48,7 @@ ClickableOps['gridLogin'] = function (pTarget) {
         StartLocation: startLoc,
         Grid: grid
     };
-    fetch(BASEURL + '/api/LLLP/login', {
+    fetch(BASEURL + '/api/Session/login', {
         method: 'POST',
         cache: 'no-cache',
         body: JSON.stringify(loginData),
@@ -76,7 +76,7 @@ ClickableOps['gridLogin'] = function (pTarget) {
 // button to do the logout
 ClickableOps['gridLogout'] = function (pTarget) {
     LogDebug('Do the logout');
-    fetch(BASEURL + '/api/LLLP/logout', { method: 'POST', cache: 'no-cache' })
+    fetch(BASEURL + '/api/Session/logout', { method: 'POST', cache: 'no-cache' })
         .then(response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -90,7 +90,7 @@ ClickableOps['gridLogout'] = function (pTarget) {
 // button to force exit
 ClickableOps['gridExit'] = function (pTarget) {
     LogDebug('Do the exit');
-    fetch(BASEURL + '/api/LLLP/exit', { method: 'POST', cache: 'no-cache' })
+    fetch(BASEURL + '/api/Session/exit', { method: 'POST', cache: 'no-cache' })
         .then(response => {
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -103,7 +103,7 @@ ClickableOps['gridExit'] = function (pTarget) {
 };
 // Fetch the list of grids from the viewer and populate the grid select box
 function FetchGridInfo() {
-    fetch(BASEURL + '/api/LLLP/login', { method: 'GET', cache: 'no-cache' })
+    fetch(BASEURL + '/api/Session/login', { method: 'GET', cache: 'no-cache' })
         .then(response => {
         if (!response.ok) {
             LogDebug('Fetch grids failed: Network response was not ok');

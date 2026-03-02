@@ -17,12 +17,13 @@ using KeeKee.Comm;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
+using KeeKee.Rest;
 
 using Microsoft.Extensions.Options;
 
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest.LLLP {
+namespace KeeKee.Session {
 
     public class RestHandlerExit : RestHandler {
 
@@ -48,7 +49,7 @@ namespace KeeKee.Rest.LLLP {
             m_commConfig = pCommConfig;
             m_cancelToken = pCancelToken;
 
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/exit");
+            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "Session/exit");
         }
 
         public override async Task ProcessPostRequest(HttpListenerContext pContext,

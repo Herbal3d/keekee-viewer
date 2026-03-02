@@ -21,15 +21,16 @@ using KeeKee.Comm;
 using KeeKee.Comm.LLLP;
 using KeeKee.Contexts;
 using KeeKee.Entity;
+using KeeKee.Framework;
 using KeeKee.Framework.Logging;
+using KeeKee.Framework.WorkQueue;
 using KeeKee.Rest;
 using KeeKee.Rest.LLLP;
 using KeeKee.Renderer;
-using KeeKee.Framework;
+using KeeKee.Session;
 using KeeKee.View;
 using KeeKee.World;
 using KeeKee.World.LL;
-using KeeKee.Framework.WorkQueue;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
@@ -127,14 +128,13 @@ namespace KeeKee {
                      services.AddTransient<RestHandlerUI>();
                      services.AddTransient<RestHandlerStatic>();
 
-                     // REST handlers for LLLP communication. These are created by the CommLLLPRest service when it starts up.
-                     services.AddSingleton<CommLLLPRest>();
-                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
+                     // Session management. This is where logins and sessions will be managed.
+                     services.AddSingleton<SessionManager>();
+                     services.AddHostedService(sp => sp.GetRequiredService<SessionManager>());
+                     services.AddTransient<Session.Session>();
                      services.AddTransient<RestHandlerLogin>();
                      services.AddTransient<RestHandlerLogout>();
-                     services.AddTransient<RestHandlerTeleport>();
                      services.AddTransient<RestHandlerExit>();
-                     services.AddTransient<RestHandlerChat>();
 
                      // Communication services. Set up for LLLP.
                      services.Configure<CommConfig>(context.Configuration.GetSection(CommConfig.subSectionName));
@@ -142,6 +142,12 @@ namespace KeeKee {
                      services.AddSingleton<LoadWorldObjects>();
                      services.AddSingleton<AssetFetcher>();
                      services.AddSingleton<ICommProvider, CommLLLP>();
+
+                     // REST handlers for LLLP communication. These are created by the CommLLLPRest service when it starts up.
+                     services.AddSingleton<CommLLLPRest>();
+                     services.AddHostedService(sp => sp.GetRequiredService<CommLLLPRest>());
+                     services.AddTransient<RestHandlerTeleport>();
+                     services.AddTransient<RestHandlerChat>();
 
                      // World services
                      services.Configure<WorldConfig>(context.Configuration.GetSection(WorldConfig.subSectionName));
@@ -168,7 +174,7 @@ namespace KeeKee {
                      services.AddSingleton<Renderer.Godot.RendererGodot>();
                      // Select the render provider based on configuration
                      services.AddSingleton<IRenderProvider>(sp => {
-                         var provider = context.Configuration.GetValue<string>("Renderer:RenderProvider") ?? "OGL";
+                         var provider = context.Configuration.GetValue<string>("Renderer:RenderProvider") ?? "null";
                          return provider.ToLowerInvariant() switch {
                              // "ogl" => sp.GetRequiredService<Renderer.OGL.RendererOGL>(),
                              "godot" => sp.GetRequiredService<Renderer.Godot.RendererGodot>(),
