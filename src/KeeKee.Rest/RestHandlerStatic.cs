@@ -39,11 +39,9 @@ namespace KeeKee.Rest {
         public RestHandlerStatic(KLogger<RestHandlerStatic> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 RestManager pRestManager
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager, "/static/") {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-
-            Prefix = "/static/";
 
             BaseUIDir = m_restConfig.Value.UIContentDir;
             if (!BaseUIDir.EndsWith("/")) BaseUIDir += "/";

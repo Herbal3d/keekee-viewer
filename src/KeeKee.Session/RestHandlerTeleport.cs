@@ -17,13 +17,14 @@ using KeeKee.Config;
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
 using KeeKee.Framework.Utilities;
+using KeeKee.Rest;
 
 using Microsoft.Extensions.Options;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.Rest.LLLP {
+namespace KeeKee.Session {
 
     public class RestHandlerTeleport : RestHandler {
 
@@ -40,16 +41,15 @@ namespace KeeKee.Rest.LLLP {
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager,
+                                    Utilities.JoinFilePieces(pRestManager.APIBase, "Session/teleport")) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
-
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/teleport");
         }
 
-        public async Task ProcessPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessPostRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {

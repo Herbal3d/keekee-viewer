@@ -45,14 +45,14 @@ namespace KeeKee.Session {
                                 SessionManager pSessionManager,
                                 Grids pGrids,
                                 ICommProvider pCommProvider
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager,
+                                    Utilities.JoinFilePieces(pRestManager.APIBase, "Session/login")) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
             m_grids = pGrids;
             m_sessionManager = pSessionManager;
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "Session/login");
         }
 
         public override async Task ProcessGetRequest(HttpListenerContext pContext,

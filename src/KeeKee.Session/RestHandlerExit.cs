@@ -42,14 +42,13 @@ namespace KeeKee.Session {
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider,
                                 CancellationTokenSource pCancelToken
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager,
+                                    Utilities.JoinFilePieces(pRestManager.APIBase, "Session/exit")) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
             m_cancelToken = pCancelToken;
-
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "Session/exit");
         }
 
         public override async Task ProcessPostRequest(HttpListenerContext pContext,

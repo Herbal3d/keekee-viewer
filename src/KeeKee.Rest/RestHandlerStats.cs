@@ -50,7 +50,8 @@ namespace KeeKee.Rest {
                                 ComponentFactory pComponentFactory,
                                 ICommProvider pCommProvider,
                                 IWorld pWorld
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager,
+                                Utilities.JoinFilePieces(pRestManager.APIBase, "/stats")) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_commConfig = pCommConfig;
@@ -59,9 +60,6 @@ namespace KeeKee.Rest {
             m_ComponentFactory = pComponentFactory;
             m_commProvider = pCommProvider;
             m_world = pWorld;
-
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "stats");
-
         }
 
         public override async Task ProcessGetRequest(HttpListenerContext pContext,

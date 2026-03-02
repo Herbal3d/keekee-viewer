@@ -45,11 +45,9 @@ namespace KeeKee.Rest {
         public RestHandlerUI(KLogger<RestHandlerUI> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
                                 RestManager pRestManager
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager, "/UI/") {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-
-            Prefix = "/UI/";
 
             // m_baseUIDIR = "/.../bin/KeeKeeUI/"
             BaseUIDir = m_restConfig.Value.UIContentDir;

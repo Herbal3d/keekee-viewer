@@ -18,16 +18,18 @@ namespace KeeKee.Rest {
 
         protected readonly RestManager m_RestManager;
 
-        public RestHandler(RestManager pRestManager) {
+        public RestHandler(RestManager pRestManager, string pPrefix) {
             m_RestManager = pRestManager;
+            this.Prefix = pPrefix;
 
             m_RestManager.RegisterListener(this);
         }
 
+        public const string NOPREFIX = "XX/no-prefix/no-prefix/XX";
         // The prefix string for this handler. The stuff after the 'api/' in the URL
         // Usually constructed with:
         //    Prefix = Utilities.JoinFilePieces(m_RestManager.APIBase, "/subpath/");
-        public string Prefix { get; protected set; } = string.Empty;
+        public string Prefix { get; protected set; } = NOPREFIX;
 
         // Process a GET request. The default is to return an error response.
         public virtual Task ProcessGetRequest(HttpListenerContext pContext,
@@ -56,7 +58,7 @@ namespace KeeKee.Rest {
             return Task.CompletedTask;
         }
 
-        public void Dispose() {
+        public virtual void Dispose() {
         }
 
     }

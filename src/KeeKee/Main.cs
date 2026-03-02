@@ -35,6 +35,7 @@ using KeeKee.World.LL;
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 using OMVR = OpenMetaverse.Rendering;
+using KeeKee.World.Services;
 
 namespace KeeKee {
 
@@ -184,11 +185,13 @@ namespace KeeKee {
                          };
                      });
                      services.AddTransient<OMVR.IRendering, MeshmerizerR>();
-                     // services.AddHostedService<ViewOGL>();
 
                      // The user interface
                      services.AddHostedService<Viewer>();
                      services.AddSingleton<IUserInterfaceProvider, UserInterfaceCommon>();
+
+                     // Some info services
+                     services.AddHostedService<AvatarTracker>();
 
                      // KeeKee.Rest, IModule
                      // KeeKee.Comm, ICommProvider

@@ -36,7 +36,6 @@ namespace KeeKee.Rest.LLLP {
         private RestHandlerFactory m_restFactory { get; set; }
         private ICommProvider m_commProvider { get; set; }
 
-        RestHandler? m_teleportHandler = null;
         RestHandler? m_chatHandler = null;
         RestHandler? m_statusHandler = null;
 
@@ -59,7 +58,6 @@ namespace KeeKee.Rest.LLLP {
                 // The LLLP comm provider is being used to start it's REST interface.
                 m_log.LogInfo("CommLLLPRest starting.");
 
-                m_teleportHandler = m_restFactory.CreateHandler<RestHandlerTeleport>();
                 m_chatHandler = m_restFactory.CreateHandler<RestHandlerChat>();
                 m_statusHandler = m_restFactory.CreateHandler<RestHandlerStatus>();
 

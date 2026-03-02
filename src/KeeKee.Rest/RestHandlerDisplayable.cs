@@ -32,75 +32,56 @@ namespace KeeKee.Rest {
         private readonly KLogger<RestHandlerDisplayable> m_log;
         private readonly IOptions<RestManagerConfig> m_restConfig;
 
-        public const string NOPREFIX = "/no-prefix/no-prefix/";
-
         public IDisplayable? DisplayableSource { get; set; } = null;
 
         public RestHandlerDisplayable(KLogger<RestHandlerDisplayable> pLogger,
                                 IOptions<RestManagerConfig> pRestConfig,
-                                RestManager pRestManager
-                                ) : base(pRestManager) {
+                                RestManager pRestManager,
+                                string pPrefix,
+                                IDisplayable? pDisplayableSource
+                                ) : base(pRestManager, pPrefix) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
-
-            Prefix = NOPREFIX;
-
-            // LIstener is registered when prefix is set
-            // m_RestManager.RegisterListener(this);
-        }
-
-        /// <summary>
-        /// Set the prefix for this handler. Can only be done once.
-        /// This allows construction before knowing the prefix.
-        /// </summary>
-        /// <param name="pPrefix"></param>
-        public void SetPrefix(string pPrefix, IDisplayable? pDisplayableSource) {
-            if (Prefix == NOPREFIX) {
-                m_log.Log(KLogLevel.DRESTDETAIL, "Setting Prefix to {0}", pPrefix);
-                Prefix = pPrefix;
-            }
-            Prefix = pPrefix;
             DisplayableSource = pDisplayableSource;
         }
 
-        public async Task ProcessGetOrPostRequest(HttpListenerContext pContext,
+        public override async Task ProcessGetRequest(HttpListenerContext pContext,
                                            HttpListenerRequest pRequest,
                                            HttpListenerResponse pResponse,
                                            CancellationToken pCancelToken) {
 
-            if (pRequest?.HttpMethod.ToUpper().Equals("GET") ?? false) {
-                string absURL = pRequest.Url?.AbsolutePath ?? "";
-                string afterString = absURL.Substring(Prefix.Length);
+            string absURL = pRequest.Url?.AbsolutePath ?? "";
+            string afterString = absURL.Substring(Prefix.Length);
 
-                // remove any query string
-                int qPos = afterString.IndexOf("?");
-                if (qPos >= 0) {
-                    afterString = afterString.Substring(0, qPos);
-                }
+            // remove any query string
+            int qPos = afterString.IndexOf("?");
+            if (qPos >= 0) {
+                afterString = afterString.Substring(0, qPos);
+            }
 
-                try {
-                    if (DisplayableSource != null) {
-                        OMVSD.OSD? displayMap = DisplayableSource.GetDisplayable();
-                        if (displayMap != null) {
-                            m_RestManager.DoSimpleResponse(pResponse, "application/json", () => {
-                                return Utilities.StringToBytes(OMVSD.OSDParser.SerializeJsonString(displayMap));
-                            });
-                        } else {
-                            m_log.Log(KLogLevel.DRESTDETAIL, "No displayable data from source");
-                            m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NoContent, null);
-                        }
+            try {
+                if (DisplayableSource != null) {
+                    OMVSD.OSD? displayMap = DisplayableSource.GetDisplayable();
+                    if (displayMap != null) {
+                        m_RestManager.DoSimpleResponse(pResponse, "application/json", () => {
+                            return Utilities.StringToBytes(OMVSD.OSDParser.SerializeJsonString(displayMap));
+                        });
                     } else {
-                        m_log.Log(KLogLevel.DRESTDETAIL, "No displayable source set");
+                        m_log.Log(KLogLevel.DRESTDETAIL, "No displayable data from source");
                         m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NoContent, null);
                     }
-                } catch (Exception e) {
-                    m_log.Log(KLogLevel.Error, "Exception {0} getting displayable data", e.Message);
-                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
+                } else {
+                    m_log.Log(KLogLevel.DRESTDETAIL, "No displayable source set");
+                    m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.NoContent, null);
                 }
+            } catch (Exception e) {
+                m_log.Log(KLogLevel.Error, "Exception {0} getting displayable data", e.Message);
+                m_RestManager.DoErrorResponse(pResponse, HttpStatusCode.InternalServerError, null);
             }
         }
 
-        public void Dispose() {
+        public override void Dispose() {
+            base.Dispose();
             // m_RestManager.UnregisterListener(this);
         }
     }

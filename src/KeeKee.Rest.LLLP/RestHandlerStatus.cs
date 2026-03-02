@@ -49,7 +49,8 @@ namespace KeeKee.Rest.LLLP {
                                 RestManager pRestManager,
                                 WorkQueueManager pWorkQueueManager,
                                 ICommProvider pCommProvider
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager,
+                                Utilities.JoinFilePieces(pRestManager.APIBase, "LLLP/stats")) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_commProvider = pCommProvider;
@@ -59,9 +60,6 @@ namespace KeeKee.Rest.LLLP {
             m_commLLLP = pCommProvider as CommLLLP;
             m_commConfig = pCommConfig;
             m_gridConfig = pGridConfig;
-
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "LLLP/stats");
-
         }
 
         public override async Task ProcessGetRequest(HttpListenerContext pContext,

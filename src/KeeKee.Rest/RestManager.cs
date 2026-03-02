@@ -18,9 +18,9 @@ using Microsoft.Extensions.Options;
 using KeeKee.Framework;
 using KeeKee.Config;
 using KeeKee.Framework.Logging;
+using KeeKee.Framework.Statistics;
 
 using OMVSD = OpenMetaverse.StructuredData;
-using KeeKee.Framework.Statistics;
 
 namespace KeeKee.Rest {
 

@@ -34,6 +34,7 @@ namespace KeeKee.Session {
         RestHandler? m_loginHandler = null;
         RestHandler? m_logoutHandler = null;
         RestHandler? m_exitHandler = null;
+        RestHandler? m_teleportHandler = null;
 
         private readonly RestHandlerFactory m_RestHandlerFactory;
 
@@ -53,6 +54,7 @@ namespace KeeKee.Session {
             m_loginHandler = m_RestHandlerFactory.CreateHandler<RestHandlerLogin>();
             m_logoutHandler = m_RestHandlerFactory.CreateHandler<RestHandlerLogout>();
             m_exitHandler = m_RestHandlerFactory.CreateHandler<RestHandlerExit>();
+            m_teleportHandler = m_RestHandlerFactory.CreateHandler<RestHandlerTeleport>();
         }
 
         public OMVSD.OSD? GetDisplayable() {

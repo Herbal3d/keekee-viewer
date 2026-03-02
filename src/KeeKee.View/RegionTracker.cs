@@ -50,8 +50,7 @@ namespace KeeKee.View {
                 m_world.OnWorldRegionRemoved += new WorldRegionRemovedCallback(World_OnWorldRegionRemoved);
                 m_world.OnWorldRegionUpdated += new WorldRegionUpdatedCallback(World_OnWorldRegionUpdated);
 
-                m_regionRestHandler = ((RestHandlerDisplayable)m_restFactory.CreateHandler<RestHandlerDisplayable>());
-                m_regionRestHandler.SetPrefix("/region/tracker/info", this);
+                m_regionRestHandler = m_restFactory.CreateHandlerDisplayable("region/tracker/info", this);
             }
         }
 

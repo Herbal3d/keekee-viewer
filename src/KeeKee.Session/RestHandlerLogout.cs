@@ -39,13 +39,12 @@ namespace KeeKee.Session {
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager,
+                                    Utilities.JoinFilePieces(pRestManager.APIBase, "Session/logout")) {
             m_log = pLogger;
             m_restConfig = pRestConfig;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
-
-            Prefix = Utilities.JoinFilePieces(m_restConfig.Value.APIBase, "Session/logout");
         }
 
         public override async Task ProcessPostRequest(HttpListenerContext pContext,

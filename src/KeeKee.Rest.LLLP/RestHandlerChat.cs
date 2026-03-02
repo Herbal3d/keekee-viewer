@@ -66,12 +66,11 @@ namespace KeeKee.Rest.LLLP {
                                 IOptions<CommConfig> pCommConfig,
                                 RestManager pRestManager,
                                 ICommProvider pCommProvider
-                                ) : base(pRestManager) {
+                                ) : base(pRestManager,
+                                    Utilities.JoinFilePieces(pRestManager.APIBase, "LLLP/chat")) {
             m_log = pLogger;
             m_commProvider = pCommProvider;
             m_commConfig = pCommConfig;
-
-            Prefix = Utilities.JoinFilePieces(m_RestManager.APIBase, "LLLP/chat");
 
             m_chats = new Queue<ChatEntry>();
 
