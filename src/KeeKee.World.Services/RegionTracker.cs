@@ -9,68 +9,85 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Microsoft.Extensions.Hosting;
+
 using KeeKee.Contexts;
 using KeeKee.Framework;
 using KeeKee.Framework.Logging;
+using KeeKee.Framework.Utilities;
 using KeeKee.Rest;
 using KeeKee.Renderer;
 
 using OMV = OpenMetaverse;
 using OMVSD = OpenMetaverse.StructuredData;
 
-namespace KeeKee.View {
+namespace KeeKee.World.Services {
     /// <summary>
     /// Watch the comings and goings of the regions and handle the level of detail
     /// that the regions are displayed in.
     /// </summary>
-    public class RegionTracker : IDisplayable, IDisposable {
+    public class RegionTracker : BackgroundService, IDisplayable, IDisposable {
 
         private KLogger<RegionTracker> m_log;
-        private bool m_enabled = false;
 
+        private RestManager m_restManager;
         private RestHandlerFactory m_restFactory;
-        protected RestHandlerDisplayable? m_regionRestHandler;
+        protected RestHandler? m_regionRestHandler;
 
         protected IWorld m_world;
         protected IRenderProvider m_renderer;
 
+        protected Dictionary<string, IRegionContext> m_regions;
+
         public RegionTracker(KLogger<RegionTracker> pLog,
                             IWorld pWorld,
                             RestHandlerFactory pRestFactory,
+                            RestManager pRestManager,
                             IRenderProvider pRenderer) {
             m_log = pLog;
             m_world = pWorld;
             m_restFactory = pRestFactory;
+            m_restManager = pRestManager;
             m_renderer = pRenderer;
+
+            m_regions = new Dictionary<string, IRegionContext>();
 
             m_log.Log(KLogLevel.DINIT, "starting");
 
-            if (m_enabled) {
-                m_world.OnWorldRegionNew += new WorldRegionNewCallback(World_OnWorldRegionNew);
-                m_world.OnWorldRegionRemoved += new WorldRegionRemovedCallback(World_OnWorldRegionRemoved);
-                m_world.OnWorldRegionUpdated += new WorldRegionUpdatedCallback(World_OnWorldRegionUpdated);
+        }
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
+            m_log.Log(KLogLevel.DREST, "ExecuteAsync entered");
 
-                m_regionRestHandler = m_restFactory.CreateHandlerDisplayable("region/tracker/info", this);
-            }
+            m_regionRestHandler = m_restFactory.CreateHandlerDisplayable(
+                Utilities.JoinFilePieces(m_restManager.APIBase, "/regions"), this);
+
+            m_world.OnWorldRegionNew += World_OnWorldRegionNew;
+            m_world.OnWorldRegionRemoved += World_OnWorldRegionRemoved;
+            m_world.OnWorldRegionUpdated += World_OnWorldRegionUpdated;
         }
 
-        public void Dispose() {
-            if (m_enabled) {
-                m_world.OnWorldRegionNew -= new WorldRegionNewCallback(World_OnWorldRegionNew);
-                m_world.OnWorldRegionRemoved -= new WorldRegionRemovedCallback(World_OnWorldRegionRemoved);
-                m_world.OnWorldRegionUpdated -= new WorldRegionUpdatedCallback(World_OnWorldRegionUpdated);
-            }
+        public override void Dispose() {
+            m_world.OnWorldRegionNew -= World_OnWorldRegionNew;
+            m_world.OnWorldRegionRemoved -= World_OnWorldRegionRemoved;
+            m_world.OnWorldRegionUpdated -= World_OnWorldRegionUpdated;
+            base.Dispose();
         }
 
         #region EVENT PROCESSING
         void World_OnWorldRegionNew(IRegionContext rcontext) {
+            m_log.Log(KLogLevel.DWORLD, $@"New region {rcontext.Name}");
+            lock (m_regions) {
+                if (!m_regions.ContainsKey(rcontext.Name.Name)) {
+                    m_regions.Add(rcontext.Name.Name, rcontext);
+                }
+            }
             /*
             // we have a new region. Set the focus region to be where the main agent points
             if (World.World.Instance.Agent != null) {
                 if (World.World.Instance.Agent.AssociatedAvatar != null) {
                     if (World.World.Instance.Agent.AssociatedAvatar.RegionContext != null) {
                         if (m_renderer != null) {
-                            LogManager.Log.Log(LogLevel.DWORLDDETAIL, "RegionTracker: setting focus region {0}", 
+                            m_log.Log(KLogLevel.DWORLDDETAIL, "RegionTracker: setting focus region {0}", 
                                 World.World.Instance.Agent.AssociatedAvatar.RegionContext.Name);
                             m_renderer.SetFocusRegion(World.World.Instance.Agent.AssociatedAvatar.RegionContext);
                         }
@@ -85,6 +102,12 @@ namespace KeeKee.View {
             }
         }
         void World_OnWorldRegionRemoved(IRegionContext rcontext) {
+            m_log.Log(KLogLevel.DWORLD, $@"Region removed {rcontext.Name}");
+            lock (m_regions) {
+                if (m_regions.ContainsKey(rcontext.Name.Name)) {
+                    m_regions.Remove(rcontext.Name.Name);
+                }
+            }
         }
         void World_OnWorldRegionUpdated(IRegionContext rcontext, UpdateCodes what) {
         }
@@ -92,7 +115,18 @@ namespace KeeKee.View {
 
         // Return the information about the regions in the world. This is used for debugging and testing.
         public OMVSD.OSD GetDisplayable() {
-            return new OMVSD.OSDMap();
+            OMVSD.OSDMap ret = new OMVSD.OSDMap();
+            var regionsInfo = new OMVSD.OSDArray();
+            lock (m_regions) {
+                foreach (var kvp in m_regions) {
+                    var regionInfo = kvp.Value.GetDisplayable();
+                    if (regionInfo != null) {
+                        regionsInfo.Add(regionInfo);
+                    }
+                }
+            }
+            ret["Regions"] = regionsInfo;
+            return ret;
         }
     }
 }

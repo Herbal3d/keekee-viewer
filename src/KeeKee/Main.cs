@@ -73,8 +73,9 @@ namespace KeeKee {
                 ?? throw new ApplicationException($"There requested type {typeof(T).FullName} could not be provided.");
         }
 
+        public delegate void AddMoreServicesCallback(IServiceCollection services);
 
-        public static async Task Main(string[] args) {
+        public static async Task Main(string[] args, AddMoreServicesCallback? addMoreServices = null) {
 
             KeeKeeHost = Host.CreateDefaultBuilder(args)
                  .ConfigureAppConfiguration((context, config) => {
@@ -192,34 +193,12 @@ namespace KeeKee {
 
                      // Some info services
                      services.AddHostedService<AvatarTracker>();
+                     services.AddHostedService<RegionTracker>();
 
-                     // KeeKee.Rest, IModule
-                     // KeeKee.Comm, ICommProvider
-                     // KeeKee.World, IWorld
-                     // KeeKee.View, IViewProvider
-                     // KeeKee.View, IUserInterfaceProvider
-                     // KeeKee.Renderer.OGL, IRendererProvider
-                     // KeeKee.Comm.LLLP, IRestUser
-                     // KeeKee.View, IViewSplash
-                     // KeeKee.View, IViewAvatar
-                     // KeeKee.View, IViewChat
-                     // KeeKee.View, KeeKee.Renderer.OGL.IViewOGL
-                     // KeeKee.View, IRegionTrackerProvider
-                     // KeeKee.World.Services, IAvatarTrackerService
-                     // KeeKee.Comm.LLLP, Comm.IChatProvider
-
-                     // Asset Server example choosing implementation based on config
-                     // pServices.AddSingleton<IAssetServer>(sp => {
-                     //     var provider = config.GetValue<string>("AssetServer:Provider") ?? "LLLP";
-                     //     OR var provider = sp.GetRequiredService<IOptions<IAssetServerOptions>>().Value.Provider ?? "LLLP";
-                     //     return provider.ToLowerInvariant() switch {
-                     //         "lllp" => services.AddSingleton<IAssetServer, LllpAssetServer>(),
-                     //         "rest" => services.AddSingleton<IAssetServer, RestAssetServer>(),
-                     //         _ => throw new ApplicationException($"Unknown AssetServer provider '{provider}'.")
-                     //     };
-                     // });
-
-
+                     // Allow injection of additional services for testing or other purposes.
+                     if (addMoreServices is not null) {
+                         addMoreServices(services);
+                     }
                  })
                  .Build();
 

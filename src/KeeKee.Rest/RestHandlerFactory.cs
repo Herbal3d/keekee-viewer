@@ -21,16 +21,10 @@ namespace KeeKee.Rest {
 
     public class RestHandlerFactory {
         private readonly IServiceProvider m_serviceProvider;
-        private readonly RestManager m_restManager;
 
-        public RestHandlerFactory(IServiceProvider pServiceProvider,
-                                  RestManager pRestManager) {
+        public RestHandlerFactory(IServiceProvider pServiceProvider) {
             m_serviceProvider = pServiceProvider;
-            m_restManager = pRestManager;
         }
-
-        // Convienience method to get the API base from the RestManager
-        public string APIBase => m_restManager.APIBase;
 
         public RestHandler CreateHandler<T>(params object[] parameters) where T : RestHandler {
             return ActivatorUtilities.CreateInstance<T>(m_serviceProvider, parameters);

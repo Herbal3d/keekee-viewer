@@ -33,17 +33,22 @@ namespace KeeKee.World.Services {
 
         private KLogger<AvatarTracker> m_log;
         protected IWorld m_world;
+        protected RestManager m_restManager;
         protected RestHandlerFactory m_restFactory;
+
+        // Handler returning the avatar information for the REST API
         protected RestHandler m_restHandler;
 
         protected Dictionary<string, IEntity> m_avatars;
 
 
         public AvatarTracker(KLogger<AvatarTracker> pLog,
+                        RestManager pRestManager,
                         RestHandlerFactory pRestFactory,
                         IWorld pWorld
                     ) {
             m_log = pLog;
+            m_restManager = pRestManager;
             m_restFactory = pRestFactory;
             m_world = pWorld;
 
@@ -52,10 +57,10 @@ namespace KeeKee.World.Services {
             m_avatars = new Dictionary<string, IEntity>();
         }
         protected override async Task ExecuteAsync(CancellationToken cancellationToken) {
-            m_log.Log(KLogLevel.DREST, "AvatarTracker ExecuteAsync entered");
+            m_log.Log(KLogLevel.DREST, "ExecuteAsync entered");
 
             m_restHandler = m_restFactory.CreateHandlerDisplayable(
-                Utilities.JoinFilePieces(m_restFactory.APIBase, "/avatars"), this
+                Utilities.JoinFilePieces(m_restManager.APIBase, "/avatars"), this
             );
 
             m_world.OnAgentNew += World_OnAgentNew;
